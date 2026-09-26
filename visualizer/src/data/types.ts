@@ -161,8 +161,12 @@ export interface SampleRow {
 
 export interface Benchmarks {
   $comment?: string
+  /** When the numbers were taken. Never a substitute for `runner`. */
+  measured?: string
+  /** Steps per measurement. */
+  steps: number
   runner: Runner
-  configs: { id: string; label: string; hyperparameters: Record<string, number> }[]
+  config: { id: string; label: string; hyperparameters: Record<string, number> }
   results: BenchResult[]
   methodology?: string
   caveats?: string[]
@@ -183,8 +187,12 @@ export interface BenchResult {
   lang: string
   config: string
   steps: number
+  wall_seconds: number
   step_ms: number
-  steps_per_sec: number
+  /** Null when the measurement failed; a zero here would be a lie. */
+  steps_per_sec: number | null
+  /** Present only when the reference run is in the same row set. */
+  relative_to_python?: number | null
   peak_rss_mb: number | null
   build_flags: string
   build_mode: string

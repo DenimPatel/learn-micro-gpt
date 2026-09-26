@@ -87,6 +87,10 @@ Measured on the reference, over 1,000 steps:
 | maximum | 3.907 |
 | **step-to-step moves that increase** | **500 of 999** |
 
+And the whole curve, raw and smoothed, with the checkpoints the parity gate uses:
+
+:::trace kind=loss-curve
+
 Half the steps go *up*. This is the first thing that breaks a naive expectation
 about training, and it is entirely correct behaviour: `"xander"` is a hard name
 and `"ana"` is an easy one, and the model is being asked to do both in

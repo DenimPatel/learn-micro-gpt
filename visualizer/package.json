@@ -19,11 +19,14 @@
     "gen:content": "node --run ../tools/render_content.mjs"
   },
   "dependencies": {
+    "@shikijs/langs": "^4.4.3",
+    "@shikijs/themes": "^4.4.3",
     "dagre": "^0.8.5",
     "katex": "^0.16.22",
     "marked": "^17.0.0",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "shiki": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -31,6 +34,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@types/dagre": "^0.7.52",
     "@types/katex": "^0.16.7",
+    "@types/node": "^26.6.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.1.0",

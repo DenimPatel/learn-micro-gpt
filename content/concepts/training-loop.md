@@ -98,6 +98,11 @@ What is unambiguous is the trend. Measured on the reference over 1,000 steps:
 | steps 151–200 | 2.532 |
 | steps 951–1000 | 2.323 |
 
+And the whole curve, raw and smoothed, which is the only honest way to see
+a trend in something this noisy:
+
+:::trace kind=loss-curve
+
 A drop of 0.53 nats — a factor of `exp(0.53) = 1.70` in likelihood, achieved by
 a model with 4,192 parameters, on 1,000 documents, in 199 lines. The final
 samples are `kamon`, `ann`, `karai`, `ana`. That is a real language model. It is

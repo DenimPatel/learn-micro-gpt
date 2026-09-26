@@ -68,3 +68,5 @@ traces/**/stdout.txt
 # Agent-local tool permissions. Personal, not project policy.
 .claude/
 .kilo/
+.playwright-cache/
+benchmarks/results.json.orig

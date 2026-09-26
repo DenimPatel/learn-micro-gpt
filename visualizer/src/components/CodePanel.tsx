@@ -1,0 +1,155 @@
+/**
+ * The code panel: a source file, a line range, and the ability to see the rest.
+ *
+ * ## Why the whole file is loaded and then cropped
+ *
+ * Every language file is bundled at build time (`src/data/sources.ts`), so there
+ * is no fetch and no URL to get wrong. The panel then shows the concept's
+ * resolved range, with a couple of lines of context on each side, and offers the
+ * whole file behind a disclosure.
+ *
+ * The alternative -- highlighting only the range -- is what makes line numbers
+ * and copy-paste awkward, and it re-introduces the "extract a slice of highlighted
+ * HTML" problem that broke the previous implementation. Cropping the *text* and
+ * highlighting the result keeps one code path.
+ *
+ * ## Accessibility
+ *
+ * The highlighted `<pre>` is the accessible content, and it carries an
+ * `aria-label` naming the file and the lines. A screen reader will otherwise read
+ * a hundred `span`s with no indication of what file they came from. The line
+ * gutter is `aria-hidden` because the numbers are presentational: the same
+ * information is in the label and in the plain-text `<pre>` fallback that every
+ * code panel has before Shiki loads.
+ */
+
+import { useEffect, useId, useMemo, useState } from 'react'
+import { useHighlight } from '../content/highlight'
+import { HIGHLIGHT_LANG, anchorFor, loadSource, loadedSource } from '../data/sources'
+import type { Language } from '../data/types'
+
+const CONTEXT_LINES = 3
+
+export function CodePanel({
+  language,
+  conceptId,
+  focus,
+  defaultOpen = true,
+}: {
+  language: Language
+  /** When set, the panel opens focused on this concept's resolved range. */
+  conceptId?: string
+  /** An explicit 1-based inclusive line range, which wins over `conceptId`. */
+  focus?: { start: number; end: number }
+  defaultOpen?: boolean
+}) {
+  const [expanded, setExpanded] = useState(defaultOpen)
+  const panelId = useId()
+
+  /*
+   * The source arrives asynchronously, because each language is a dynamic
+   * `?raw` import in its own chunk (see `data/sources.ts` for why). Until it
+   * lands the panel shows a one-line placeholder rather than an empty box, so
+   * the page never reflows into looking broken.
+   */
+  const [source, setSource] = useState<string | null>(() => loadedSource(language) ?? null)
+  useEffect(() => {
+    let cancelled = false
+    const already = loadedSource(language)
+    if (already !== undefined) {
+      setSource(already)
+      return
+    }
+    void loadSource(language).then((text) => {
+      if (!cancelled) setSource(text)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [language])
+
+  const range = useMemo(() => {
+    if (focus) return focus
+    if (!conceptId) return null
+    return anchorFor(conceptId, language) ?? null
+  }, [focus, conceptId, language])
+
+  const text = source ?? ''
+  const lines = useMemo(() => text.split('\n'), [text])
+  const from = range ? Math.max(0, range.start - 1 - CONTEXT_LINES) : 0
+  const to = range ? Math.min(lines.length, range.end + CONTEXT_LINES) : lines.length
+  const slice = lines.slice(from, to).join('\n')
+  const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
+  const { html: darkHtml, ready: darkReady } = useHighlight(
+    slice,
+    HIGHLIGHT_LANG[language],
+    'dark',
+  )
+
+  if (source === null) {
+    return (
+      <div className="code-panel" role="group" aria-label={`loading the ${language} source`}>
+        <div className="code-panel__bar">
+          <span className="code-panel__name">{language}</span>
+        </div>
+        <p className="code-panel__missing">loading the {language} source&hellip;</p>
+      </div>
+    )
+  }
+
+  const label = range
+    ? `${language} source, lines ${range.start} to ${range.end} of ${lines.length}`
+    : `${language} source, ${lines.length} lines`
+
+  const gutter = Array.from({ length: to - from }, (_, index) => {
+    const number = from + index + 1
+    const focused = range ? number >= range.start && number <= range.end : false
+    return (
+      <span key={number} className={focused ? 'code-gutter__line is-focused' : 'code-gutter__line'}>
+        {number}
+      </span>
+    )
+  })
+
+  return (
+    <div className="code-panel" role="group" aria-label={label}>
+      <div className="code-panel__bar">
+        <span className="code-panel__name">{language}</span>
+        {range ? (
+          <span className="code-panel__range">
+            lines {range.start}&ndash;{range.end}
+          </span>
+        ) : null}
+        <button
+          type="button"
+          className="code-panel__toggle"
+          aria-expanded={expanded}
+          aria-controls={panelId}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          {expanded ? 'show less' : 'show whole file'}
+        </button>
+      </div>
+
+      <div id={panelId} hidden={!expanded} className="code-panel__body">
+        <div className="code-gutter" aria-hidden="true">
+          {gutter}
+        </div>
+        <pre className="code-block" tabIndex={0} aria-label={label}>
+          {ready && darkReady ? (
+            <>
+              <span className="light-only" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
+              <span className="dark-only" dangerouslySetInnerHTML={{ __html: darkHtml ?? '' }} />
+            </>
+          ) : (
+            <code>
+              {slice}
+              {/* A polite notice, not a spinner: the text is already readable. */}
+              <span className="code-panel__loading"> (highlighting&hellip;)</span>
+            </code>
+          )}
+        </pre>
+      </div>
+    </div>
+  )
+}

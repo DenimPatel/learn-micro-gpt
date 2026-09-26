@@ -113,12 +113,58 @@ of one query. Heads make attention itself a multi-dimensional operation.
 ## Reading the traces
 
 This is the one concept where a recorded trace beats any amount of prose, so
-the Atlas inlines one. For step 0, position 3, head 0 you get a 4x4 matrix of
-weights. Two things to look for:
+the Atlas inlines one. Here is step 0, position 3, head 0 — one weight per
+position the model can currently see:
 
-- The **diagonal** entry (t = 3) is the largest, because of the self-match above.
-- The weights **sum to 1 along rows**, and change a lot from step 0 to step 500,
-  because the projection matrices are being trained and the queries are moving.
+:::trace kind=attention step=0 pos=3 head=0
+
+Four columns, and they come out `[0.231, 0.279, 0.220, 0.270]`. Nearly uniform,
+and almost nothing special: that is an untrained model.
+
+The same view at step 200:
+
+:::trace kind=attention step=200 pos=3 head=0
+
+Now it is `[0.394, 0.236, 0.197, 0.174]`. Structured, and leaning hard on
+position 0.
+
+**That the diagonal is the largest number is not true, and that is the
+interesting part.** Measured over the recorded trace, for head 0 at every
+position with more than one candidate:
+
+| step | diagonal is the argmax | mean weight on the diagonal | mean weight on the best earlier position |
+| --- | --- | --- | --- |
+| 0 | 2 of 4 | 0.389 | 0.373 |
+| 25 | 0 of 4 | 0.245 | 0.617 |
+| 100 | 0 of 6 | 0.242 | 0.386 |
+| 500 | 0 of 4 | 0.292 | 0.503 |
+
+Training *reduces* the weight on the current position and *raises* the weight on
+the best earlier one. By step 25 the current position is not the argmax at all.
+
+That is the opposite of what most people's first mental model of attention
+predicts, and it makes sense once you think about what the model is doing. The
+self-match is a mathematical artefact of `k` and `q` coming from the same
+projection of the same vector. It carries no information, so the network is free
+to down-weight it — and it does, because the tokens that *precede* the current
+one are the ones that predict the next.
+
+Three things to check in any trace you look at:
+
+- **Every row sums to 1**, to floating-point precision. The structural
+  invariant.
+- **The row has exactly `pos + 1` entries**, not `block_size`. That is the causal
+  mask — implemented by the shape of the `keys` list, not by a mask value
+  anywhere. The C port does the same thing with `num_keys = pos_id + 1`.
+- **Position 0 always gives `[1.0]`.** With one position visible there is
+  nothing to choose between, so the softmax of a single logit is 1. If your trace
+  shows anything else at position 0, something is wrong before you look at
+  anything else.
+
+:::trace kind=loss-curve
+
+And here is the loss curve those attention weights came from, with the
+per-step noise that makes it unreadable unless you smooth it:
 
 :::callout "Set n_head to 1 and watch"
 `n_head = 1` makes `head_dim = 16` and the loss curve gets noticeably worse. Set

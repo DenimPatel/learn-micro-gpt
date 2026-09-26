@@ -73,7 +73,12 @@ temperature-scaled logits in exactly one place. This is the standard way to do
 it, and the alternative (adding a `temperature` parameter to `softmax`) would
 push a sampling concern into a layer that does not need to know about it.
 
-The samples at `T = 0.5`, straight from the reference:
+The samples at `T = 0.5`, straight from the reference. Here they are from the
+recorded run, so you can see them without running anything:
+
+:::trace kind=samples
+
+And printed directly by the script:
 
 ```output
 kamon   ann    karai  jaire  vialan  karia  yeran  anna   areli  kaina

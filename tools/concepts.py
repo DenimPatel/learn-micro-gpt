@@ -30,32 +30,45 @@ DIRECTIVE_RE = re.compile(
     r"^:::(?P<name>[a-z][a-z-]*)(?P<args>.*)$",
 )
 
+#: A line that starts with `:::` but does not match `DIRECTIVE_RE`. `::::trace`
+#: arrived from a stray keystroke in an edit, and because it simply failed the
+#: regex it was rendered as a paragraph of literal colons -- silently, with no
+#: build failure. A near-miss on a directive is a typo, and typos should be loud.
+_MALFORMED_DIRECTIVE_RE = re.compile(r"^:{2,}\S*\S")
+
 #: Known directives, and the argument names each one accepts.
+#:
+#: `block` means "owns the lines below it until a closing `:::`" -- i.e. the
+#: directive has a body. Getting this wrong is not a cosmetic error: `trace` was
+#: originally marked as a block, and a self-closing `:::trace kind=attn` therefore
+#: swallowed every following line up to the next `:::`, which silently deleted
+#: most of the multi-head-attention concept. A directive with no body is not a
+#: block.
 DIRECTIVE_SPEC: dict[str, dict[str, Any]] = {
     "trace": {
-        "block": True,
+        "block": False,
         "args": {"kind", "step", "pos", "head", "top", "lang", "config"},
-        "note": "Inline a widget backed by a committed trace. See docs/TRACE-FORMAT.md.",
+        "note": "Inline a widget backed by a committed trace. One line. See docs/TRACE-FORMAT.md.",
     },
     "lang": {
-        "block": False,
+        "block": True,
         "args": {"config"},
-        "note": "Start a language tab range. Closed by the next :::lang or end of body.",
+        "note": "Start a language tab range; closed by the next :::lang or the end of the body.",
     },
     "shape": {
         "block": False,
-        "args": {},
-        "note": "Inline the shape table entry of that name.",
+        "args": {"name"},
+        "note": "Inline one shape table entry, by name.",
     },
     "term": {
         "block": False,
         "args": {},
-        "note": "Link a glossary term. Fails validation if the term is undefined.",
+        "note": "Link a glossary term. Validation fails if the term is not defined.",
     },
     "callout": {
         "block": True,
         "args": {},
-        "note": "A boxed aside, optionally titled.",
+        "note": "A boxed aside, optionally titled. Body until a closing :::.",
     },
     "note": {
         "block": True,
@@ -126,11 +139,21 @@ def parse_args(raw: str, line_no: int) -> tuple[dict[str, str], str]:
         text = text[close + 1 :].strip()
 
     args: dict[str, str] = {}
-    for token in text.split():
+    for position, token in enumerate(text.split()):
         if not token:
             continue
         if "=" not in token:
-            raise ContentError(f"directive argument {token!r} is not key=value (line {line_no})")
+            # One leading bare token is the directive's subject -- the term being
+            # linked, the shape being shown. `:::term rmsnorm` reads better than
+            # `:::term name=rmsnorm`, and a second bare token is a typo rather
+            # than a shorthand worth supporting.
+            if position == 0 and not quoted:
+                quoted = token.strip('"')
+                continue
+            raise ContentError(
+                f"directive argument {token!r} is not key=value (line {line_no}). "
+                f"A directive may have one bare leading argument and then only key=value."
+            )
         key, _, value = token.partition("=")
         args[key] = value.strip('"')
     return args, quoted
@@ -172,6 +195,12 @@ def parse_body(body: str) -> list[Block]:
 
         match = DIRECTIVE_RE.match(stripped)
         if not match:
+            if _MALFORMED_DIRECTIVE_RE.match(stripped):
+                raise ContentError(
+                    f"line {line_no}: {stripped!r} starts with ':::' but is not a valid "
+                    f"directive. Expected `:::name` or `:::name key=value`. A near-miss "
+                    f"here renders as a paragraph of colons rather than failing."
+                )
             buffer.append(raw)
             continue
 

@@ -364,6 +364,24 @@ def check_bodies(concepts: list[Concept], index: dict[str, Any], report: Report)
                         f"different word."
                     )
             if block.name == "trace":
+                kind = block.args.get("kind")
+                TRACE_KINDS = {
+                    "loss-curve", "attention", "softmax", "shapes", "tokens", "samples",
+                }
+                if kind is None:
+                    report.error(
+                        f"{concept.id} line {block.line_no}: `:::trace` needs a kind "
+                        f"(one of {', '.join(sorted(TRACE_KINDS))})"
+                    )
+                elif kind not in TRACE_KINDS:
+                    # The app's `BlockView` switches on this set and renders
+                    # nothing for anything else, so a typo here produces a concept
+                    # with a silently missing widget.
+                    report.error(
+                        f"{concept.id} line {block.line_no}: unknown trace kind "
+                        f"{kind!r}. Known: {', '.join(sorted(TRACE_KINDS))}. A kind "
+                        f"outside this set renders nothing at all."
+                    )
                 for key in ("step", "pos", "head", "top"):
                     raw = block.args.get(key)
                     if raw is None:

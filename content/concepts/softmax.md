@@ -79,4 +79,9 @@ finite-difference tests do exactly that for its `softmax_fwd`, and it is the
 cheapest possible check that a normalisation function is normalising. If the sum
 is 1.0 and the output has a `NaN` in it, you have found a divide-by-zero that
 `max_val` was supposed to prevent.
+
+And here are the actual top-8 next characters the trained model prefers, from
+the recorded run:
+
+:::trace kind=softmax step=200 pos=0
 :::
