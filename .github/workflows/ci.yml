@@ -1,0 +1,384 @@
+# CI for learn-micro-gpt.
+#
+# ## Shape
+#
+# Four jobs. `provenance` and `content` are fast and gate everything; `tracks`
+# builds and measures every language implementation; `web` builds the visualizer
+# and runs its tests; `deploy` publishes only on the default branch.
+#
+# The ordering is the point. Content validation cannot meaningfully run before
+# the provenance check, because every number in the site is a claim about
+# specific bytes of `reference/microgpt.py`, and validating the prose about those
+# numbers while the numbers' subject has moved is theatre.
+#
+# ## What is deliberately not here
+#
+# No `parity` job running the full 1,000 steps. It takes about three minutes
+# across four tracks on a cold runner, and every one of those minutes is a
+# compile. It runs in `tracks` on a reduced horizon, and the full run is a
+# `workflow_dispatch` input plus a nightly job.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      steps:
+        description: 'Training steps for the parity check'
+        default: 1000
+        type: number
+
+# The scheduled benchmark run: regenerates benchmarks/results.json on a known
+# runner and opens a PR if the numbers moved. On a schedule rather than on push,
+# so a timing change never blocks a content PR -- timings are not something a
+# reviewer can act on in the same way a broken selector is.
+on:
+  schedule:
+    # 04:17 UTC on Mondays. Not on the hour: scheduled workflows on the hour are
+    # the most contended slot on GitHub's fleet, and this one measures wall-clock
+    # time, so it should not queue behind a hundred other jobs.
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHONUNBUFFERED: '1'
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Does the vendored code still match its pins?
+  #
+  # Runs first and blocks everything. reference/microgpt.py is byte-pinned, and
+  # every number in the site is a claim about those bytes.
+  provenance:
+    name: provenance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Check the sha256 of every vendored file
+        run: make verify-provenance
+
+      - name: Check docs/PROVENANCE.md is current
+        # The generated doc must not lag the pins it describes, or it is worse
+        # than no doc: a reader checking a digest would be checking a stale one.
+        run: |
+          make provenance
+          git diff --exit-code -- docs/PROVENANCE.md
+
+  # --------------------------------------------------------------------------
+  # Do the concepts still resolve, and do they still mean what they say?
+  content:
+    name: content
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    needs: provenance
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Python tooling is stdlib-only, so there is nothing to install
+        run: python3 -c "import sys; print('python', sys.version)"
+
+      - name: Resolve every concept's AST selectors
+        run: make validate
+
+      - name: Generated content is current
+        # `make validate` regenerates anchors.json and content.json. If either
+        # changes, the committed copy was stale -- which means the site was
+        # rendering code panels that pointed at the wrong lines.
+        run: git diff --exit-code -- visualizer/src/data/generated/
+
+      - name: Python tool tests
+        run: make test
+
+      - name: Regenerate the traces and fail on drift
+        # The committed traces are the evidence behind every number in the
+        # concepts. Regenerating and diffing is what stops them from quietly
+        # ceasing to describe the code they came from.
+        #
+        # 1000 steps of CPython is about two minutes, so this is the slowest
+        # content check and the reason the job has a ten-minute budget.
+        run: make trace-check
+
+  # --------------------------------------------------------------------------
+  # Do all five implementations still build, and do they still agree?
+  tracks:
+    name: tracks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    needs: provenance
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+          cache-dependency-path: implementations/go/go.sum
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: visualizer/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: implementations/rust
+
+      - name: The C tracks build with the portable fallbacks
+        # The whole reason microgpt_simd.h exists. This step is the check that
+        # keeps the C parity track runnable on a Linux runner at all, which it
+        # was not before.
+        run: make -C implementations/c portable
+
+      - name: All three C build configurations agree
+        # Accelerate + NEON, scalar BLAS + NEON, and fully scalar must produce
+        # the same loss curve. A fallback that rounded differently would look to
+        # the parity gate exactly like a different algorithm.
+        run: |
+          make -C implementations/c test
+          # Accelerate does not exist on Linux, so on this runner that
+          # configuration is skipped and the script compares the two portable
+          # ones. It says so rather than passing silently.
+          grep -q 'equivalence' <(cd implementations/c && ./test_equivalence.sh)
+
+      - name: The C gradient and invariant tests
+        # Includes the locked known-issue check on the backward pass's directional
+        # derivative. If that number moves, the gradient code was edited without
+        # anyone re-checking it.
+        run: make -C implementations/c check
+
+      - name: Build the Go track
+        working-directory: implementations/go
+        run: go vet ./... && go build -o /dev/null .
+
+      - name: Build the Rust track
+        working-directory: implementations/rust
+        run: cargo build --release && cargo clippy -- -D warnings
+
+      - name: Typecheck the TypeScript track
+        working-directory: implementations/typescript
+        run: npm install --no-audit --no-fund && npx tsc --noEmit
+
+      - name: Every track is within the parity band
+        # 200 steps, not 1000: the gate compares smoothed losses at checkpoints
+        # and a trend over 50-step windows, and 200 steps is enough for both to be
+        # meaningful. The full run is `workflow_dispatch` and the nightly job.
+        run: python3 -m tools.parity --steps 200
+
+      - name: The full run, when asked for one
+        if: github.event_name == 'workflow_dispatch'
+        run: python3 -m tools.parity --steps ${{ github.event.inputs.steps || 1000 }}
+
+  # --------------------------------------------------------------------------
+  # Does the site build, and does it work from a subpath?
+  web:
+    name: web
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: [provenance, content]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: visualizer/package-lock.json
+
+      - name: Install
+        working-directory: visualizer
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        working-directory: visualizer
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: visualizer
+        run: npm run typecheck
+
+      - name: Unit tests
+        working-directory: visualizer
+        run: npm run test:unit
+
+      - name: Build
+        working-directory: visualizer
+        run: npm run build
+
+      - name: Nothing in the build is fetched at runtime
+        # The property that makes the Pages deployment work. This fails if a
+        # `fetch('/...')` creeps back in, and it is the one check that would
+        # have caught the original bug.
+        run: |
+          if grep -rEn "fetch\(\s*['\"]/" dist/assets/*.js; then
+            echo "error: an absolute fetch() in the built bundle."
+            echo "  GitHub Pages serves this site from a subpath, so an absolute"
+            echo "  URL 404s in production while working perfectly at /."
+            echo "  Import sources with Vite's ?raw instead -- see"
+            echo "  visualizer/src/data/sources.ts."
+            exit 1
+          fi
+          echo "no absolute fetches in the bundle"
+
+      - name: The 404 fallback is emitted
+        # GitHub Pages serves 404.html for unresolvable paths, which is what
+        # keeps a deep link working if the router ever moves off the hash.
+        run: |
+          test -f dist/404.html
+          cmp dist/index.html dist/404.html
+
+      - name: Install the browser
+        working-directory: visualizer
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end, against a production build served from a subpath
+        # The check that could not have passed before. Serving from `/` hides
+        # every subpath bug this site previously had.
+        working-directory: visualizer
+        run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: visualizer/playwright-report
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: dist
+          path: visualizer/dist
+          retention-days: 7
+
+  # --------------------------------------------------------------------------
+  # Publish.
+  #
+  # Gated on `web` succeeding and on being on the default branch, and
+  # environment-protected so it cannot run on a fork's first push.
+  deploy:
+    name: deploy
+    needs: [provenance, content, tracks, web]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      # Never two deploys at once, and never cancel one in progress: a cancelled
+      # Pages deploy can leave the site half-published.
+      group: github-pages
+      cancel-in-progress: false
+    steps:
+      - name: Download the build that was tested
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: site
+          run-id: ${{ github.run_id }}
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # --------------------------------------------------------------------------
+  # Nightly: regenerate the benchmarks on a known runner and offer a PR.
+  benchmarks:
+    name: benchmarks
+    needs: content
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.24'
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            visualizer/package-lock.json
+            implementations/typescript/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: implementations/rust
+
+      - name: Build the tracks
+        run: |
+          make -C implementations/c portable
+          (cd implementations/go && go build -o /dev/null .)
+          (cd implementations/rust && cargo build --release)
+          (cd implementations/typescript && npm install --no-audit --no-fund)
+
+      - name: Measure
+        run: make bench
+
+      - name: Open a PR if the numbers moved
+        # Not a direct commit: a benchmark change is a thing a human should look
+        # at, because the numbers end up quoted in the site and in the docs, and
+        # "the benchmark went down by 3%" and "the benchmark is now measuring
+        # something else" look identical in a diff.
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/nightly-benchmarks
+          base: main
+          title: 'chore: regenerate benchmarks/results.json'
+          commit-message: 'chore: regenerate benchmarks/results.json'
+          body: |
+            Nightly benchmark run on `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
+
+            Machine: `${{ runner.os }}` / `${{ runner.arch }}`
+
+            Review this rather than merging it blindly. The ratios between tracks
+            are meaningful; the absolute seconds are not, and a large change here
+            can equally mean a real speedup and that something started measuring a
+            different thing. See `docs/BENCHMARKS.md`.
+          labels: benchmarks

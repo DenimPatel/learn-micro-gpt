@@ -1,0 +1,45 @@
+# Path-based labels.
+#
+# Deliberately few labels, applied automatically. A label taxonomy nobody reads
+# is a taxonomy nobody maintains, and the issue templates already ask for the one
+# thing that matters -- which area -- in the form itself.
+name: Labeler
+
+- label: content
+  files:
+    - 'content/**'
+    - 'tools/concepts.py'
+    - 'tools/render_content.py'
+    - 'tools/validate_concepts.py'
+    - 'tools/selectors.py'
+    - 'tools/gen_anchors.py'
+
+- label: traces
+  files:
+    - 'traces/**'
+    - 'tools/trace.py'
+
+- label: tracks
+  files:
+    - 'implementations/**'
+
+- label: web
+  files:
+    - 'visualizer/**'
+
+- label: benchmarks
+  files:
+    - 'benchmarks/**'
+    - 'tools/bench.py'
+    - 'docs/BENCHMARKS.md'
+
+- label: ci
+  files:
+    - '.github/**'
+    - 'Makefile'
+
+- label: docs
+  files:
+    - 'docs/**'
+    - '*.md'
+    - '!content/**'

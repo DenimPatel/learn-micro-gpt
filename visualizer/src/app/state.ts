@@ -35,7 +35,10 @@ export function useTheme(): [Theme, () => void] {
     }
   }, [theme])
 
-  const toggle = useCallback(() => setTheme((current) => (current === 'dark' ? 'light' : 'dark')), [])
+  const toggle = useCallback(
+    () => setTheme((current) => (current === 'dark' ? 'light' : 'dark')),
+    [],
+  )
   return [theme, toggle]
 }
 

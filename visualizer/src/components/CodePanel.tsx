@@ -51,21 +51,26 @@ export function CodePanel({
    * `?raw` import in its own chunk (see `data/sources.ts` for why). Until it
    * lands the panel shows a one-line placeholder rather than an empty box, so
    * the page never reflows into looking broken.
+   *
+   * The cache is read in the state *initialiser*, not in an effect. Every code
+   * panel on a concept page asks for the same source, so after the first one
+   * loads the rest would each setState on mount -- a synchronous state update
+   * inside an effect, which is a cascading render, and eslint's
+   * `set-state-in-effect` rule is right about that.
    */
   const [source, setSource] = useState<string | null>(() => loadedSource(language) ?? null)
   useEffect(() => {
+    if (source !== null) return
     let cancelled = false
-    const already = loadedSource(language)
-    if (already !== undefined) {
-      setSource(already)
-      return
-    }
     void loadSource(language).then((text) => {
       if (!cancelled) setSource(text)
     })
     return () => {
       cancelled = true
     }
+    // `source` is a guard, not a dependency: including it would re-run the
+    // effect on every load and restart the import that just resolved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language])
 
   const range = useMemo(() => {
@@ -80,11 +85,7 @@ export function CodePanel({
   const to = range ? Math.min(lines.length, range.end + CONTEXT_LINES) : lines.length
   const slice = lines.slice(from, to).join('\n')
   const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
-  const { html: darkHtml, ready: darkReady } = useHighlight(
-    slice,
-    HIGHLIGHT_LANG[language],
-    'dark',
-  )
+  const { html: darkHtml, ready: darkReady } = useHighlight(slice, HIGHLIGHT_LANG[language], 'dark')
 
   if (source === null) {
     return (

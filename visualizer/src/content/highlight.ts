@@ -116,11 +116,10 @@ export function useHighlight(
   }, [])
 
   useEffect(() => {
-    const cached = cache.get(key)
-    if (cached !== undefined) {
-      setState({ html: cached, ready: true })
-      return
-    }
+    // A cache hit needs no setState: `useState`'s initialiser already read it
+    // above, and re-setting it here would be a synchronous state update in an
+    // effect -- a cascading render for no change.
+    if (cache.has(key)) return
     let cancelled = false
     void loadHighlighter().then((highlighter) => {
       const themeName = theme === 'dark' ? 'github-dark' : 'github-light'

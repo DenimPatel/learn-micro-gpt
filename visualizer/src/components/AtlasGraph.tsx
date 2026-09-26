@@ -87,9 +87,9 @@ export function AtlasGraph() {
         <div className="atlas__canvas">
           <svg
             className="atlas__svg"
-            viewBox={`0 0 ${Math.max(...nodes.map((n) => n.x + n.width)) + 12} ${Math.max(
-              ...nodes.map((n) => n.y + n.height),
-            ) + 12}`}
+            viewBox={`0 0 ${Math.max(...nodes.map((n) => n.x + n.width)) + 12} ${
+              Math.max(...nodes.map((n) => n.y + n.height)) + 12
+            }`}
             role="img"
             aria-label={`A graph of the ${nodes.length} concepts and the ${edges.length} prerequisite relations between them. The same information is in the list below.`}
           >

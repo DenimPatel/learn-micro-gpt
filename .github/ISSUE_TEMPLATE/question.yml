@@ -1,0 +1,32 @@
+name: A question
+description: Understanding the algorithm, the repository, or a decision made in it.
+labels: [question]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: |
+        A specific question gets a specific answer. "How does this work?" gets
+        "which part?" -- and that is not a complaint, it is that there are
+        eighteen concepts and a great many ways to read the file.
+      placeholder: Why is the learning rate decayed linearly rather than with a cosine schedule?
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Where are you reading?
+      description: A line range, a file, or a page. It is usually already answered somewhere, and if so I will point at it.
+    validations:
+      required: false
+
+  - type: checkboxes
+    attributes:
+      label: Have you looked
+      options:
+        - label: `docs/HOW-TO-READ.md`
+        - label: `docs/ARCHITECTURE.md`
+        - label: `docs/KNOWN-ISSUES.md`
+        - label: `docs/ADDING-A-LANGUAGE.md`

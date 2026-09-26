@@ -246,6 +246,106 @@ class TestGateFiresOnBrokenContent(unittest.TestCase):
         self.assertTrue(any("sha256 does not match" in e for e in errors), errors)
 
 
+class TestDocsQuoteTheAnchors(unittest.TestCase):
+    """A doc that quotes a line range must quote the range the concept anchors.
+
+    The prose docs are the only place line numbers are hardcoded -- and they are
+    hardcoded on purpose, because a reader following "lines 29-71" in
+    `docs/HOW-TO-READ.md` needs a number. That makes them the one place a drift
+    can hide, so the numbers are checked against the selectors that generate the
+    site's own highlights.
+    """
+
+    #: concept id -> the range `docs/HOW-TO-READ.md` claims.
+    HOW_TO_READ = {
+        "data-loading": (13, 20),
+        "tokenizer": (22, 26),
+        "autograd-value": (29, 71),
+        "autograd-backward": (58, 71),
+        "params-init": (73, 89),
+        "linear": (93, 94),
+        "softmax": (96, 100),
+        "rmsnorm": (102, 105),
+        "embedding": (108, 111),
+        "multi-head-attention": (122, 131),
+        "mlp-block": (134, 140),
+        "lm-head": (142, 143),
+        "adam": (173, 181),
+        "cross-entropy-loss": (162, 168),
+        "training-loop": (150, 183),
+        "inference-sampling": (185, 199),
+    }
+
+    def test_documented_ranges_match_the_resolved_anchors(self) -> None:
+        for concept_id, claimed in self.HOW_TO_READ.items():
+            with self.subTest(concept=concept_id):
+                concept = content.load_concept(REPO_ROOT / "content" / "concepts" / f"{concept_id}.md")
+                selector = concept.frontmatter["anchors"]["python"]["selector"]
+                span = selectors.resolve("python", selector, REPO_ROOT)
+                self.assertEqual(
+                    (span.start, span.end),
+                    claimed,
+                    f"docs/HOW-TO-READ.md says {claimed[0]}-{claimed[1]} for {concept_id} "
+                    f"but its selector {selector!r} resolves to {span.start}-{span.end}",
+                )
+
+    def test_the_documented_table_names_every_concept_it_can(self) -> None:
+        # If a concept is added and the table is not, a reader gets no pointer to
+        # it. The converse -- a table row for a concept that no longer exists --
+        # is caught by the previous test.
+        doc = (REPO_ROOT / "docs" / "HOW-TO-READ.md").read_text(encoding="utf-8")
+        for concept_id in self.HOW_TO_READ:
+            self.assertIn(
+                f"content/concepts/{concept_id}.md",
+                doc,
+                f"docs/HOW-TO-READ.md does not link {concept_id}",
+            )
+
+
+class TestBenchmarksDoc(unittest.TestCase):
+    """`docs/BENCHMARKS.md` is generated from `benchmarks/results.json`.
+
+    It says so at the top, which makes this check a promise rather than a
+    nicety: a reader comparing the table against the JSON should not find a
+    third number.
+    """
+
+    def setUp(self) -> None:
+        self.doc = (REPO_ROOT / "docs" / "BENCHMARKS.md").read_text(encoding="utf-8")
+        self.data = json.loads((REPO_ROOT / "benchmarks" / "results.json").read_text())
+
+    def test_every_measured_track_is_in_the_table(self) -> None:
+        for row in self.data["results"]:
+            with self.subTest(lang=row["lang"]):
+                self.assertRegex(
+                    self.doc,
+                    rf"\|\s*{re.escape(row['lang'])}\s*\|",
+                    f"{row['lang']} is measured but missing from docs/BENCHMARKS.md",
+                )
+
+    def test_the_table_shows_the_measured_ratios(self) -> None:
+        for row in self.data["results"]:
+            with self.subTest(lang=row["lang"]):
+                if not row.get("relative_to_python"):
+                    continue
+                # The table rounds to whole steps/sec; the ratio is shown to 2 dp.
+                self.assertIn(f"{row['steps_per_sec']:,.0f}", self.doc)
+                self.assertIn(f"{row['relative_to_python']}x", self.doc)
+
+    def test_the_recorded_machine_is_named(self) -> None:
+        # A benchmark without a recorded machine is not a benchmark, and this doc
+        # is where a reader would look for one.
+        self.assertIn(self.data["runner"]["cpu"], self.doc)
+        self.assertIn(self.data["runner"]["os"], self.doc)
+
+    def test_it_states_the_three_known_non_answers(self) -> None:
+        # The paragraphs explaining what is deliberately absent are the most useful
+        # part of the document, and the easiest to drop in a rewrite.
+        for marker in ("No `scaled` config row", "No peak RSS", "No \"vs PyTorch\" row"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, self.doc)
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy

@@ -50,7 +50,8 @@ test.describe('served from a subpath', () => {
   test('the reference source is in the bundle, not fetched', async ({ page }) => {
     const fetched: string[] = []
     page.on('request', (request) => {
-      if (/\.py$|\.c$|\.go$|\.rs$|\.ts$/.test(new URL(request.url()).pathname)) fetched.push(request.url())
+      if (/\.py$|\.c$|\.go$|\.rs$|\.ts$/.test(new URL(request.url()).pathname))
+        fetched.push(request.url())
     })
 
     await page.goto('#/learn/softmax')
@@ -62,7 +63,9 @@ test.describe('served from a subpath', () => {
     expect(fetched, `source files must be bundled, not fetched:\n${fetched.join('\n')}`).toEqual([])
   })
 
-  test('a deep link works, which a history router could not do without a rewrite', async ({ page }) => {
+  test('a deep link works, which a history router could not do without a rewrite', async ({
+    page,
+  }) => {
     await page.goto('./#/learn/multi-head-attention')
     await expect(page.getByRole('heading', { name: 'Multi-head attention' })).toBeVisible()
     await expect(page.getByText(/lines 122/)).toBeVisible()
@@ -97,13 +100,17 @@ test.describe('content and anchors', () => {
     await page.goto('#/learn/autograd-value')
     await expect(page.locator('.code-panel pre.shiki').first()).toBeVisible()
 
-    const broken = await page.locator('.code-panel pre').evaluateAll((nodes) =>
-      nodes
-        .map((node) => node.innerHTML)
-        // A line that starts with a closing tag, or an unbalanced span count,
-        // both mean a token was cut.
-        .filter((html) => /^\s*<\//.test(html) || (html.match(/<span/g) ?? []).length !== (html.match(/<\/span>/g) ?? []).length)
-        .length,
+    const broken = await page.locator('.code-panel pre').evaluateAll(
+      (nodes) =>
+        nodes
+          .map((node) => node.innerHTML)
+          // A line that starts with a closing tag, or an unbalanced span count,
+          // both mean a token was cut.
+          .filter(
+            (html) =>
+              /^\s*<\//.test(html) ||
+              (html.match(/<span/g) ?? []).length !== (html.match(/<\/span>/g) ?? []).length,
+          ).length,
     )
     expect(broken, 'no code panel has a split token').toBe(0)
   })
@@ -129,7 +136,10 @@ test.describe('trace widgets', () => {
     const first = heatmaps.nth(0)
     await expect(first.locator('.heatmap__cell')).toHaveCount(4)
     await expect(first).toHaveAttribute('role', 'img')
-    await expect(first).toHaveAttribute('aria-label', /step 0, head 0, position 3\. position 0: 0\.231/)
+    await expect(first).toHaveAttribute(
+      'aria-label',
+      /step 0, head 0, position 3\. position 0: 0\.231/,
+    )
 
     // And the trained one really is different, with the weights the concept's
     // table quotes. If these ever matched, the trace would not be describing
@@ -193,9 +203,14 @@ test.describe('accessibility', () => {
     await expect(page.locator('main')).toHaveAttribute('id', 'main')
   })
 
-  test('the concept graph has a text equivalent, because an SVG is not navigable', async ({ page }) => {
+  test('the concept graph has a text equivalent, because an SVG is not navigable', async ({
+    page,
+  }) => {
     await page.goto('#/explore')
-    await expect(page.locator('svg.atlas__svg')).toHaveAttribute('aria-label', /graph of the 18 concepts/)
+    await expect(page.locator('svg.atlas__svg')).toHaveAttribute(
+      'aria-label',
+      /graph of the 18 concepts/,
+    )
     // And the list is real content, not aria-only: it is what a screen reader
     // reads, and what renders if dagre fails to load.
     const list = page.locator('ol.atlas__list')
@@ -205,10 +220,10 @@ test.describe('accessibility', () => {
 
   test('the current page is marked with aria-current', async ({ page }) => {
     await page.goto('#/learn/rmsnorm')
-    await expect(page.locator('nav[aria-label="Main"] a[aria-current="page"]')).toHaveText('concepts')
-    await expect(
-      page.locator('.app__sidebar a[aria-current="page"]'),
-    ).toHaveText('RMSNorm')
+    await expect(page.locator('nav[aria-label="Main"] a[aria-current="page"]')).toHaveText(
+      'concepts',
+    )
+    await expect(page.locator('.app__sidebar a[aria-current="page"]')).toHaveText('RMSNorm')
   })
 
   test('images and charts carry text alternatives', async ({ page }) => {
@@ -237,7 +252,9 @@ test.describe('accessibility', () => {
 })
 
 test.describe('theme', () => {
-  test('the inline script applies the theme before paint, and the toggle persists it', async ({ page }) => {
+  test('the inline script applies the theme before paint, and the toggle persists it', async ({
+    page,
+  }) => {
     await page.goto('./')
     const html = page.locator('html')
     const initial = await html.evaluate((node) => node.classList.contains('dark'))
@@ -245,9 +262,7 @@ test.describe('theme', () => {
     // Polled rather than read once: the click schedules a React state update and
     // an effect, neither of which has happened by the time click() resolves.
     await page.getByRole('button', { name: /Switch to .* theme/ }).click()
-    await expect
-      .poll(() => html.evaluate((node) => node.classList.contains('dark')))
-      .toBe(!initial)
+    await expect.poll(() => html.evaluate((node) => node.classList.contains('dark'))).toBe(!initial)
     const flipped = !initial
 
     // Persisted: a reload should not flash back to the default.

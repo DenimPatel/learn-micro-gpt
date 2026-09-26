@@ -27,13 +27,18 @@ export function ConceptPage({
 }) {
   useEffect(() => {
     markSeen(concept.id)
-    document.title = `${concept.title} — learn microgpt`
   }, [concept.id, markSeen])
+
+  useEffect(() => {
+    document.title = `${concept.title} — learn microgpt`
+  }, [concept.title])
 
   const languages = languagesFor(concept.id)
   const [primary, ...rest] = languages
   const chapter = index.chapters.find((c) => c.id === concept.chapter)
-  const position = chapter ? `${chapter.title} · ${concept.order} of ${chapter.concepts.length}` : ''
+  const position = chapter
+    ? `${chapter.title} · ${concept.order} of ${chapter.concepts.length}`
+    : ''
 
   return (
     <article className="concept" aria-labelledby="concept-title">
@@ -58,20 +63,23 @@ export function ConceptPage({
         </div>
       ) : null}
 
-      {primary ? (
-        <CodePanel language={primary as Language} conceptId={concept.id} />
-      ) : null}
+      {primary ? <CodePanel language={primary as Language} conceptId={concept.id} /> : null}
 
       {rest.length > 0 ? (
         <section className="concept__ports" aria-label="The same code in other languages">
           <h2>The same algorithm, in {rest.length + 1} languages</h2>
           <p>
             The range below is the same concept in the other tracks. These are separate programs,
-            not translations of one another, so the line numbers do not line up &mdash; and that
-            is the interesting part.
+            not translations of one another, so the line numbers do not line up &mdash; and that is
+            the interesting part.
           </p>
           {rest.map((language) => (
-            <CodePanel key={language} language={language} conceptId={concept.id} defaultOpen={false} />
+            <CodePanel
+              key={language}
+              language={language}
+              conceptId={concept.id}
+              defaultOpen={false}
+            />
           ))}
         </section>
       ) : null}
@@ -120,7 +128,9 @@ function BlockView({ block }: { block: Block }) {
       }
       switch (args.kind) {
         case 'attention':
-          return <AttentionHeatmap step={num('step', 0)} pos={num('pos', 3)} head={num('head', 0)} />
+          return (
+            <AttentionHeatmap step={num('step', 0)} pos={num('pos', 3)} head={num('head', 0)} />
+          )
         case 'softmax':
           return <SoftmaxBars step={num('step', 0)} pos={num('pos', 0)} />
         case 'loss-curve':
@@ -151,9 +161,8 @@ function TraceTokens({ step }: { step: number }) {
   // than inventing a widget for data that was not recorded.
   return (
     <p className="widget widget--empty">
-      The documents and sampled names for step {step} are in{' '}
-      <code>traces/python/micro/</code>, and the attention and probability data behind them is on
-      the <a href="#/explore">Explore</a> page.
+      The documents and sampled names for step {step} are in <code>traces/python/micro/</code>, and
+      the attention and probability data behind them is on the <a href="#/explore">Explore</a> page.
     </p>
   )
 }
@@ -168,7 +177,11 @@ function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: 
   return (
     <div className="prevnext">
       {previous ? (
-        <a className="prevnext__link prevnext__link--prev" href={`#/learn/${previous.id}`} onClick={() => onNavigate(previous.id)}>
+        <a
+          className="prevnext__link prevnext__link--prev"
+          href={`#/learn/${previous.id}`}
+          onClick={() => onNavigate(previous.id)}
+        >
           <span className="prevnext__label">previous</span>
           {previous.title}
         </a>
@@ -176,7 +189,11 @@ function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: 
         <span />
       )}
       {next ? (
-        <a className="prevnext__link prevnext__link--next" href={`#/learn/${next.id}`} onClick={() => onNavigate(next.id)}>
+        <a
+          className="prevnext__link prevnext__link--next"
+          href={`#/learn/${next.id}`}
+          onClick={() => onNavigate(next.id)}
+        >
           <span className="prevnext__label">next</span>
           {next.title}
         </a>

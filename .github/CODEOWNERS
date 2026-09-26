@@ -1,0 +1,30 @@
+# Code owners.
+#
+# One owner, deliberately. This is a single-author repository, and a
+# `CODEOWNERS` file listing eight people for a 199-line teaching artifact would be
+# a way of appearing well-governed.
+#
+# The two entries that are not "everything" are the two places where a wrong
+# change is *silently* wrong rather than loudly wrong, which is the criterion
+# that decides whether a path needs a more careful review:
+#
+#   reference/  byte-pinned; every number in the repository is a claim about
+#               these exact bytes
+#   traces/     the evidence behind every number; a drift here invalidates prose
+#               that nothing would otherwise flag as stale
+
+*                       @DenimPatel
+
+# The reference and its annotated fork. CI checks the sha256 of microgpt.py, so
+# a change here must also update tools/provenance.py, bump PIN_EPOCH, and
+# regenerate the traces and the benchmarks. See docs/TRACE-FORMAT.md.
+reference/             @DenimPatel
+
+# Recorded runs. Regenerate rather than hand-edit, and review the prose that
+# quotes the numbers.
+traces/                @DenimPatel
+
+# The C backward pass. docs/KNOWN-ISSUES.md issue 1: the directional-derivative
+# ratio is locked at -0.12 +/- 0.20, so any change to implementations/c/*.c
+# trips that test on purpose.
+implementations/c/      @DenimPatel

@@ -36,7 +36,11 @@ export type WorkerRequest =
   | { type: 'cancel' }
 
 export type WorkerResponse =
-  | { type: 'status'; stage: 'loading' | 'writing' | 'compiling' | 'running' | 'sampling'; detail?: string }
+  | {
+      type: 'status'
+      stage: 'loading' | 'writing' | 'compiling' | 'running' | 'sampling'
+      detail?: string
+    }
   | { type: 'step'; step: number; total: number; loss: number }
   | { type: 'sample'; index: number; text: string }
   | { type: 'done'; wallSeconds: number; samples: string[] }

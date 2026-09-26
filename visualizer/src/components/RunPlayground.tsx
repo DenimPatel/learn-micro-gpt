@@ -108,7 +108,12 @@ export function RunPlayground() {
             samples: message.samples.length ? message.samples : current.samples,
           }
         case 'error':
-          return { ...current, status: 'error', error: message.message, recoverable: message.recoverable }
+          return {
+            ...current,
+            status: 'error',
+            error: message.message,
+            recoverable: message.recoverable,
+          }
         default:
           return current
       }
@@ -153,8 +158,8 @@ export function RunPlayground() {
     <article className="playground">
       <h1>Run it yourself</h1>
       <p className="lede">
-        The 199 lines, unmodified, in your browser. Change{' '}
-        <code>n_head</code> or <code>n_layer</code>, press run, and watch the samples change.
+        The 199 lines, unmodified, in your browser. Change <code>n_head</code> or{' '}
+        <code>n_layer</code>, press run, and watch the samples change.
       </p>
 
       <section className="playground__how" aria-labelledby="how-heading">
@@ -167,11 +172,11 @@ export function RunPlayground() {
           nothing is downloaded.
         </p>
         <p className="callout">
-          The step count is reduced from 1000 to 200 for the browser run, by substituting the
-          string <code>num_steps = 1000</code> in the source text before compiling. That is the
-          only difference, it happens in the source you can see below, and it is why this is a
-          playground rather than a second reference. For the real thing, with 1000 steps and the
-          real dataset, run <code>make run</code> in a terminal.
+          The step count is reduced from 1000 to 200 for the browser run, by substituting the string{' '}
+          <code>num_steps = 1000</code> in the source text before compiling. That is the only
+          difference, it happens in the source you can see below, and it is why this is a playground
+          rather than a second reference. For the real thing, with 1000 steps and the real dataset,
+          run <code>make run</code> in a terminal.
         </p>
       </section>
 
@@ -202,9 +207,7 @@ export function RunPlayground() {
           {run.recoverable ? (
             <p>That is usually a network problem. The two options below both work offline.</p>
           ) : null}
-          <p>
-            Either run it locally, which is the better way to do this anyway:
-          </p>
+          <p>Either run it locally, which is the better way to do this anyway:</p>
           <pre className="code-block">
             <code>make run</code>
           </pre>
@@ -219,8 +222,8 @@ export function RunPlayground() {
         <div className="notice" role="status" aria-live="polite">
           <p>
             {run.stage === 'loading'
-              ? run.detail ?? 'loading Pyodide'
-              : run.detail ?? 'working'}
+              ? (run.detail ?? 'loading Pyodide')
+              : (run.detail ?? 'working')}
             {run.step !== undefined && run.total ? ` — step ${run.step} of ${run.total}` : ''}
           </p>
           {run.losses.length ? (
@@ -233,9 +236,7 @@ export function RunPlayground() {
 
       {run.status === 'done' ? (
         <div className="notice notice--ok" role="status">
-          <p>
-            Finished {run.wallSeconds?.toFixed(1)}s in the browser. Your samples:
-          </p>
+          <p>Finished {run.wallSeconds?.toFixed(1)}s in the browser. Your samples:</p>
           <ul className="samples">
             {run.samples.map((text, i) => (
               <li key={i}>

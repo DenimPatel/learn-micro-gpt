@@ -1,0 +1,53 @@
+name: Something is wrong
+description: A selector, a number, a build, or the site itself is wrong.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing this. The most useful reports in this repository have
+        all been one sentence long with a number in it, so: **what did you
+        expect, and what did you get?**
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      description: A number, a line range, a rendered page -- whatever you expected.
+      placeholder: The multi-head-attention concept should highlight lines 122-131 of microgpt.py
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      placeholder: |
+        It highlights lines 96-100 -- the softmax function.
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Which command?
+      description: The one that shows the problem, if a command does.
+      placeholder: make validate
+    validations:
+      required: false
+
+  - type: input
+    id: url
+    attributes:
+      label: Which page or file?
+      placeholder: '#/learn/multi-head-attention'
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: verified
+    attributes:
+      label: Before filing
+      options:
+        - label: I ran `make validate` and it passed (or failed, and I am including the output)
+        - label: I checked `docs/KNOWN-ISSUES.md` and this is not a known issue

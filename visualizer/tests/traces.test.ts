@@ -99,7 +99,10 @@ describe('ema', () => {
   it('matches tools/trace.py on the recorded value', () => {
     // meta.loss_stats.ema_final50 was computed by the Python tool; the browser
     // must agree, or the chart and the documented number disagree.
-    const smoothed = ema(trace.steps.map((row) => row.loss), trace.meta.loss_stats.ema_alpha)
+    const smoothed = ema(
+      trace.steps.map((row) => row.loss),
+      trace.meta.loss_stats.ema_alpha,
+    )
     const last50 = smoothed.slice(-50)
     const mean = last50.reduce((a, b) => a + b, 0) / last50.length
     expect(mean).toBeCloseTo(trace.meta.loss_stats.ema_final50, 5)

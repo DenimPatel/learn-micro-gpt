@@ -1,0 +1,54 @@
+name: Adding or fixing a language track
+description: A new implementation, or a problem with one that exists.
+labels: [tracks]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Adding a language?** Read
+        [`docs/ADDING-A-LANGUAGE.md`](https://github.com/DenimPatel/learn-micro-gpt/blob/main/docs/ADDING-A-LANGUAGE.md)
+        first. Requirement 5 is the one that matters: a directional-derivative
+        gradient check, because a loss curve is evidence that something learned
+        and not evidence that the thing that learned was the gradient. The C port
+        passes the loss-band check with a gradient that is wrong by a factor of
+        -0.12.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What are you doing?
+      options:
+        - Adding a new language
+        - Fixing an existing track
+        - Asking whether a language is feasible
+    validations:
+      required: true
+
+  - type: input
+    id: language
+    attributes:
+      label: Which language?
+    validations:
+      required: true
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: Approach
+      description: |
+        If adding: reimplement the autograd tape, or hand-write the backward
+        pass? The three existing tracks all took the tape, and the C port's
+        hand-written pass is the repository's known issue.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: If adding, which of these are already true?
+      options:
+        - label: It takes `--input`, `--steps`, `--seed`, and `--trace`
+        - label: It prints `step N / M | loss X` every step, or the trace carries the losses
+        - label: It has a directional-derivative gradient check that can fail
+        - label: It has unit tests that can fail
+        - label: Nothing yet -- this is an early idea

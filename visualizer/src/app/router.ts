@@ -36,16 +36,19 @@ export interface Route {
   conceptId?: string
 }
 
-const ROUTES: { pattern: RegExp; name: RouteName; concept?: (m: RegExpMatchArray) => string | undefined }[] =
-  [
-    { pattern: /^#\/learn\/([a-z0-9-]+)$/, name: 'concept', concept: (m) => m[1] },
-    { pattern: /^#\/learn\/?$/, name: 'learn' },
-    { pattern: /^#\/explore\/?$/, name: 'explore' },
-    { pattern: /^#\/compare\/?$/, name: 'compare' },
-    { pattern: /^#\/run\/?$/, name: 'run' },
-    { pattern: /^#\/about\/?$/, name: 'about' },
-    { pattern: /^#?\/?$/, name: 'home' },
-  ]
+const ROUTES: {
+  pattern: RegExp
+  name: RouteName
+  concept?: (m: RegExpMatchArray) => string | undefined
+}[] = [
+  { pattern: /^#\/learn\/([a-z0-9-]+)$/, name: 'concept', concept: (m) => m[1] },
+  { pattern: /^#\/learn\/?$/, name: 'learn' },
+  { pattern: /^#\/explore\/?$/, name: 'explore' },
+  { pattern: /^#\/compare\/?$/, name: 'compare' },
+  { pattern: /^#\/run\/?$/, name: 'run' },
+  { pattern: /^#\/about\/?$/, name: 'about' },
+  { pattern: /^#?\/?$/, name: 'home' },
+]
 
 export function parseRoute(hash: string): Route {
   for (const route of ROUTES) {

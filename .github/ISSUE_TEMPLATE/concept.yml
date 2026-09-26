@@ -1,0 +1,73 @@
+name: A concept is wrong or unclear
+description: A concept's prose, its maths, a shape annotation, or a quoted number.
+labels: [content]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The concepts are the product here, and a wrong one is worse than a
+        missing one. If a quoted number does not match the recording, or a shape
+        is wrong, say so precisely -- that is the highest-value bug in this
+        repository.
+
+  - type: dropdown
+    id: concept
+    attributes:
+      label: Which concept?
+      options:
+        - data-loading
+        - tokenizer
+        - autograd-value
+        - autograd-backward
+        - params-init
+        - linear
+        - softmax
+        - rmsnorm
+        - embedding
+        - multi-head-attention
+        - mlp-block
+        - attention-block
+        - lm-head
+        - gpt-forward
+        - cross-entropy-loss
+        - adam
+        - training-loop
+        - inference-sampling
+        - Something else / not a concept
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - A quoted number is wrong
+        - A shape annotation is wrong
+        - The prose contradicts the code
+        - The maths is wrong or unclear
+        - The anchor highlights the wrong lines
+        - The example does not work when I run it
+        - It is hard to understand
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: detail
+    attributes:
+      label: Detail
+      description: |
+        For a wrong number, `make trace` and the file under `traces/` is where
+        the real one is. For an example that does not work, the command you ran
+        and what it printed.
+    validations:
+      required: true
+
+  - type: input
+    id: section
+    attributes:
+      label: Which section?
+      placeholder: 'The line "divide by head_dim**0.5"'
+    validations:
+      required: false

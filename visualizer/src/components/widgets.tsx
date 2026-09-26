@@ -49,10 +49,7 @@ export function AttentionHeatmap({
   const heads = trace.meta.selection.heads
 
   const row = useMemo(
-    () =>
-      trace.attn.find(
-        (r) => r.step === stepIndex && r.pos === pos && r.head === headIndex,
-      ),
+    () => trace.attn.find((r) => r.step === stepIndex && r.pos === pos && r.head === headIndex),
     [stepIndex, pos, headIndex],
   )
 
@@ -60,8 +57,8 @@ export function AttentionHeatmap({
     return (
       <figure className="widget widget--empty">
         <figcaption>
-          No attention weights were recorded for step {stepIndex}, position {pos}, head{' '}
-          {headIndex}. The trace records steps {steps.join(', ')} at positions{' '}
+          No attention weights were recorded for step {stepIndex}, position {pos}, head {headIndex}.
+          The trace records steps {steps.join(', ')} at positions{' '}
           {trace.meta.selection.positions.join(', ')} and heads {heads.join(', ')}.
         </figcaption>
       </figure>
@@ -79,7 +76,11 @@ export function AttentionHeatmap({
         cannot attend to it.
       </figcaption>
 
-      <div className="heatmap" role="img" aria-label={describe(row.weights, pos, stepIndex, headIndex)}>
+      <div
+        className="heatmap"
+        role="img"
+        aria-label={describe(row.weights, pos, stepIndex, headIndex)}
+      >
         {row.weights.map((weight, index) => (
           <div
             key={index}
@@ -184,15 +185,23 @@ export function LossChart({ highlightSteps = [50, 200] }: { highlightSteps?: num
   const series = smoothed ? ema(trace.steps.map((s) => s.loss)) : trace.steps.map((s) => s.loss)
   const stats = trace.meta.loss_stats
 
+  /*
+   * `reduce` rather than a `map` that mutates captured `let`s: the map version
+   * worked, and eslint's `immutability` rule flagged it because from the
+   * compiler's point of view the closure escapes. The reduce is also one pass
+   * instead of two, and it has no reason for the values to be in two places.
+   */
   const { min, max, points } = useMemo(() => {
-    let lo = Infinity
-    let hi = -Infinity
-    const pts = series.map((value, index) => {
-      if (value < lo) lo = value
-      if (value > hi) hi = value
-      return { index, value }
-    })
-    return { min: lo, max: hi, points: pts }
+    const points = series.map((value, index) => ({ index, value }))
+    if (points.length === 0) return { min: 0, max: 1, points }
+    const bounds = points.reduce(
+      (acc, point) => ({
+        lo: point.value < acc.lo ? point.value : acc.lo,
+        hi: point.value > acc.hi ? point.value : acc.hi,
+      }),
+      { lo: Infinity, hi: -Infinity },
+    )
+    return { min: bounds.lo, max: bounds.hi, points }
   }, [series])
 
   const width = 100
@@ -200,7 +209,9 @@ export function LossChart({ highlightSteps = [50, 200] }: { highlightSteps?: num
   const x = (index: number) => (index / (series.length - 1)) * width
   const y = (value: number) => height - ((value - min) / (max - min || 1)) * height
 
-  const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${y(p.value).toFixed(2)}`).join(' ')
+  const path = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${y(p.value).toFixed(2)}`)
+    .join(' ')
 
   return (
     <figure className="widget">
@@ -279,9 +290,8 @@ export function ShapeTable({ names }: { names?: string[] }) {
     <div className="table-scroll">
       <table className="shapes">
         <caption>
-          Read from the reference at record time, not hardcoded. Changing{' '}
-          <code>n_embd</code> in <code>microgpt.py</code> changes this table and every shape
-          annotation in the concepts.
+          Read from the reference at record time, not hardcoded. Changing <code>n_embd</code> in{' '}
+          <code>microgpt.py</code> changes this table and every shape annotation in the concepts.
         </caption>
         <tbody>
           {shapes.map((row) => (
@@ -314,8 +324,8 @@ export function SamplesList() {
   return (
     <figure className="widget">
       <figcaption className="widget__caption">
-        Twenty samples from the trained model at temperature 0.5. Some are names in the dataset
-        (<code>anna</code>, <code>kamon</code>); some are not.
+        Twenty samples from the trained model at temperature 0.5. Some are names in the dataset (
+        <code>anna</code>, <code>kamon</code>); some are not.
       </figcaption>
       <ul className="samples">
         {rows.map((row, index) => (

@@ -152,16 +152,16 @@ function renderToken(token: unknown, key: number): ReactNode {
       )
 
     case 'blockquote':
-      return (
-        <blockquote key={key}>{renderInlineChildren(node.tokens ?? [])}</blockquote>
-      )
+      return <blockquote key={key}>{renderInlineChildren(node.tokens ?? [])}</blockquote>
 
     case 'list': {
       const Tag = node.ordered ? 'ol' : 'ul'
       return (
         <Tag key={key}>
           {(node.items ?? []).map((item, index) => (
-            <li key={index}>{renderInlineChildren((item as { tokens?: unknown[] }).tokens ?? [])}</li>
+            <li key={index}>
+              {renderInlineChildren((item as { tokens?: unknown[] }).tokens ?? [])}
+            </li>
           ))}
         </Tag>
       )
@@ -183,11 +183,9 @@ function renderToken(token: unknown, key: number): ReactNode {
             <tbody>
               {(node.items ?? []).map((row, rowIndex) => (
                 <tr key={rowIndex}>
-                  {((row as { text?: string }).text ?? '')
-                    .split('|')
-                    .map((cell, cellIndex) => (
-                      <td key={cellIndex}>{renderInlineMath(cell.trim())}</td>
-                    ))}
+                  {((row as { text?: string }).text ?? '').split('|').map((cell, cellIndex) => (
+                    <td key={cellIndex}>{renderInlineMath(cell.trim())}</td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -210,7 +208,13 @@ function renderToken(token: unknown, key: number): ReactNode {
 
 function renderInlineChildren(tokens: unknown[]): ReactNode {
   return tokens.map((token, index) => {
-    const node = token as { type?: string; text?: string; tokens?: unknown[]; href?: string; title?: string }
+    const node = token as {
+      type?: string
+      text?: string
+      tokens?: unknown[]
+      href?: string
+      title?: string
+    }
     switch (node.type) {
       case 'text':
         return <Fragment key={index}>{renderInlineMath(node.text ?? '')}</Fragment>
@@ -224,16 +228,20 @@ function renderInlineChildren(tokens: unknown[]): ReactNode {
         return <br key={index} />
       case 'link':
         return (
-          <a key={index} href={node.href} {...(node.href?.startsWith('http') ? { target: '_blank', rel: 'noreferrer noopener' } : {})}>
+          <a
+            key={index}
+            href={node.href}
+            {...(node.href?.startsWith('http')
+              ? { target: '_blank', rel: 'noreferrer noopener' }
+              : {})}
+          >
             {renderInlineChildren(node.tokens ?? [])}
           </a>
         )
       case 'del':
         return <del key={index}>{renderInlineChildren(node.tokens ?? [])}</del>
       default:
-        return node.text ? (
-          <Fragment key={index}>{renderInlineMath(node.text)}</Fragment>
-        ) : null
+        return node.text ? <Fragment key={index}>{renderInlineMath(node.text)}</Fragment> : null
     }
   })
 }

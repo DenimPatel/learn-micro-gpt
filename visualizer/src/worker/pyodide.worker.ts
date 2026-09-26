@@ -32,12 +32,14 @@ function post(message: WorkerResponse) {
 
 async function getPyodide(): Promise<Pyodide> {
   if (pyodide) return pyodide
-  post({ type: 'status', stage: 'loading', detail: `fetching Pyodide ${PYODIDE_VERSION} (~12 MB, once)` })
+  post({
+    type: 'status',
+    stage: 'loading',
+    detail: `fetching Pyodide ${PYODIDE_VERSION} (~12 MB, once)`,
+  })
   // Pinned version, pinned URL. An unpinned runtime means the same URL can serve
   // different code tomorrow.
-  const { loadPyodide } = await import(
-    /* @vite-ignore */ `${PYODIDE_URL}pyodide.mjs` as string
-  )
+  const { loadPyodide } = await import(/* @vite-ignore */ `${PYODIDE_URL}pyodide.mjs` as string)
   pyodide = (await loadPyodide({ indexURL: PYODIDE_URL })) as Pyodide
   return pyodide
 }
@@ -66,7 +68,11 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
      * from a mutable URL. Writing the file first short-circuits that check, so
      * nothing is fetched and the run is exactly the committed one.
      */
-    post({ type: 'status', stage: 'writing', detail: 'writing data/input.txt into the virtual filesystem' })
+    post({
+      type: 'status',
+      stage: 'writing',
+      detail: 'writing data/input.txt into the virtual filesystem',
+    })
     py.FS.writeFile('/input.txt', request.dataset)
 
     if (cancelled) return

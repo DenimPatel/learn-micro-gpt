@@ -48,9 +48,9 @@ export function ComparePage() {
     <article className="compare">
       <h1>Five languages, one algorithm</h1>
       <p className="lede">
-        Every track below computes the same function. They are separate programs, not
-        translations, which is why the line numbers do not line up &mdash; and why comparing them
-        is interesting rather than pointless.
+        Every track below computes the same function. They are separate programs, not translations,
+        which is why the line numbers do not line up &mdash; and why comparing them is interesting
+        rather than pointless.
       </p>
 
       <section aria-labelledby="cost-heading">
@@ -158,11 +158,11 @@ export function ComparePage() {
         <h2 id="parity-heading">Do they agree?</h2>
         <p>
           The gate is statistical, and the reason is not a hedge. Each step of the reference trains
-          on <em>one document</em>, so its printed loss is a single sample: standard deviation
-          0.392 on a mean of 2.452, and it rises on{' '}
-          <strong>{trace_upward()}</strong> of its steps. Any check on raw per-step values is
-          comparing noise. So the gate compares an exponentially-smoothed loss at fixed
-          checkpoints, and separately requires the windowed trend to improve by at least 10%.
+          on <em>one document</em>, so its printed loss is a single sample: standard deviation 0.392
+          on a mean of 2.452, and it rises on <strong>{trace_upward()}</strong> of its steps. Any
+          check on raw per-step values is comparing noise. So the gate compares an
+          exponentially-smoothed loss at fixed checkpoints, and separately requires the windowed
+          trend to improve by at least 10%.
         </p>
         <p>
           The reference itself is the proof that the original specification could not work: it
@@ -170,8 +170,8 @@ export function ComparePage() {
         </p>
         <LossChart />
         <p>
-          <a href="#/about">Read more in the docs</a>, or run{' '}
-          <code>make parity</code> to see the live comparison.
+          <a href="#/about">Read more in the docs</a>, or run <code>make parity</code> to see the
+          live comparison.
         </p>
       </section>
 
@@ -188,8 +188,8 @@ export function ComparePage() {
             ))}
         </dl>
         <p>
-          4,192 parameters, trained one document at a time. Every number on this site is measured
-          at exactly this configuration; change a number and every recorded figure describes a
+          4,192 parameters, trained one document at a time. Every number on this site is measured at
+          exactly this configuration; change a number and every recorded figure describes a
           different experiment.
         </p>
       </section>

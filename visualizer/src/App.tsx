@@ -118,13 +118,7 @@ export function App() {
         </aside>
 
         <main id="main" ref={mainRef} tabIndex={-1} className="app__main">
-          <Router
-            route={route}
-            navigate={navigate}
-            markSeen={markSeen}
-            seen={seen}
-            total={total}
-          />
+          <Router route={route} navigate={navigate} markSeen={markSeen} seen={seen} total={total} />
         </main>
       </div>
 
@@ -222,17 +216,15 @@ function ConceptRoute({
 
 function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number }) {
   const first = index.chapters[0]?.concepts[0]
-  const next = index.chapters
-    .flatMap((c) => c.concepts)
-    .find((c) => !seen.has(c.id))
+  const next = index.chapters.flatMap((c) => c.concepts).find((c) => !seen.has(c.id))
   return (
     <article className="home">
       <h1>A guided reading of 199 lines</h1>
       <p className="lede">
         Andrej Karpathy&rsquo;s <code>microgpt.py</code> is the smallest complete GPT that still
-        trains, generates text, and can be read in one sitting. This site goes through it concept
-        by concept &mdash; with the code, the tensor shapes, the recorded numbers, and the same
-        program in four other languages.
+        trains, generates text, and can be read in one sitting. This site goes through it concept by
+        concept &mdash; with the code, the tensor shapes, the recorded numbers, and the same program
+        in four other languages.
       </p>
 
       <div className="home__cta">
@@ -259,9 +251,9 @@ function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number })
           by CI. Nothing on this site is a plausible-looking invention.
         </li>
         <li>
-          <strong>Nothing rots silently.</strong> Concepts declare AST selectors, not line
-          numbers, so editing the reference moves the highlights with it. A selector that resolves
-          to nothing is a build failure.
+          <strong>Nothing rots silently.</strong> Concepts declare AST selectors, not line numbers,
+          so editing the reference moves the highlights with it. A selector that resolves to nothing
+          is a build failure.
         </li>
         <li>
           <strong>What is wrong is written down.</strong> The C port&rsquo;s hand-written backward
@@ -344,18 +336,21 @@ function AboutPage() {
 
       <h2>What is known to be wrong</h2>
       <p>
-        The C port&rsquo;s hand-written backward pass does not correctly propagate the key and
-        value gradients of earlier positions back to their embeddings. Only the output head&rsquo;s
+        The C port&rsquo;s hand-written backward pass does not correctly propagate the key and value
+        gradients of earlier positions back to their embeddings. Only the output head&rsquo;s
         gradient is right. Measured as a directional derivative over all 4,192 parameters, its
         gradient comes out at <strong>−0.12×</strong> the true value, where a correct gradient is
         1.0×.
       </p>
       <p>
-        The instructive part: <strong>its loss curve still tracks the reference to within 7% and
-        the model still trains.</strong> Adam divides by an estimate of the gradient&rsquo;s own
-        magnitude, so a gradient that is wrong by a factor barely moves the step. A loss curve is
-        evidence that something learned, not evidence that the thing that learned was the gradient.
-        The full measurements are in <code>docs/KNOWN-ISSUES.md</code>.
+        The instructive part:{' '}
+        <strong>
+          its loss curve still tracks the reference to within 7% and the model still trains.
+        </strong>{' '}
+        Adam divides by an estimate of the gradient&rsquo;s own magnitude, so a gradient that is
+        wrong by a factor barely moves the step. A loss curve is evidence that something learned,
+        not evidence that the thing that learned was the gradient. The full measurements are in{' '}
+        <code>docs/KNOWN-ISSUES.md</code>.
       </p>
 
       <h2>How the numbers are produced</h2>
@@ -373,15 +368,14 @@ function AboutPage() {
         </li>
         <li>
           <code>tools/bench.py</code> measures the tracks and records the machine. Ratios within a
-          row set are meaningful; absolute seconds are not, and are not a claim about your
-          hardware.
+          row set are meaningful; absolute seconds are not, and are not a claim about your hardware.
         </li>
       </ul>
 
       <h2>License</h2>
       <p>
-        This site and its tooling are MIT. The reference is Karpathy&rsquo;s; the C ports carry
-        the upstream MIT notice. Nothing here is vendored without attribution &mdash; see{' '}
+        This site and its tooling are MIT. The reference is Karpathy&rsquo;s; the C ports carry the
+        upstream MIT notice. Nothing here is vendored without attribution &mdash; see{' '}
         <code>CREDITS.md</code> and <code>NOTICE</code>.
       </p>
     </article>

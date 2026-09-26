@@ -1,0 +1,90 @@
+# Dependency updates.
+#
+# Grouped by ecosystem rather than one PR per package. A repository this size
+# would otherwise get forty PRs a month, most of them lockfile churn, and the
+# signal-to-noise is bad enough that people stop reading them -- which is the same
+# failure mode as a test suite that is too noisy to trust.
+#
+# The npm ecosystem covers both `visualizer/` and `implementations/typescript/`,
+# and they are grouped together deliberately: they are the same lockfile
+# ecosystem and a version bump that breaks one will almost certainly break the
+# other.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'
+    labels: [dependencies]
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: npm
+    directory: /visualizer
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'web'
+    labels: [dependencies]
+    groups:
+      # Tooling and libraries move together; a Shiki grammar bump and a Vite bump
+      # are one thing to test, not two.
+      javascript:
+        patterns: ['*']
+        exclude-patterns: ['@types/*']
+      types:
+        patterns: ['@types/*']
+      # `shiki` and its `@shikijs/*` grammars have to move in lockstep or the
+      # core API and the grammar types disagree.
+      shiki:
+        patterns:
+          - 'shiki'
+          - '@shikijs/*'
+
+  - package-ecosystem: npm
+    directory: /implementations/typescript
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: 'ts'
+    labels: [dependencies]
+    groups:
+      javascript:
+        patterns: ['*']
+        exclude-patterns: ['@types/*', 'typescript']
+      typescript:
+        patterns: ['typescript', '@types/*']
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'py'
+    labels: [dependencies]
+    open-pull-requests-limit: 3
+    # `tools/` is stdlib-only by design (see docs/ARCHITECTURE.md), so the only
+    # thing Dependabot can find here is a transitive dev dependency of something
+    # that should not exist. A PR proposing to add one is a signal worth reading.
+
+  - package-ecosystem: cargo
+    directory: /implementations/rust
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'rust'
+    labels: [dependencies]
+    # No dependencies by design; the port is stdlib-only. Listed so that adding
+    # one is a deliberate act with a reviewer looking for it.
+
+  - package-ecosystem: gomod
+    directory: /implementations/go
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'go'
+    labels: [dependencies]
+    # Same: no dependencies, on purpose.
