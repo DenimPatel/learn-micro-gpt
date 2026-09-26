@@ -39,7 +39,7 @@ raises the learning rate or trains for longer.
 Subtracting the same constant from every logit leaves the result *exactly*
 unchanged, because
 
-```
+```text
 exp(z_i - m) / sum(exp(z_j - m))  =  exp(z_i) / sum(exp(z_j))
 ```
 

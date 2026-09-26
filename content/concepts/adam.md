@@ -46,7 +46,7 @@ was meaningful.
 
 Adam divides the gradient by an estimate of its own scale:
 
-```
+```text
 update = m_hat / (sqrt(v_hat) + eps)
 ```
 

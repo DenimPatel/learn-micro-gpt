@@ -35,7 +35,7 @@ letters, so `vocab_size` is 27.
 this file uses it for two things: it pads the start of a name, and it terminates
 it. `"mary"` becomes:
 
-```
+```text
 [BOS] m a r y [BOS]
 ```
 
@@ -73,7 +73,7 @@ the lookup table, and `index` is the inverse map.
 `vocab_size` is the width of the final output layer, and the width of the token
 embedding table. It shows up in the parameter count:
 
-```
+```text
 27 * 16  (wte)      = 432
 27 * 16  (lm_head)  = 432
 16 * 16  (wpe)      = 256
@@ -97,7 +97,7 @@ the size of the alphabet changes.
 `vocab_size` sets the scale of the whole problem. A model that has learned
 nothing guesses uniformly and scores
 
-```
+```text
 -log(1/27) = 3.2958
 ```
 

@@ -311,7 +311,7 @@ def _check_cycles(
         visit(concept.id)
 
 
-def check_anchors(concepts: list[Concept], report: Report) -> None:
+def check_anchors(concepts: list[Concept], report: Report, root: Path = REPO_ROOT) -> None:
     for concept in concepts:
         anchors = concept.frontmatter.get("anchors") or {}
         if "python" not in anchors:
@@ -327,7 +327,7 @@ def check_anchors(concepts: list[Concept], report: Report) -> None:
                     f"known: {', '.join(sorted(selectors.SOURCES))}"
                 )
                 continue
-            path = REPO_ROOT / selectors.SOURCES[language]
+            path = root / selectors.SOURCES[language]
             if not path.is_file():
                 report.error(
                     f"{concept.id}: anchors {language!r} but "
@@ -387,9 +387,9 @@ def check_bodies(concepts: list[Concept], index: dict[str, Any], report: Report)
                 )
 
 
-def check_reference_pin(index: dict[str, Any], report: Report) -> None:
+def check_reference_pin(index: dict[str, Any], report: Report, root: Path = REPO_ROOT) -> None:
     reference = index.get("reference", {})
-    path = REPO_ROOT / reference.get("path", "reference/microgpt.py")
+    path = root / reference.get("path", "reference/microgpt.py")
     if not path.is_file():
         report.error(f"index.json reference path does not exist: {path}")
         return
@@ -420,7 +420,7 @@ def check_reference_pin(index: dict[str, Any], report: Report) -> None:
         )
 
 
-def check_anchors_current(concepts: list[Concept], report: Report) -> None:
+def check_anchors_current(concepts: list[Concept], report: Report, root: Path = REPO_ROOT) -> None:
     """The committed anchors.json must match what the selectors resolve to now.
 
     Without this, the order `gen_anchors` then `validate` matters: someone who
@@ -431,15 +431,15 @@ def check_anchors_current(concepts: list[Concept], report: Report) -> None:
     """
     from tools import gen_anchors
 
-    path = gen_anchors.OUTPUT
+    path = root / "visualizer" / "src" / "data" / "generated" / "anchors.json"
     if not path.is_file():
         report.error(
-            f"{path.relative_to(REPO_ROOT)} does not exist. The visualizer reads "
+            f"{path.relative_to(root)} does not exist. The visualizer reads "
             f"it; run `make validate` (or `python3 -m tools.gen_anchors`)."
         )
         return
 
-    result = gen_anchors.build(REPO_ROOT)
+    result = gen_anchors.build(root)
     if result["failures"]:
         for failure in result["failures"]:
             report.error(f"anchor does not resolve: {failure}")
@@ -449,7 +449,7 @@ def check_anchors_current(concepts: list[Concept], report: Report) -> None:
     actual = path.read_text(encoding="utf-8")
     if actual != expected:
         report.error(
-            f"{path.relative_to(REPO_ROOT)} is stale. Re-run `make validate` to "
+            f"{path.relative_to(root)} is stale. Re-run `make validate` to "
             f"regenerate it.\n"
             f"    The site renders code panels straight from this file, so a stale "
             f"copy highlights the wrong lines and says so with total confidence."
@@ -461,8 +461,8 @@ def check_anchors_current(concepts: list[Concept], report: Report) -> None:
         )
 
 
-def check_traces(report: Report) -> None:
-    root = REPO_ROOT / "traces"
+def check_traces(report: Report, repo_root: Path = REPO_ROOT) -> None:
+    root = repo_root / "traces"
     if not root.is_dir():
         return
     total = 0
@@ -471,7 +471,7 @@ def check_traces(report: Report) -> None:
         total += size
         if size > TRACE_BUDGET_BYTES:
             report.error(
-                f"{path.relative_to(REPO_ROOT)} is {size} bytes, over the "
+                f"{path.relative_to(repo_root)} is {size} bytes, over the "
                 f"{TRACE_BUDGET_BYTES} byte per-track budget. At micro "
                 f"hyperparameters a trace is kilobytes; something is recording "
                 f"raw activations."
@@ -480,17 +480,8 @@ def check_traces(report: Report) -> None:
         report.note(f"traces: {total / 1024:.1f} KiB total")
 
 
-def check_index_assets(index: dict[str, Any], report: Report) -> None:
-    for key in ("name", "chars", "docs", "params"):
-        pass  # the reference block's numeric claims are advisory, not gates
-    hyper = index.get("hyperparameters", {})
-    notes = hyper.get("note", "")
-    for claim, actual in (("n_embd", None), ("n_head", None), ("n_layer", None)):
-        if claim in hyper and actual is not None and hyper[claim] != actual:
-            report.error(f"index.json hyperparameters.{claim} disagrees with the reference")
 
-
-# ----------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 
 def main() -> int:
@@ -506,11 +497,11 @@ def main() -> int:
     print(f"validating {len(concepts)} concepts against content/schema.json")
     check_schema(concepts, schema, report)
     check_graph(concepts, index, report)
-    check_anchors(concepts, report)
+    check_anchors(concepts, report, REPO_ROOT)
     check_bodies(concepts, index, report)
-    check_reference_pin(index, report)
-    check_anchors_current(concepts, report)
-    check_traces(report)
+    check_reference_pin(index, report, REPO_ROOT)
+    check_anchors_current(concepts, report, REPO_ROOT)
+    check_traces(report, REPO_ROOT)
 
     for note in report.notes:
         print(f"  - {note}")

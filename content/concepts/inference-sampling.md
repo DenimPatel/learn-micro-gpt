@@ -75,7 +75,7 @@ push a sampling concern into a layer that does not need to know about it.
 
 The samples at `T = 0.5`, straight from the reference:
 
-```
+```output
 kamon   ann    karai  jaire  vialan  karia  yeran  anna   areli  kaina
 konna   keylen liole  alerin earan   lenne  kana   lara   alela  anton
 ```

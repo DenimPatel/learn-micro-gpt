@@ -115,7 +115,16 @@ class Span:
     def apply_offset(self, offset: tuple[int, int] | None) -> "Span":
         if offset is None:
             return self
-        return Span(self.start + offset[0], self.end + offset[1])
+        start = self.start + offset[0]
+        end = self.end + offset[1]
+        if start < 1:
+            # Raised here rather than in __post_init__ so the caller gets a
+            # SelectorError it can catch, with the offsets that caused it.
+            raise SelectorUnresolvedError(
+                f"offset [{offset[0]}, {offset[1]}] pushed the start to line {start}, "
+                f"before the beginning of the file"
+            )
+        return Span(start, end)
 
     def as_dict(self) -> dict[str, int]:
         return {"start": self.start, "end": self.end}

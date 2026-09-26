@@ -142,16 +142,21 @@ def parse_scalar(token: str, line_no: int | None = None) -> Any:
     token = token.strip()
     if not token:
         return ""
-    if token[0] == "[" and token[-1] == "]":
-        return [parse_scalar(p, line_no) for p in _split_flow(token[1:-1], line_no or 0)]
-    if token[0] == "{" and token[-1] == "}":
-        mapping: dict[str, Any] = {}
-        for part in _split_flow(token[1:-1], line_no or 0):
-            if ":" not in part:
-                raise YamliteError(f"flow map entry without ':' -> {part!r}", line_no)
-            key, _, value = part.partition(":")
-            mapping[parse_scalar(key, line_no)] = parse_scalar(value, line_no)
-        return mapping
+    if token[0] == "[" or token[0] == "{":
+        # An opener without its matching closer is a typo, not a string. Accepting
+        # it as a plain scalar would mean a malformed `shapes:` entry renders as
+        # the literal text "[a, b" on the site, forever, with no error anywhere.
+        if _is_balanced(token):
+            if token[0] == "[":
+                return [parse_scalar(p, line_no) for p in _split_flow(token[1:-1], line_no or 0)]
+            mapping: dict[str, Any] = {}
+            for part in _split_flow(token[1:-1], line_no or 0):
+                if ":" not in part:
+                    raise YamliteError(f"flow map entry without ':' -> {part!r}", line_no)
+                key, _, value = part.partition(":")
+                mapping[parse_scalar(key, line_no)] = parse_scalar(value, line_no)
+            return mapping
+        raise YamliteError(f"unbalanced flow collection: {token!r}", line_no)
     if token[0] == "&" or token[0] == "*" or token[0] == "!":
         raise YamliteError("anchors, aliases and tags are not supported", line_no)
     unquoted = _unquote(token, line_no or 0)

@@ -22,9 +22,10 @@ __pycache__/
 venv/
 
 # --- Native build artifacts -------------------------------------------------
-# Compiled binaries
+# Compiled binaries. Note the `microgpt-*` pattern also covers the per-config
+# names tools/parity.py builds (microgpt-micro, microgpt-scaled).
 microgpt
-microgpt-scaled
+microgpt-*
 test_gradients
 /go/*
 !/go/go.mod
@@ -42,6 +43,12 @@ target/
 # Checkpoints written by the C implementation
 model.bin
 *.bin.tmp
+
+# Raw tool output. The parsed traces/*.jsonl are committed; the stdout they were
+# parsed from is build output, and keeping both means the drift check has two
+# things to disagree about.
+traces/**/stdout.txt
+.run/
 
 # --- Tooling / editors ------------------------------------------------------
 .DS_Store

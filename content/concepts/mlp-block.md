@@ -41,7 +41,7 @@ absence of any mixing across the sequence axis.
 
 **It is where the parameters are.** At `n_embd = 16`:
 
-```
+```text
 mlp_fc1  [64, 16]  = 1024
 mlp_fc2  [16, 64]  = 1024
                      -----
