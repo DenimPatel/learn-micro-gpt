@@ -1,0 +1,28 @@
+# No dependencies, on purpose. The reference's whole point is that the algorithm
+# fits in one file with nothing but a standard library; a port that needed a
+# BLAS crate would be measuring the crate.
+[package]
+name = "microgpt-rs"
+version = "0.1.0"
+edition = "2021"
+description = "A Rust port of Andrej Karpathy's 199-line microgpt.py"
+license = "MIT"
+publish = false
+
+# A library plus a binary, so the model code is testable without spawning a
+# process. `cargo test` runs the finite-difference checks in tests/parity.rs.
+[lib]
+name = "microgpt"
+path = "src/lib.rs"
+
+[[bin]]
+name = "microgpt-rs"
+path = "src/main.rs"
+
+[profile.release]
+# The point of this port is to be read, so keep the debug assertions and
+# overflow checks on. A model that silently wraps a float is worse than one
+# that stops.
+debug-assertions = true
+overflow-checks = true
+lto = true

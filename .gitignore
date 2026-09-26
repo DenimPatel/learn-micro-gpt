@@ -1,5 +1,7 @@
 # --- Node / Vite -----------------------------------------------------------
 node_modules/
+# The typescript port's own toolchain
+implementations/typescript/node_modules/
 visualizer/dist/
 visualizer/dist-ssr/
 visualizer/coverage/
@@ -31,7 +33,7 @@ test_gradients
 !/go/go.mod
 /go.sum
 # Rust
-target/
+implementations/rust/target/
 # Go coverage / test binaries
 *.test
 # C

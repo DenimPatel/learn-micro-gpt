@@ -70,8 +70,13 @@ from __future__ import annotations
 
 import json
 import math
-import statistics
+import re
+import shutil
+import subprocess
 import sys
+import tempfile
+import os
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -152,54 +157,202 @@ def load_committed_trace(lang: str, config: str) -> TrackRun | None:
     return TrackRun(lang, config, losses, meta)
 
 
-def run_c(config: str, source: Path, steps: int) -> TrackRun | None:
-    """Build and run a C track, returning its parsed loss curve."""
-    import os
-    import re
-    import shutil
-    import subprocess
-    import tempfile
+STEP_RE = re.compile(r"^step\s+(\d+)\s*/\s*(\d+)\s*\|\s*loss\s+([0-9.]+)\s*$")
 
-    binary = REPO_ROOT / "implementations" / "c" / f"microgpt-{config}"
-    flags = ["-O3", "-Wall", "-Wno-unused-function"]
-    link: list[str] = []
-    if sys.platform == "darwin":
-        flags.append("-mcpu=apple-m1")
-        link = ["-framework", "Accelerate"]
-    build = subprocess.run(
-        [*_cc(), *flags, "-o", str(binary), str(source), "-lm", *link],
-        capture_output=True,
-        text=True,
-    )
-    if build.returncode != 0:
-        print(build.stderr[-3000:], file=sys.stderr)
-        return None
 
-    work = Path(tempfile.mkdtemp(prefix="microgpt-parity-"))
-    try:
-        shutil.copy(REPO_ROOT / "data" / "input.txt", work / "input.txt")
-        run = subprocess.run(
-            [str(binary)], cwd=work, capture_output=True, text=True, timeout=900
-        )
-    finally:
-        shutil.rmtree(work, ignore_errors=True)
-    if run.returncode != 0:
-        print(run.stderr[-3000:], file=sys.stderr)
-        return None
+def parse_losses(stdout: str, limit: int | None = None) -> list[float]:
+    """Pull a loss curve out of any track's output.
 
-    losses = []
-    for line in run.stdout.split("\n"):
-        match = re.match(r"^step\s+(\d+)\s*/\s*(\d+)\s*\|\s*loss\s+([0-9.]+)\s*$", line.strip())
+    Every track prints the same `step N / M | loss X` line the reference does,
+    which is what makes one comparison work for all of them.
+    """
+    losses: list[float] = []
+    for line in stdout.split("\n"):
+        match = STEP_RE.match(line.strip())
         if match:
             losses.append(float(match.group(3)))
-    return TrackRun("c", config, losses[:steps] or losses)
+    return losses[:limit] if limit else losses
 
 
-def _cc() -> list[str]:
-    import os
-    import shutil as _shutil
+@dataclass
+class TrackRunner:
+    """How to build and run one track.
 
-    return [_shutil.which("cc") or _shutil.which("gcc") or "cc"]
+    Two things every track here does the same way, and both were got wrong first:
+
+    **The dataset is passed explicitly, and the run happens in a scratch
+    directory.** The reference resolves `input.txt` from the current working
+    directory, so a track run from the repository root would read whatever
+    happened to be there. Each track is invoked with an explicit `--input` and a
+    private cwd seeded from `data/input.txt`, so nothing a track writes lands in
+    the repository and nothing it reads can surprise it.
+
+    **The loss curve comes from a trace, not from stdout, wherever the track
+    produces one.** Parsing progress output is fragile in a way that is easy to
+    miss: Go and TypeScript print only the first few steps and then every hundredth,
+    which looks fine in a terminal and yields a 7-point curve to a parity check.
+    The `--trace` JSONL every port already writes has all 1,000, and reading it is
+    what a machine-readable channel is for. C and Rust print every step and are
+    parsed from stdout.
+    """
+
+    lang: str
+    config: str
+    source: Path
+    run: list[str]
+    build: list[str] = field(default_factory=list)
+    tools: tuple[str, ...] = ()
+    #: Where to run: a directory containing go.mod needs the module root, not a
+    #: scratch directory. `None` means the scratch directory.
+    cwd: Path | None = None
+    #: "trace" or "stdout"
+    parse: str = "stdout"
+    trace_path: str = "{work}/track.jsonl"
+    timeout: int = 1800
+
+    def missing_tools(self) -> list[str]:
+        return [tool for tool in self.tools if shutil.which(tool) is None]
+
+    def missing_files(self) -> list[str]:
+        missing = [str(self.source.relative_to(REPO_ROOT))] if not self.source.is_file() else []
+        if self.lang == "rust" and not (
+            REPO_ROOT / "implementations" / "rust" / "target" / "release" / "microgpt-rs"
+        ).is_file():
+            missing.append("implementations/rust/target/release/microgpt-rs (run `cargo build --release`)")
+        return missing
+
+    def execute(self, steps: int) -> TrackRun | None:
+        work = Path(tempfile.mkdtemp(prefix=f"microgpt-parity-{self.lang}-"))
+        try:
+            shutil.copy(REPO_ROOT / "data" / "input.txt", work / "input.txt")
+            if self.build:
+                built = subprocess.run(
+                    self.build, capture_output=True, text=True, timeout=self.timeout
+                )
+                if built.returncode != 0:
+                    print(f"{self.lang}: build failed\n{built.stderr[-2500:]}", file=sys.stderr)
+                    return None
+            trace = work / "track.jsonl"
+            argv = [
+                part.replace("{steps}", str(steps))
+                .replace("{work}", str(work))
+                .replace("{trace}", str(trace))
+                .replace("{input}", str(REPO_ROOT / "data" / "input.txt"))
+                for part in self.run
+            ]
+            completed = subprocess.run(
+                argv,
+                cwd=self.cwd or work,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+            )
+            if completed.returncode != 0:
+                print(
+                    f"{self.lang}: run failed (exit {completed.returncode})\n"
+                    f"{completed.stderr[-2500:]}",
+                    file=sys.stderr,
+                )
+                return None
+            if self.parse == "trace":
+                if not trace.is_file():
+                    print(
+                        f"{self.lang}: no trace at {self.trace_path}; the track was "
+                        f"supposed to write one",
+                        file=sys.stderr,
+                    )
+                    return None
+                losses = [
+                    float(row["loss"])
+                    for row in read_trace(trace)
+                    if row.get("type") == "step" and "loss" in row
+                ]
+            else:
+                losses = parse_losses(completed.stdout, steps)
+            if not losses:
+                print(f"{self.lang}: no loss values recovered", file=sys.stderr)
+                return None
+            return TrackRun(self.lang, self.config, losses[:steps] or losses)
+        except subprocess.TimeoutExpired:
+            print(f"{self.lang}: timed out after {self.timeout}s", file=sys.stderr)
+            return None
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+
+
+def read_trace(path: Path) -> list[dict[str, Any]]:
+    """Parse a JSONL trace: one object per line, blanks skipped."""
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rows.append(json.loads(line))
+    return rows
+
+
+def runners() -> list[TrackRunner]:
+    data = REPO_ROOT / "data" / "input.txt"
+    go_root = REPO_ROOT / "implementations" / "go"
+    ts_root = REPO_ROOT / "implementations" / "typescript"
+    rust_binary = REPO_ROOT / "implementations" / "rust" / "target" / "release" / "microgpt-rs"
+    c_binary = REPO_ROOT / "implementations" / "c" / "microgpt-parity"
+
+    c_flags = ["-O3", "-Wall", "-Wno-unused-function"]
+    c_link: list[str] = []
+    if sys.platform == "darwin":
+        c_flags.append("-mcpu=apple-m1")
+        c_link = ["-framework", "Accelerate"]
+
+    return [
+        # C: prints every step, so stdout is complete. Reads input.txt from its cwd,
+        # which is the scratch directory -- that is the one track that relies on it.
+        TrackRunner(
+            lang="c",
+            config="micro",
+            source=REPO_ROOT / "implementations" / "c" / "microgpt.c",
+            build=[
+                shutil.which("cc") or shutil.which("gcc") or "cc", *c_flags,
+                "-o", str(c_binary),
+                str(REPO_ROOT / "implementations" / "c" / "microgpt.c"), "-lm", *c_link,
+            ],
+            run=[str(c_binary)],
+            tools=("cc", "gcc"),
+        ),
+        # Go: `go run` needs the module root as its cwd, but takes an explicit
+        # --input, so the data still comes from the repository.
+        TrackRunner(
+            lang="go",
+            config="micro",
+            source=go_root / "main.go",
+            run=["go", "run", ".", "--input", "{input}", "--steps", "{steps}",
+                 "--quiet", "--trace", "{trace}"],
+            tools=("go",),
+            cwd=go_root,
+            parse="trace",
+        ),
+        # Rust: prints every step, so stdout is complete.
+        TrackRunner(
+            lang="rust",
+            config="micro",
+            source=REPO_ROOT / "implementations" / "rust" / "src" / "lib.rs",
+            build=["cargo", "build", "--release", "--quiet",
+                   "--manifest-path", str(REPO_ROOT / "implementations" / "rust" / "Cargo.toml")],
+            run=[str(rust_binary), "--input", "{input}", "--steps", "{steps}"],
+            tools=("cargo",),
+        ),
+        # TypeScript: progress output is sparse on purpose, so the trace is the only
+        # complete source of loss values.
+        TrackRunner(
+            lang="typescript",
+            config="micro",
+            source=ts_root / "src" / "index.ts",
+            run=["npx", "tsx", str(ts_root / "src" / "cli.ts"),
+                 "--input", "{input}", "--steps", "{steps}", "--trace", "{trace}"],
+            tools=("npx", "node"),
+            cwd=ts_root,
+            parse="trace",
+        ),
+    ]
 
 
 # ----------------------------------------------------------------------------
@@ -325,23 +478,38 @@ def main(argv: list[str] | None = None) -> int:
 
     tracks: list[TrackRun] = []
     if not args.committed_only:
-        c_run = run_c("micro", REPO_ROOT / "implementations" / "c" / "microgpt.c", args.steps)
-        if c_run is None:
-            print("error: could not build or run the C parity track", file=sys.stderr)
-            return 1
-        tracks.append(c_run)
-    for config_dir in sorted((TRACES_DIR).glob("*/*")):
-        if config_dir.name == "micro" or config_dir.parent.name == "python":
+        for runner in runners():
+            missing = runner.missing_tools() + runner.missing_files()
+            if missing:
+                print(
+                    f"skipping {runner.lang}: {', '.join(missing)} not available. "
+                    f"CI checks every track; a local run checks what it can.",
+                    file=sys.stderr,
+                )
+                continue
+            run = runner.execute(args.steps)
+            if run is not None:
+                tracks.append(run)
+
+    for config_dir in sorted(TRACES_DIR.glob("*/*")):
+        if config_dir.parent.name == "python":
             continue
         committed = load_committed_trace(config_dir.parent.name, config_dir.name)
         if committed:
             tracks.append(committed)
 
     if not tracks:
-        print(
-            "no other tracks to compare. The C parity track is built and run by "
-            "this command unless --committed-only is passed.",
-        )
+        print("no tracks available to compare against the reference")
+        if not args.committed_only:
+            print(
+                "  No track could be built or run. Each one needs a toolchain:\n"
+                "    c           a C compiler (cc or gcc)\n"
+                "    go          the go toolchain\n"
+                "    rust        cargo, and `cargo build --release` in implementations/rust\n"
+                "    typescript  node, and `npm install` in implementations/typescript",
+                file=sys.stderr,
+            )
+            return 1
         return 0
 
     all_failures: list[str] = []
