@@ -167,14 +167,33 @@ class TestLegacyMappingParity(unittest.TestCase):
 
 
 class TestCResolution(unittest.TestCase):
+    """
+    These assert *semantic* properties -- that a selector resolves to a range
+    containing the right thing -- rather than hardcoded line numbers.
+
+    An earlier version of this file asserted exact line numbers for the C
+    source, and every one of them broke the moment microgpt.c got a longer header
+    comment. That is precisely the failure mode the whole selector design exists
+    to prevent, and this test file was the thing committing it: a test that
+    encodes line numbers is a test that will break on a harmless edit and get
+    "fixed" by updating the number rather than by noticing what changed.
+    """
+
     def resolve(self, raw: str) -> selectors.Span:
         return selectors.resolve("c", raw, REPO_ROOT, C_SOURCE)
+
+    def lines(self, span: selectors.Span) -> str:
+        return "\n".join(C_SOURCE.split("\n")[span.start - 1 : span.end])
 
     def test_multiline_signature_is_found(self) -> None:
         # `static inline void linear_fwd(const float *x,` then more parameter
         # lines then `{`. A line-at-a-time scan misses every one of these.
         span = self.resolve("def:linear_fwd")
-        self.assertEqual((span.start, span.end), (171, 177))
+        text = self.lines(span)
+        self.assertIn("static inline void linear_fwd", text)
+        self.assertIn("cblas_sgemv", text)
+        # The span must end at the closing brace, not the opening one.
+        self.assertEqual(text.rstrip().split("\n")[-1].strip(), "}")
 
     def test_control_flow_is_not_mistaken_for_a_definition(self) -> None:
         # `if (ready) {` must not be recorded as `def:ready`.
@@ -186,7 +205,9 @@ class TestCResolution(unittest.TestCase):
         # glued onto the next definition as `}   static void forward_pos(...) {`,
         # which then failed an anchored match. So `forward_pos` silently
         # resolved to nothing while the file looked fine.
-        self.assertEqual(self.resolve("def:forward_pos").start, 418)
+        first = self.lines(self.resolve("def:forward_pos"))
+        self.assertTrue(first.startswith("static void forward_pos"), first[:60])
+        self.assertIn("Multi-head attention", first)
 
     def test_every_real_function_resolves(self) -> None:
         for name in (
@@ -198,30 +219,52 @@ class TestCResolution(unittest.TestCase):
             with self.subTest(name=name):
                 span = self.resolve(f"def:{name}")
                 self.assertGreater(span.end, span.start - 1, "span must be non-empty")
+                # And the resolved text must actually declare that function.
+                self.assertIn(name, self.lines(span))
 
     def test_macro_defines_are_anchors(self) -> None:
-        for name, line in (("N_EMBD", 19), ("N_HEAD", 20), ("BLOCK_SIZE", 22), ("NUM_STEPS", 27)):
+        for name, value in (
+            ("N_EMBD", "16"),
+            ("N_HEAD", "4"),
+            ("N_LAYER", "1"),
+            ("BLOCK_SIZE", "16"),
+            ("NUM_STEPS", "1000"),
+            ("MAX_DOC_LEN", "20"),
+        ):
             with self.subTest(name=name):
-                self.assertEqual(self.resolve(f"assign:{name}").start, line)
+                text = self.lines(self.resolve(f"assign:{name}"))
+                self.assertRegex(text, rf"#\s*define\s+{name}\b")
+                self.assertIn(value, text)
 
     def test_file_scope_arrays_resolve_despite_attributes(self) -> None:
         # `static float ALIGN128 wte[...]` -- the alignment attribute sits between
         # the type and the name, so a strict type-then-name pattern misses it.
-        for name, line in (("wte", 91), ("wpe", 92), ("lm_head", 93), ("g_lm_head", 105)):
+        for name in ("wte", "wpe", "lm_head", "g_lm_head", "attn_wq", "mlp_fc1"):
             with self.subTest(name=name):
-                self.assertEqual(self.resolve(f"assign:{name}").start, line)
+                text = self.lines(self.resolve(f"assign:{name}"))
+                self.assertRegex(text, rf"\b{name}\b\s*\[")
+                self.assertNotIn("static void", text.split(name)[0][-20:] if name in text else "")
 
     def test_comment_selector_handles_box_drawing_separators(self) -> None:
         # `/* ── Inference ──...── */` has to reduce to `Inference`, or every C
         # section anchor has to spell out the box-drawing characters.
-        self.assertEqual(self.resolve("comment:Inference").start, 944)
-        self.assertEqual(self.resolve("comment:Main").start, 856)
+        for prefix in ("Inference", "Main", "Data loading", "Weight initialization"):
+            with self.subTest(prefix=prefix):
+                text = self.lines(self.resolve(f"comment:{prefix}"))
+                self.assertIn(prefix, text)
 
     def test_comment_selector_ignores_indentation(self) -> None:
         # `  /* Training loop */` is indented two spaces; the same selector works
         # on a column-0 comment.
-        self.assertEqual(self.resolve("comment:Training loop").start, 869)
-        self.assertEqual(self.resolve("comment:Multi-head attention").start, 446)
+        for prefix in ("Training loop", "Multi-head attention", "MLP block"):
+            with self.subTest(prefix=prefix):
+                self.assertIn(prefix, self.lines(self.resolve(f"comment:{prefix}")))
+
+    def test_section_selectors_work_on_c_too(self) -> None:
+        span = self.resolve("section:Data loading")
+        self.assertIn("load_data", self.lines(span))
+        # A section must not run past the next one.
+        self.assertNotIn("Weight initialization", self.lines(span))
 
 
 class TestSpan(unittest.TestCase):

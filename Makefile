@@ -36,16 +36,32 @@ BENCHMARKS := benchmarks
 # host actually advertises it.
 UNAME_S := $(shell uname -s)
 
+# The C tracks build in one of three configurations, all of which produce the
+# same loss curve (implementations/c/test_equivalence.sh checks that):
+#
+#   1. Accelerate + NEON    Apple Silicon fast path
+#   2. scalar BLAS + NEON   Apple Silicon without the framework
+#   3. scalar + scalar      anywhere, including the Linux CI runner
+#
+# The third is the default everywhere, because it is the one that always works.
+# C_FAST=1 opts into the first on macOS.
 ifeq ($(UNAME_S),Darwin)
-  CC        ?= clang
+  CC        ?= cc
   CFLAGS_NATIVE ?= -mcpu=apple-m1
   CFLAGS_FAST   ?= -Ofast -ffast-math -ffp-contract=fast -funroll-loops
-  LDFLAGS_PLATFORM ?= -framework Accelerate
+  CFLAGS_PORTABLE ?= -O3
+  ifeq ($(C_FAST),1)
+    CFLAGS   ?= $(CFLAGS_FAST) $(CFLAGS_NATIVE) $(CFLAGS_BASE) -DMICROGPT_USE_ACCELERATE
+    LDLIBS_PLATFORM ?= -framework Accelerate
+  else
+    CFLAGS   ?= $(CFLAGS_PORTABLE) $(CFLAGS_BASE)
+  endif
 else
   CC        ?= cc
   CFLAGS_NATIVE ?=
   CFLAGS_FAST   ?= -Ofast -ffast-math -ffp-contract=fast -funroll-loops
-  LDFLAGS_PLATFORM ?=
+  CFLAGS_PORTABLE ?= -O3
+  CFLAGS   ?= $(CFLAGS_PORTABLE) $(CFLAGS_BASE)
 endif
 
 CFLAGS_BASE    ?= -Wall -Wno-unused-function
@@ -91,6 +107,7 @@ help:
 	@echo "  build                    production build of the visualizer"
 	@echo "  preview                  serve the production build locally"
 	@echo "  lint                     every linter this repo has"
+	@echo "  c-test                   C build-config equivalence + gradient checks"
 	@echo "  fmt                      every formatter, in place"
 	@echo "  check                    lint + test + validate + parity (what CI runs)"
 	@echo
@@ -137,13 +154,13 @@ run-c: $(C_DIR)/microgpt
 run-scaled: $(C_DIR)/microgpt-scaled
 	./$(C_DIR)/microgpt-scaled --input data/input.txt
 
-$(C_DIR)/microgpt: $(C_DIR)/microgpt.c
+$(C_DIR)/microgpt: $(C_DIR)/microgpt.c $(C_DIR)/microgpt_simd.h
 	@$(call require,$(CC),Install clang or gcc.)
-	$(CC) $(CFLAGS) -o $@ $< -lm $(LDFLAGS_PLATFORM)
+	$(CC) $(CFLAGS) -o $@ $< -lm $(LDLIBS_PLATFORM)
 
-$(C_DIR)/microgpt-scaled: $(C_DIR)/microgpt-scaled.c
+$(C_DIR)/microgpt-scaled: $(C_DIR)/microgpt-scaled.c $(C_DIR)/microgpt_simd.h
 	@$(call require,$(CC),Install clang or gcc.)
-	$(CC) $(CFLAGS_FAST) -o $@ $< -lm $(LDFLAGS_PLATFORM)
+	$(CC) $(CFLAGS) -o $@ $< -lm $(LDLIBS_PLATFORM)
 
 run-go:
 	@$(call require,$(GO),Install Go from https://go.dev/dl/)
@@ -161,6 +178,7 @@ run-ts:
 validate:
 	$(PYTHON) -m tools.gen_anchors
 	$(PYTHON) -m tools.validate_concepts
+	$(PYTHON) -m tools.render_content
 
 test:
 	$(PYTHON) -m unittest discover -s tools/tests -t . -v
@@ -213,13 +231,20 @@ build:
 preview:
 	cd $(VIS) && $(NPM) run preview
 
+# All three C build configurations must produce the same loss curve. A fallback
+# that rounded differently would look to the parity gate like a different
+# algorithm, so this is a correctness check, not a nicety.
+c-test:
+	cd $(C_DIR) && ./test_equivalence.sh
+	cd $(C_DIR) && $(MAKE) check
+
 lint:
 	$(PYTHON) -m tools.lint
 
 fmt:
 	$(PYTHON) -m tools.fmt
 
-check: lint test validate test-web parity build
+check: lint test validate test-web c-test parity build
 
 ## ------------------------------------------------------ housekeeping ------
 
@@ -240,5 +265,5 @@ distclean: clean
 
 .PHONY: setup setup-python setup-web run run-python run-c run-scaled \
         run-go run-rust run-ts validate test test-web install-web \
-        verify-provenance provenance trace trace-check parity bench \
+        verify-provenance provenance trace trace-check parity bench c-test \
         dev build preview lint fmt check clean distclean

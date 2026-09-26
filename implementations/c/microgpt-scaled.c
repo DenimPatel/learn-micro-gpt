@@ -1,14 +1,31 @@
 /*
- * microgpt.c — MAX-optimized C port for Apple Silicon
+ * microgpt-scaled.c — C port at the *scaled* config, for the throughput track
  * float32 + ARM NEON SIMD + Apple Accelerate + branch-free hot paths
  *
- * Compile: clang -Ofast -mcpu=apple-m1 -ffast-math -ffp-contract=fast
- *          -funroll-loops -flto -fvectorize -o microgpt microgpt.c
- *          -lm -framework Accelerate
+ * n_embd 256 / n_head 8 / n_layer 4 / block 256, against the reference's
+ * 16 / 4 / 1 / 16. Two configs on purpose: it shows the speed gap *widening*
+ * with model size, which is the actual lesson, and it is why the C port is worth
+ * reading in the first place. See docs/BENCHMARKS.md.
+ *
+ * This track is excluded from the parity gate -- it is a different model, so
+ * there is nothing to compare its loss against -- and exists only to be timed.
+ *
+ * Build (Apple Silicon, the fast path):
+ *   clang -Ofast -mcpu=apple-m1 -ffast-math -ffp-contract=fast -funroll-loops \
+ *         -DMICROGPT_USE_ACCELERATE -o microgpt-scaled microgpt-scaled.c \
+ *         -lm -framework Accelerate
+ *
+ * Build (anywhere else):
+ *   cc -O3 -o microgpt-scaled microgpt-scaled.c -lm
+ *
+ * `microgpt_simd.h` supplies the same intrinsics and BLAS calls on every target:
+ * the real ones on aarch64 with NEON, small portable fallbacks elsewhere. This
+ * is the same portability work as microgpt.c -- see that header for why it was
+ * necessary, and `make c-test` for the check that all configurations agree.
  */
 
-#include <Accelerate/Accelerate.h>
-#include <arm_neon.h>
+#include "microgpt_simd.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>

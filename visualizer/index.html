@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Relative, so the icon resolves under a Pages subpath. The previous
+         version used an absolute /vite.svg and 404'd. -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>learn microgpt — a concept atlas for 199 lines</title>
+    <meta
+      name="description"
+      content="A guided, visual reading of Andrej Karpathy's 199-line microgpt.py: the algorithm, the tensor shapes, the recorded numbers, and the same program in five languages."
+    />
+    <meta property="og:title" content="learn microgpt — a concept atlas for 199 lines" />
+    <meta
+      property="og:description"
+      content="A guided, visual reading of Karpathy's 199-line microgpt.py, with recorded traces, tensor shapes, and ports in C, Go, Rust, and TypeScript."
+    />
+    <meta property="og:image" content="./og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Applied before first paint so a reader who chose dark never gets a white
+      // flash. Deliberately inline and dependency-free: this is the one thing
+      // that must run before the bundle does.
+      (function () {
+        try {
+          var stored = localStorage.getItem('atlas:theme')
+          var dark =
+            stored === 'dark' ||
+            (stored !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', dark)
+        } catch (e) {
+          /* private mode, no localStorage: fall back to the light default */
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="font-family: system-ui; max-width: 42rem; margin: 4rem auto; padding: 0 1rem">
+        This is an interactive atlas, so it needs JavaScript. The same material is
+        readable as plain prose in <code>content/concepts/</code> on GitHub, and the
+        reference itself is <code>reference/microgpt.py</code> — 199 lines you can read
+        in one sitting.
+      </p>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,14 +1,24 @@
 /*
- * microgpt.c — MAX-optimized C port for Apple Silicon
+ * microgpt.c — MAX-optimized C port of Karpathy's 199-line microgpt.py
  * float32 + ARM NEON SIMD + Apple Accelerate + branch-free hot paths
  *
- * Compile: clang -Ofast -mcpu=apple-m1 -ffast-math -ffp-contract=fast
- *          -funroll-loops -flto -fvectorize -o microgpt microgpt.c
- *          -lm -framework Accelerate
+ * Build (Apple Silicon, the fast path):
+ *   clang -Ofast -mcpu=apple-m1 -ffast-math -ffp-contract=fast -funroll-loops \
+ *         -o microgpt microgpt.c -lm -framework Accelerate
+ *
+ * Build (anywhere else, the portable path — same arithmetic, no SIMD):
+ *   cc -O3 -o microgpt microgpt.c -lm
+ *
+ * The two paths differ only in `microgpt_simd.h`, which supplies the 19 NEON
+ * intrinsics and 3 BLAS calls this file uses on every target: the real ones on
+ * aarch64, small portable fallbacks everywhere else. That is what lets the
+ * parity track run in CI on the Linux runner, which the original
+ * `#include <Accelerate/Accelerate.h>` + `-framework Accelerate` build could not
+ * do at all. See that header for the details.
  */
 
-#include <Accelerate/Accelerate.h>
-#include <arm_neon.h>
+#include "microgpt_simd.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -332,8 +342,11 @@ static inline void adam_update(float *__restrict__ param,
     float vi = beta2 * v_buf[i] + one_m_b2 * g * g;
     m_buf[i] = mi;
     v_buf[i] = vi;
-    /* Add eps BEFORE sqrt to avoid NaN */
-    param[i] -= lr_t * (mi * inv_b1c) / sqrtf(vi * inv_b2c + eps);
+    /* eps outside the sqrt, matching reference/microgpt.py and the vector path
+     * above. It used to go inside -- sqrt(v+eps) is not sqrt(v)+eps. The
+     * difference is ~1e-7 relative, so nothing but the finite-difference test
+     * in test_gradients.c could have noticed. */
+    param[i] -= lr_t * (mi * inv_b1c) / (sqrtf(vi * inv_b2c) + eps);
     grad[i] = 0.0f;
   }
 }

@@ -121,6 +121,23 @@ automatically, it computes them because somebody typed them out.** Every
 no way to check that the human was right by looking at the code alone — which is
 precisely the class of bug autograd exists to make impossible.
 
+:::callout "This is not hypothetical"
+The C port in the tab above is exactly the shape this warning describes, and its
+backward pass is wrong. `backward_all` does not correctly carry the key and
+value gradients of earlier positions back to their embeddings; only the output
+head's gradient is right. Projected on a random direction over all 4,192
+parameters, its gradient comes out at **-0.12x** the true directional
+derivative, where a correct gradient is 1.0x.
+
+The instructive part is that **its loss curve still tracks the reference to
+within 7%, and it still trains.** Adam's update divides by an estimate of the
+gradient's own magnitude, so a gradient that is wrong by a factor barely moves
+the step. A missing gradient path is therefore invisible to the loss, invisible
+to a statistical loss-band comparison, and visible only to a finite difference.
+
+The full measurements, and what the C track is and is not good for, are in
+`docs/KNOWN-ISSUES.md`.
+
 Two consequences worth internalising:
 
 - Autograd trades memory and speed for *correctness by construction*. That is a
