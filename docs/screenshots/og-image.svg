@@ -1,60 +1,76 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0d1117"/>
-      <stop offset="1" stop-color="#161b22"/>
+      <stop offset="0" stop-color="#0b0b0f"/>
+      <stop offset="1" stop-color="#17121f"/>
     </linearGradient>
+    <radialGradient id="bloom" cx="0.22" cy="0.04" r="0.6">
+      <stop offset="0" stop-color="#6d3bf5" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#6d3bf5" stop-opacity="0"/>
+    </radialGradient>
     <!-- The recorded attention weights at step 200, position 3, head 0. Real
          numbers from traces/python/micro/attn.jsonl, not a decorative pattern:
          the trained model puts 0.394 on position 0 and 0.174 on itself, which is
-         the finding the multi-head-attention concept is about. -->
+         the finding the multi-head-attention concept is about. Bar lengths are
+         those numbers scaled to the largest. -->
     <linearGradient id="heat" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0"    stop-color="#2f95e8"/>
-      <stop offset="0.236" stop-color="#2f95e8"/>
-      <stop offset="0.472" stop-color="#1f74bd"/>
-      <stop offset="0.708" stop-color="#17558c"/>
-      <stop offset="0.944" stop-color="#123a5c"/>
+      <stop offset="0"   stop-color="#a37ef0"/>
+      <stop offset="0.6" stop-color="#8258d6"/>
+      <stop offset="1"   stop-color="#6535c9"/>
     </linearGradient>
   </defs>
 
   <rect width="1280" height="640" fill="url(#bg)"/>
+  <rect width="1280" height="640" fill="url(#bloom)"/>
 
-  <text x="80" y="120" fill="#e6edf3" font-size="64" font-weight="700" letter-spacing="-1.5">learn microgpt</text>
-  <text x="80" y="176" fill="#9198a1" font-size="30">a concept atlas for 199 lines</text>
+  <!-- The site mark, at the same 2x2 as the favicon. -->
+  <g transform="translate(80, 62)">
+    <rect width="42" height="42" rx="10.5" fill="#6d3bf5"/>
+    <g fill="#ffffff">
+      <rect x="9.5" y="9.5" width="9.5" height="9.5" rx="2.4" opacity="0.38"/>
+      <rect x="23" y="9.5" width="9.5" height="9.5" rx="2.4" opacity="0.58"/>
+      <rect x="9.5" y="23" width="9.5" height="9.5" rx="2.4" opacity="0.78"/>
+      <rect x="23" y="23" width="9.5" height="9.5" rx="2.4"/>
+    </g>
+    <text x="60" y="32" fill="#eeedf4" font-size="40" font-weight="640" letter-spacing="-1.2">learn microgpt</text>
+  </g>
 
-  <text x="80" y="252" fill="#6fc2ff" font-size="24" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">microgpt.py</text>
-  <text x="300" y="252" fill="#e6edf3" font-size="24">— Andrej Karpathy, reproduced byte-for-byte</text>
+  <text x="80" y="162" fill="#9b98aa" font-size="26">a concept atlas for 199 lines</text>
 
-  <g transform="translate(80, 300)">
-    <rect width="640" height="200" rx="12" fill="#161b22" stroke="#3d444d"/>
-    <text x="28" y="44" fill="#9198a1" font-size="18">attention weights · step 200 · position 3 · head 0</text>
-    <!-- Four bars, the four recorded weights, scaled to the largest. -->
-    <g transform="translate(28, 72)">
-      <rect x="0"    y="0"   width="280" height="34" rx="4" fill="url(#heat)"/>
-      <rect x="300"  y="0"   width="168" height="34" rx="4" fill="#1f74bd"/>
-      <rect x="600"  y="0"   width="140" height="34" rx="4" fill="#17558c"/>
-      <rect x="900"  y="0"   width="124" height="34" rx="4" fill="#123a5c"/>
-      <g fill="#e6edf3" font-size="17" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
-        <text x="0"   y="58">0.394</text>
-        <text x="300" y="58">0.236</text>
-        <text x="600" y="58">0.197</text>
-        <text x="900" y="58">0.174</text>
-        <text x="0"   y="88" fill="#6e7681">position 0</text>
-        <text x="300" y="88" fill="#6e7681">position 1</text>
-        <text x="600" y="88" fill="#6e7681">position 2</text>
-        <text x="900" y="88" fill="#6e7681">position 3  ← the current position, last</text>
+  <g transform="translate(80, 204)">
+    <text x="0" y="0" fill="#c3adff" font-size="22" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">microgpt.py</text>
+    <text x="188" y="0" fill="#eeedf4" font-size="22">— Andrej Karpathy, reproduced byte-for-byte</text>
+  </g>
+
+  <g transform="translate(80, 250)">
+    <rect width="740" height="300" rx="18" fill="#121218" stroke="#272733"/>
+    <text x="30" y="46" fill="#9b98aa" font-size="18">attention weights · step 200 · position 3 · head 0</text>
+    <g transform="translate(30, 76)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="18">
+      <rect x="0" y="0"   width="480" height="34" rx="5" fill="url(#heat)"/>
+      <rect x="0" y="50"  width="288" height="34" rx="5" fill="#6f4cbe"/>
+      <rect x="0" y="100" width="240" height="34" rx="5" fill="#553c92"/>
+      <rect x="0" y="150" width="212" height="34" rx="5" fill="#3f2d6e"/>
+
+      <g fill="#ffffff">
+        <text x="494" y="24">0.394</text>
+        <text x="302" y="74">0.236</text>
+        <text x="254" y="124" fill="#e0d6ff">0.197</text>
+        <text x="226" y="174" fill="#cbc0f0">0.174</text>
+      </g>
+      <g fill="#706d7f" font-size="16">
+        <text x="582" y="24">position 0</text>
+        <text x="582" y="74">position 1</text>
+        <text x="582" y="124">position 2</text>
+        <text x="582" y="174" fill="#9b98aa">position 3 · the current one</text>
       </g>
     </g>
   </g>
 
-  <g transform="translate(80, 540)" fill="#9198a1" font-size="22">
+  <g transform="translate(80, 600)" fill="#9b98aa" font-size="21">
     <text x="0" y="0">18 concepts</text>
-    <text x="180" y="0">·</text>
-    <text x="210" y="0">5 languages</text>
-    <text x="370" y="0">·</text>
-    <text x="400" y="0">every number measured from a real run</text>
+    <text x="166" y="0" fill="#3a3a47">·</text>
+    <text x="192" y="0">5 languages</text>
+    <text x="336" y="0" fill="#3a3a47">·</text>
+    <text x="362" y="0">every number measured from a real run</text>
   </g>
-
-  <!-- A single underline in the accent colour, matching the site's wordmark. -->
-  <rect x="80" y="586" width="220" height="4" rx="2" fill="#4493f8"/>
 </svg>

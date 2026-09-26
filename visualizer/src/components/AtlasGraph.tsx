@@ -25,8 +25,18 @@ interface Node {
   height: number
 }
 
-const NODE_W = 168
+/*
+ * Node geometry, in graph units (the SVG scales to fit its container).
+ *
+ * The width is set by the longest concept title rather than by taste: at 12px the
+ * label needs about 6.1 units per character, so 168 fits 24 characters plus
+ * padding, and the truncation below is only reached by the handful of genuinely
+ * long names. A graph whose nodes are visibly too narrow for their labels is
+ * worse than one with a long name shortened.
+ */
+const NODE_W = 172
 const NODE_H = 44
+const LABEL_CHARS = 24
 
 export function AtlasGraph() {
   const [nodes, setNodes] = useState<Node[] | null>(null)
@@ -138,8 +148,13 @@ export function AtlasGraph() {
                   textAnchor="middle"
                   className="atlas__label"
                 >
-                  {node.title.length > 22 ? `${node.title.slice(0, 21)}…` : node.title}
+                  {node.title.length > LABEL_CHARS
+                    ? `${node.title.slice(0, LABEL_CHARS - 1)}…`
+                    : node.title}
                 </text>
+                {/* The full title, for the hover and for anyone reading the
+                    markup: the visible label is shortened, the title is not. */}
+                <title>{node.title}</title>
               </a>
             ))}
           </svg>

@@ -25,10 +25,30 @@
 
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useHighlight } from '../content/highlight'
-import { HIGHLIGHT_LANG, anchorFor, loadSource, loadedSource } from '../data/sources'
+import { HIGHLIGHT_LANG, LANGUAGES, anchorFor, loadSource, loadedSource } from '../data/sources'
 import type { Language } from '../data/types'
+import { Icon } from './Icon'
 
 const CONTEXT_LINES = 3
+
+/**
+ * Copy the visible slice, and say so for a moment.
+ *
+ * The failure is the interesting part: `navigator.clipboard` is undefined on an
+ * insecure origin, which includes a bundle opened from `file://` -- one of the
+ * four ways this site is meant to work (see `app/router.ts`). So a rejected or
+ * missing clipboard is a no-op with no state change, rather than an unhandled
+ * rejection and a button that claims success.
+ */
+async function copy(text: string, setCopied: (value: boolean) => void): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    return
+  }
+  setCopied(true)
+  setTimeout(() => setCopied(false), 1600)
+}
 
 export function CodePanel({
   language,
@@ -86,14 +106,16 @@ export function CodePanel({
   const slice = lines.slice(from, to).join('\n')
   const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
   const { html: darkHtml, ready: darkReady } = useHighlight(slice, HIGHLIGHT_LANG[language], 'dark')
+  const [copied, setCopied] = useState(false)
 
   if (source === null) {
+    const name = LANGUAGES[language].label
     return (
       <div className="code-panel" role="group" aria-label={`loading the ${language} source`}>
         <div className="code-panel__bar">
-          <span className="code-panel__name">{language}</span>
+          <span className="code-panel__name">{name}</span>
         </div>
-        <p className="code-panel__missing">loading the {language} source&hellip;</p>
+        <p className="code-panel__missing">loading the {name} source&hellip;</p>
       </div>
     )
   }
@@ -115,12 +137,21 @@ export function CodePanel({
   return (
     <div className="code-panel" role="group" aria-label={label}>
       <div className="code-panel__bar">
-        <span className="code-panel__name">{language}</span>
+        <span className="code-panel__name">{LANGUAGES[language].label}</span>
         {range ? (
           <span className="code-panel__range">
             lines {range.start}&ndash;{range.end}
           </span>
         ) : null}
+        <span className="code-panel__spacer" />
+        <button
+          type="button"
+          className="code-panel__copy"
+          onClick={() => void copy(slice, setCopied)}
+        >
+          <Icon name={copied ? 'check' : 'copy'} size={13} />
+          {copied ? 'copied' : 'copy'}
+        </button>
         <button
           type="button"
           className="code-panel__toggle"

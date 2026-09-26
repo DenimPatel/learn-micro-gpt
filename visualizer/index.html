@@ -5,31 +5,60 @@
     <!-- Relative, so the icon resolves under a Pages subpath. The previous
          version used an absolute /vite.svg and 404'd. -->
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Set below, and rewritten by the toggle, so the browser chrome matches the
+         page rather than staying whatever colour the OS last used. -->
+    <meta name="theme-color" content="#fcfcfa" />
+
     <title>learn microgpt — a concept atlas for 199 lines</title>
     <meta
       name="description"
       content="A guided, visual reading of Andrej Karpathy's 199-line microgpt.py: the algorithm, the tensor shapes, the recorded numbers, and the same program in five languages."
     />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="learn microgpt" />
     <meta property="og:title" content="learn microgpt — a concept atlas for 199 lines" />
     <meta
       property="og:description"
       content="A guided, visual reading of Karpathy's 199-line microgpt.py, with recorded traces, tensor shapes, and ports in C, Go, Rust, and TypeScript."
     />
+    <!-- Relative like the icon, not absolute: og:image is not resolved against
+         the document, so a root-relative path breaks on a Pages subpath. -->
     <meta property="og:image" content="./og-image.png" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="640" />
+    <meta
+      property="og:image:alt"
+      content="learn microgpt, with the recorded attention weights at step 200"
+    />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="learn microgpt — a concept atlas for 199 lines" />
+    <meta
+      name="twitter:description"
+      content="A guided, visual reading of Karpathy's 199-line microgpt.py, with recorded traces, tensor shapes, and ports in C, Go, Rust, and TypeScript."
+    />
+    <meta name="twitter:image" content="./og-image.png" />
+
     <script>
       // Applied before first paint so a reader who chose dark never gets a white
       // flash. Deliberately inline and dependency-free: this is the one thing
-      // that must run before the bundle does.
+      // that must run before the bundle does. The storage key is shared with
+      // app/state.ts, and the theme-color write is repeated there on toggle.
       ;(function () {
+        var light = '#fcfcfa'
+        var dark = '#0b0b0f'
         try {
           var stored = localStorage.getItem('atlas:theme')
-          var dark =
+          var isDark =
             stored === 'dark' ||
             (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-          document.documentElement.classList.toggle('dark', dark)
+          document.documentElement.classList.toggle('dark', isDark)
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', isDark ? dark : light)
         } catch (e) {
           /* private mode, no localStorage: fall back to the light default */
         }
@@ -39,11 +68,25 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <p style="font-family: system-ui; max-width: 42rem; margin: 4rem auto; padding: 0 1rem">
-        This is an interactive atlas, so it needs JavaScript. The same material is readable as plain
-        prose in <code>content/concepts/</code> on GitHub, and the reference itself is
-        <code>reference/microgpt.py</code> — 199 lines you can read in one sitting.
-      </p>
+      <div
+        style="
+          font-family: ui-serif, Georgia, Cambria, serif;
+          max-width: 40rem;
+          margin: 5rem auto;
+          padding: 0 1.5rem;
+          color: #14131a;
+          line-height: 1.7;
+        "
+      >
+        <h1 style="font-size: 1.75rem; letter-spacing: -0.02em; margin-bottom: 0.6em">
+          learn microgpt
+        </h1>
+        <p style="color: #3b3846">
+          This is an interactive atlas, so it needs JavaScript. The same material is readable as
+          plain prose in <code>content/concepts/</code> on GitHub, and the reference itself is
+          <code>reference/microgpt.py</code> — 199 lines you can read in one sitting.
+        </p>
+      </div>
     </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>

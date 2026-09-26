@@ -13,10 +13,18 @@
  * table.
  */
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { ema, trace } from '../data/sources'
+import type { Shape } from '../data/types'
 
-/** Accessible colour ramp for the attention heatmap, light and dark. */
+/**
+ * Accessible colour ramp for the attention heatmap, light and dark.
+ *
+ * Each step carries its own ink rather than one colour for the whole widget,
+ * because a single-ink ramp is only readable at the light end or the dark end.
+ * The ramp crosses from "ink on tint" to "white on saturated violet" at step 3,
+ * and both halves are paired for contrast in both themes.
+ */
 const RAMP = [
   'var(--heat-0)',
   'var(--heat-1)',
@@ -24,6 +32,15 @@ const RAMP = [
   'var(--heat-3)',
   'var(--heat-4)',
   'var(--heat-5)',
+]
+
+const RAMP_INK = [
+  'var(--heat-0-ink)',
+  'var(--heat-1-ink)',
+  'var(--heat-2-ink)',
+  'var(--heat-3-ink)',
+  'var(--heat-4-ink)',
+  'var(--heat-5-ink)',
 ]
 
 function rampIndex(value: number, max: number): number {
@@ -81,16 +98,19 @@ export function AttentionHeatmap({
         role="img"
         aria-label={describe(row.weights, pos, stepIndex, headIndex)}
       >
-        {row.weights.map((weight, index) => (
-          <div
-            key={index}
-            className={index === argmax ? 'heatmap__cell is-argmax' : 'heatmap__cell'}
-            style={{ background: RAMP[rampIndex(weight, max)] }}
-            title={`position ${index}: ${weight.toFixed(4)}`}
-          >
-            <span className="heatmap__value">{weight.toFixed(2)}</span>
-          </div>
-        ))}
+        {row.weights.map((weight, index) => {
+          const level = rampIndex(weight, max)
+          return (
+            <div
+              key={index}
+              className={index === argmax ? 'heatmap__cell is-argmax' : 'heatmap__cell'}
+              style={{ background: RAMP[level], color: RAMP_INK[level] }}
+              title={`position ${index}: ${weight.toFixed(4)}`}
+            >
+              <span className="heatmap__value">{weight.toFixed(2)}</span>
+            </div>
+          )
+        })}
       </div>
 
       <p className="widget__note">
@@ -223,27 +243,33 @@ export function LossChart() {
     return { min: lo, max: hi }
   }, [series, raw])
 
+  // Loss, mapped to the viewBox's y axis. Shared by the curves and the rules, so
+  // a reference line cannot drift off the curve it is annotating.
+  const yOf = useCallback(
+    (value: number) => 100 - ((value - min) / (max - min || 1)) * 100,
+    [min, max],
+  )
+
   const path = useMemo(() => {
     const total = Math.max(1, series.length - 1)
     const x = (index: number) => (index / total) * 100
-    const y = (value: number) => 100 - ((value - min) / (max - min || 1)) * 100
     const points = series
       .map((value, index) => ({ index, value }))
       .filter((point) => point.index >= BURN_IN)
     return points
-      .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${y(p.value).toFixed(2)}`)
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${yOf(p.value).toFixed(2)}`)
       .join(' ')
-  }, [series, min, max])
+  }, [series, yOf])
 
   const rawPath = useMemo(() => {
     const total = Math.max(1, raw.length - 1)
     return raw
       .map(
         (value, index) =>
-          `${index === 0 ? 'M' : 'L'}${((index / total) * 100).toFixed(2)},${(100 - ((value - min) / (max - min || 1)) * 100).toFixed(2)}`,
+          `${index === 0 ? 'M' : 'L'}${((index / total) * 100).toFixed(2)},${yOf(value).toFixed(2)}`,
       )
       .join(' ')
-  }, [raw, min, max])
+  }, [raw, yOf])
 
   return (
     <figure className="widget">
@@ -257,6 +283,27 @@ export function LossChart() {
         look like a cliff that did not happen.
       </figcaption>
 
+      {/*
+        A legend, because the chart has three kinds of mark on it and no axes.
+        The dashed pair in particular is meaningless without one: two unlabelled
+        horizontal rules in a plot with no scale are decoration, and the reader has
+        to guess which is the start of the run and which is the end.
+      */}
+      <p className="chart__legend">
+        <span>
+          <i className="chart__swatch chart__swatch--line" />
+          smoothed (EMA)
+        </span>
+        <span>
+          <i className="chart__swatch chart__swatch--raw" />
+          raw, per step
+        </span>
+        <span>
+          <i className="chart__swatch chart__swatch--rule" />
+          the two means, steps 1&ndash;50 and the last 50
+        </span>
+      </p>
+
       <svg
         viewBox="0 0 100 100"
         className="chart"
@@ -269,6 +316,27 @@ export function LossChart() {
             behaviour rather than a summary of it. */}
         <path d={rawPath} className="chart__raw" fill="none" />
         {showSmoothed ? <path d={path} className="chart__line" fill="none" /> : null}
+        {/*
+          The two means the stats below quote, as the only reference lines a
+          reader actually needs: what the first fifty steps averaged, and what the
+          last fifty averaged. The gap between them is the whole claim the caption
+          makes, and asking a reader to infer it from two axis-less curves is asking
+          them to do arithmetic on a picture.
+        */}
+        <line
+          className="chart__rule"
+          x1="0"
+          y1={yOf(rawWindow.first)}
+          x2="100"
+          y2={yOf(rawWindow.first)}
+        />
+        <line
+          className="chart__rule"
+          x1="0"
+          y1={yOf(rawWindow.last)}
+          x2="100"
+          y2={yOf(rawWindow.last)}
+        />
       </svg>
 
       <dl className="stats">
@@ -315,32 +383,81 @@ export function LossChart() {
   )
 }
 
-export function ShapeTable({ names }: { names?: string[] }) {
-  const shapes = useMemo(() => {
+/*
+ * The shape table.
+ *
+ * Two kinds of shape, and they are not the same table.
+ *
+ * A concept declares its own -- `m` is `[4192]`, `q, k, v` are `[16]` each -- in
+ * its frontmatter, with a note on what the axis means. Those are per concept and
+ * are what the reader needs: the extents of the thing being explained. The five
+ * hyperparameters are global configuration, read from the recorded run.
+ *
+ * The distinction matters because this used to take the concept's shape *names* and
+ * filter the hyperparameter list by them, which is a category error and produced
+ * an empty table with a caption under it on every concept whose shapes are not
+ * named after a hyperparameter -- which is all of them. So: the concept's shapes
+ * when it has any, the hyperparameters otherwise.
+ */
+export function ShapeTable({ shapes, names }: { shapes?: Shape[]; names?: string[] }) {
+  const rows = useMemo(() => {
+    if (shapes?.length) {
+      return shapes.map((row) => ({ name: row.name, value: row.shape, note: row.note }))
+    }
     const all = [
-      { name: 'n_embd', value: trace.meta.hyperparameters.n_embd },
-      { name: 'n_head', value: trace.meta.hyperparameters.n_head },
-      { name: 'n_layer', value: trace.meta.hyperparameters.n_layer },
-      { name: 'block_size', value: trace.meta.hyperparameters.block_size },
-      { name: 'head_dim', value: trace.meta.hyperparameters.head_dim },
+      { name: 'n_embd', value: String(trace.meta.hyperparameters.n_embd), note: undefined },
+      { name: 'n_head', value: String(trace.meta.hyperparameters.n_head), note: undefined },
+      { name: 'n_layer', value: String(trace.meta.hyperparameters.n_layer), note: undefined },
+      {
+        name: 'block_size',
+        value: String(trace.meta.hyperparameters.block_size),
+        note: undefined,
+      },
+      { name: 'head_dim', value: String(trace.meta.hyperparameters.head_dim), note: undefined },
     ]
-    return names?.length ? all.filter((row) => names.includes(row.name)) : all
-  }, [names])
+    // `names` comes from a `::shape` block, which names one of the above. A name
+    // that matches nothing falls back to the whole set rather than rendering an
+    // empty table, for the same reason.
+    const picked = names?.length ? all.filter((row) => names.includes(row.name)) : all
+    return picked.length ? picked : all
+  }, [shapes, names])
+
+  const perConcept = Boolean(shapes?.length)
 
   return (
     <div className="table-scroll">
       <table className="shapes">
         <caption>
-          Read from the reference at record time, not hardcoded. Changing <code>n_embd</code> in{' '}
-          <code>microgpt.py</code> changes this table and every shape annotation in the concepts.
+          {perConcept ? (
+            <>
+              The shapes this concept names. A shape is a list of extents, and a list of lists is a
+              matrix &mdash; so <code>[16]</code> is a vector of 16 numbers, not the number 16.
+            </>
+          ) : (
+            <>
+              Read from the reference at record time, not hardcoded. Changing <code>n_embd</code> in{' '}
+              <code>microgpt.py</code> changes this table and every shape annotation in the
+              concepts.
+            </>
+          )}
         </caption>
+        {rows.some((row) => row.note) ? (
+          <thead>
+            <tr>
+              <th scope="col">tensor</th>
+              <th scope="col">shape</th>
+              <th scope="col">what the axis is</th>
+            </tr>
+          </thead>
+        ) : null}
         <tbody>
-          {shapes.map((row) => (
+          {rows.map((row) => (
             <tr key={row.name}>
               <th scope="row">
                 <code>{row.name}</code>
               </th>
-              <td>{String(row.value)}</td>
+              <td>{row.value}</td>
+              {rows.some((r) => r.note) ? <td>{row.note ?? ''}</td> : null}
             </tr>
           ))}
         </tbody>

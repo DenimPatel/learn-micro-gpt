@@ -1,5 +1,5 @@
 /**
- * The app shell: chrome, routing, and the home page.
+ * The app shell: chrome, routing, and the four static pages.
  *
  * Accessibility decisions that are not obvious, recorded so they do not get
  * "cleaned up":
@@ -8,28 +8,89 @@
  *    without one.
  *  - `<nav aria-label>` on every landmark. Two navs with no labels are two
  *    navs a screen reader cannot tell apart.
- *  - The theme toggle is a real `<button>` with `aria-pressed`, not a styled div.
- *  - Focus is moved to the main heading on navigation, so a keyboard user who
+ *  - The theme toggle is a real `<button>`, not a styled div.
+ *  - Focus is moved to the main region on navigation, so a keyboard user who
  *    follows a "next concept" link lands in the new content rather than at the
  *    top of the document with no idea anything happened.
+ *  - `aria-current` is set by `NavLink`, not at the call sites, because the
+ *    route-to-section mapping is not an exact match: every concept page belongs
+ *    to the "concepts" section.
+ *
+ * Two things here are about feel rather than structure. The header reports
+ * reading position, through one passive scroll listener that writes one custom
+ * property and one class -- a state update per scroll frame would re-render the
+ * code panel and both charts. And the concept rail becomes a drawer below
+ * 980px, because the alternative was eighteen links stacked above the content of
+ * every page on a phone.
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRoute, hrefFor, type Route, type RouteName } from './app/router'
 import { useProgress, useTheme } from './app/state'
-import { conceptsById, index } from './data/sources'
+import { TRACK_ORDER, conceptsById, index } from './data/sources'
 import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
+import { Icon } from './components/Icon'
 import { RunPlayground } from './components/RunPlayground'
 import { LossChart, SamplesList } from './components/widgets'
+
+function sameRoute(a: Route, b: Route): boolean {
+  return a.name === b.name && a.conceptId === b.conceptId
+}
+
+const TITLES: Record<Exclude<RouteName, 'concept'>, string> = {
+  home: 'a concept atlas for 199 lines — learn microgpt',
+  learn: 'Concepts — learn microgpt',
+  explore: 'Explore the graph — learn microgpt',
+  compare: 'Five languages, one algorithm — learn microgpt',
+  run: 'Run it in your browser — learn microgpt',
+  about: 'About this atlas — learn microgpt',
+}
 
 export function App() {
   const [route, navigate] = useRoute()
   const [theme, toggleTheme] = useTheme()
   const [seen, markSeen, resetSeen] = useProgress()
+  // Which route the drawer was opened *from*, rather than a boolean. Navigation
+  // then closes it by derivation -- a new route is not the route the drawer was
+  // opened on -- instead of by an effect that resets state after a render.
+  const [railRoute, setRailRoute] = useState<Route | null>(null)
+  const [stuck, setStuck] = useState(false)
   const mainRef = useRef<HTMLElement | null>(null)
   const firstRender = useRef(true)
+
+  useEffect(() => {
+    document.title =
+      route.name === 'concept'
+        ? `${conceptsById[route.conceptId ?? '']?.title ?? 'Concept'} — learn microgpt`
+        : TITLES[route.name]
+  }, [route.name, route.conceptId])
+
+  // Reading position, reported without re-rendering: one custom property for the
+  // progress hairline, one boolean for the header's condensed state.
+  useEffect(() => {
+    let frame = 0
+    const report = () => {
+      frame = 0
+      const scrollable = document.documentElement.scrollHeight - window.innerHeight
+      const ratio = scrollable > 0 ? Math.min(1, window.scrollY / scrollable) : 0
+      document.documentElement.style.setProperty('--progress', ratio.toFixed(4))
+    }
+    const onScroll = () => {
+      setStuck(window.scrollY > 6)
+      if (frame) return
+      frame = requestAnimationFrame(report)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', report)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', report)
+    }
+  }, [])
 
   // Move focus to the main region on navigation, but not on first paint -- that
   // would steal focus from the document on load, which is its own accessibility
@@ -42,7 +103,21 @@ export function App() {
     mainRef.current?.focus()
   }, [route])
 
+  const railOpen = railRoute !== null && sameRoute(railRoute, route)
+  const toggleRail = () =>
+    setRailRoute((current) => (current !== null && sameRoute(current, route) ? null : route))
+
+  useEffect(() => {
+    if (!railOpen) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setRailRoute(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [railOpen])
+
   const total = index.chapters.reduce((sum, chapter) => sum + chapter.concepts.length, 0)
+  const readPct = total === 0 ? 0 : Math.round((seen.size / total) * 100)
 
   return (
     <div className="app">
@@ -50,71 +125,125 @@ export function App() {
         Skip to content
       </a>
 
-      <header className="app__header">
-        <a className="app__brand" href="#/">
-          learn<span>microgpt</span>
-        </a>
-        <nav className="app__nav" aria-label="Main">
-          <NavLink route={{ name: 'learn' }} current={route.name}>
+      <header className={stuck ? 'app__header is-stuck' : 'app__header'}>
+        <div className="app__bar">
+          <button
+            type="button"
+            className="app__nav-toggle"
+            aria-expanded={railOpen}
+            aria-controls="concept-rail"
+            onClick={toggleRail}
+          >
+            <Icon name={railOpen ? 'close' : 'menu'} />
             concepts
-          </NavLink>
-          <NavLink route={{ name: 'explore' }} current={route.name}>
-            explore
-          </NavLink>
-          <NavLink route={{ name: 'compare' }} current={route.name}>
-            compare
-          </NavLink>
-          <NavLink route={{ name: 'run' }} current={route.name}>
-            run
-          </NavLink>
-          <NavLink route={{ name: 'about' }} current={route.name}>
-            about
-          </NavLink>
-        </nav>
-        <button
-          type="button"
-          className="app__theme"
-          onClick={toggleTheme}
-          aria-pressed={theme === 'dark'}
-          aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-        >
-          {theme === 'dark' ? '☾' : '☀'}
-        </button>
+          </button>
+
+          <a className="app__brand" href={hrefFor({ name: 'home' })}>
+            <span className="app__brand-mark" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            learn<span className="app__brand-dim">microgpt</span>
+          </a>
+
+          <nav className="app__nav" aria-label="Main">
+            <NavLink route={{ name: 'learn' }} current={route.name}>
+              concepts
+            </NavLink>
+            <NavLink route={{ name: 'explore' }} current={route.name}>
+              explore
+            </NavLink>
+            <NavLink route={{ name: 'compare' }} current={route.name}>
+              compare
+            </NavLink>
+            <NavLink route={{ name: 'run' }} current={route.name}>
+              run
+            </NavLink>
+            <NavLink route={{ name: 'about' }} current={route.name}>
+              about
+            </NavLink>
+          </nav>
+
+          <div className="app__tools">
+            <button
+              type="button"
+              className="app__icon-button"
+              onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+            >
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} />
+            </button>
+          </div>
+        </div>
+
+        <div className="app__progress" aria-hidden="true">
+          <span />
+        </div>
       </header>
 
+      {railOpen ? (
+        <button
+          type="button"
+          className="app__scrim"
+          aria-label="Close the concept list"
+          onClick={() => setRailRoute(null)}
+        />
+      ) : null}
+
       <div className="app__body">
-        <aside className="app__sidebar" aria-label="Concepts">
-          <p className="app__progress-label">
-            {seen.size} of {total} opened
-          </p>
-          <progress value={seen.size} max={total} aria-label="Reading progress" />
+        <aside
+          id="concept-rail"
+          className={railOpen ? 'app__sidebar is-open' : 'app__sidebar'}
+          aria-label="Concepts"
+        >
+          <div className="app__sidebar-head">
+            <p className="app__sidebar-kicker">
+              <span>curriculum</span>
+              <span className="app__sidebar-count">
+                {seen.size} of {total}
+              </span>
+            </p>
+            <div
+              className="app__progress-track"
+              role="progressbar"
+              aria-label="Reading progress"
+              aria-valuenow={readPct}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <span className="app__progress-fill" style={{ width: `${readPct}%` }} />
+            </div>
+            {seen.size > 0 ? (
+              <button type="button" className="app__reset" onClick={resetSeen}>
+                <Icon name="reset" size={12} /> reset progress
+              </button>
+            ) : null}
+          </div>
+
           {index.chapters.map((chapter) => (
-            <section key={chapter.id}>
+            <section key={chapter.id} className="app__sidebar-group">
               <h2>{chapter.title}</h2>
               <ol>
-                {chapter.concepts.map((concept) => (
-                  <li key={concept.id}>
-                    <a
-                      href={hrefFor({ name: 'concept', conceptId: concept.id })}
-                      className={seen.has(concept.id) ? 'is-seen' : undefined}
-                      aria-current={
-                        route.name === 'concept' && route.conceptId === concept.id
-                          ? 'page'
-                          : undefined
-                      }
-                    >
-                      {concept.title}
-                    </a>
-                  </li>
-                ))}
+                {chapter.concepts.map((entry) => {
+                  const current = route.name === 'concept' && route.conceptId === entry.id
+                  return (
+                    <li key={entry.id}>
+                      <a
+                        href={hrefFor({ name: 'concept', conceptId: entry.id })}
+                        className={seen.has(entry.id) ? 'is-opened' : undefined}
+                        aria-current={current ? 'page' : undefined}
+                      >
+                        {entry.title}
+                      </a>
+                    </li>
+                  )
+                })}
               </ol>
             </section>
           ))}
-          {seen.size > 0 ? (
-            <button type="button" className="app__reset" onClick={resetSeen}>
-              reset progress
-            </button>
-          ) : null}
         </aside>
 
         <main id="main" ref={mainRef} tabIndex={-1} className="app__main">
@@ -123,10 +252,16 @@ export function App() {
       </div>
 
       <footer className="app__footer">
-        <p>
-          The reference is Andrej Karpathy&rsquo;s, reproduced byte-for-byte and pinned by sha256.{' '}
-          <a href="#/about">Attribution, licenses, and what is known to be wrong</a>.
-        </p>
+        <div className="app__footer-inner">
+          <p>
+            The reference is Andrej Karpathy&rsquo;s, reproduced byte-for-byte and pinned by sha256.{' '}
+            <a href="#/about">Attribution, licenses, and what is known to be wrong</a>.
+          </p>
+          <p className="app__footer-count">
+            {TRACK_ORDER.length} tracks &middot; {total} concepts &middot; every number measured
+            from a real run
+          </p>
+        </div>
       </footer>
     </div>
   )
@@ -214,34 +349,79 @@ function ConceptRoute({
   )
 }
 
+/**
+ * The home page.
+ *
+ * A hero, the two ways in, the three reasons to believe it, and the recorded run.
+ * The four numbers under the title are the ones a reader can check against
+ * `content/index.json` and `traces/`; they are not decoration and they are not
+ * rounded.
+ */
 function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number }) {
   const first = index.chapters[0]?.concepts[0]
   const next = index.chapters.flatMap((c) => c.concepts).find((c) => !seen.has(c.id))
+  const parameters = Number(index.hyperparameters.num_params ?? 0)
+
   return (
     <article className="home">
-      <h1>A guided reading of 199 lines</h1>
-      <p className="lede">
-        Andrej Karpathy&rsquo;s <code>microgpt.py</code> is the smallest complete GPT that still
-        trains, generates text, and can be read in one sitting. This site goes through it concept by
-        concept &mdash; with the code, the tensor shapes, the recorded numbers, and the same program
-        in four other languages.
-      </p>
+      <header className="home__hero">
+        <p className="home__kicker">
+          <Icon name="file" size={13} />
+          microgpt.py &mdash; {index.reference.lines} lines &mdash; {index.reference.author}
+        </p>
+        <h1>A guided reading of {index.reference.lines} lines</h1>
+        <p className="lede">
+          Andrej Karpathy&rsquo;s <code>microgpt.py</code> is the smallest complete GPT that still
+          trains, generates text, and can be read in one sitting. This site goes through it concept
+          by concept &mdash; with the code, the tensor shapes, the recorded numbers, and the same
+          program in four other languages.
+        </p>
 
-      <div className="home__cta">
-        {next ? (
-          <a className="button button--primary" href={`#/learn/${next.id}`}>
-            {seen.size === 0 ? 'start reading' : `continue: ${next.title}`}
+        <div className="home__cta">
+          {next ? (
+            <a
+              className="button button--primary"
+              href={hrefFor({ name: 'concept', conceptId: next.id })}
+            >
+              {seen.size === 0 ? 'start reading' : `continue: ${next.title}`}
+              <Icon name="arrow" size={14} />
+            </a>
+          ) : (
+            <a
+              className="button button--primary"
+              href={hrefFor({ name: 'concept', conceptId: first?.id ?? '' })}
+            >
+              start again from the beginning
+              <Icon name="arrow" size={14} />
+            </a>
+          )}
+          <a className="button" href={hrefFor({ name: 'run' })}>
+            run it in your browser
           </a>
-        ) : (
-          <p>
-            You have opened all {total} concepts.{' '}
-            <a href={`#/learn/${first?.id}`}>Start again from the beginning</a>.
-          </p>
-        )}
-        <a className="button" href="#/run">
-          run it in your browser
-        </a>
-      </div>
+        </div>
+
+        <dl className="home__stats">
+          <div>
+            <dt>reference</dt>
+            <dd>
+              {index.reference.lines}
+              <small>lines</small>
+            </dd>
+          </div>
+          <div>
+            <dt>concepts</dt>
+            <dd>{total}</dd>
+          </div>
+          <div>
+            <dt>tracks</dt>
+            <dd>{TRACK_ORDER.length}</dd>
+          </div>
+          <div>
+            <dt>parameters</dt>
+            <dd>{parameters.toLocaleString()}</dd>
+          </div>
+        </dl>
+      </header>
 
       <h2>What makes it worth reading</h2>
       <ul className="home__points">
@@ -257,14 +437,14 @@ function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number })
         </li>
         <li>
           <strong>What is wrong is written down.</strong> The C port&rsquo;s hand-written backward
-          pass gets a gradient wrong by a factor of −0.12, and its loss curve still looks fine.{' '}
-          <a href="#/about">That is documented, measured, and tested</a> &mdash; and it is the most
-          instructive thing on the site.
+          pass gets a gradient wrong by a factor of &minus;0.12, and its loss curve still looks
+          fine. <a href="#/about">That is documented, measured, and tested</a> &mdash; and it is the
+          most instructive thing on the site.
         </li>
       </ul>
 
       <h2>The recorded run</h2>
-      <p>
+      <p className="home__body-text">
         1,000 steps of the reference on 32,033 names. The samples at the end are a mix of names in
         the dataset and names that are not.
       </p>
@@ -285,17 +465,32 @@ function LearnPage({ seen }: { seen: ReadonlySet<string> }) {
       {index.chapters.map((chapter) => (
         <section key={chapter.id}>
           <h2>
-            {chapter.order}. {chapter.title}
+            <span className="learn__chapter-order">{chapter.order}</span>
+            {chapter.title}
           </h2>
           <p>{chapter.blurb}</p>
-          <ul>
-            {chapter.concepts.map((concept) => (
-              <li key={concept.id}>
-                <a href={`#/learn/${concept.id}`}>{concept.title}</a>
-                {seen.has(concept.id) ? <span className="learn__tick"> ✓ read</span> : null}
-                <p>{concept.summary}</p>
-              </li>
-            ))}
+          <ul className="learn__grid">
+            {chapter.concepts.map((entry) => {
+              const opened = seen.has(entry.id)
+              return (
+                <li key={entry.id}>
+                  <a
+                    className={opened ? 'learn__card is-opened' : 'learn__card'}
+                    href={hrefFor({ name: 'concept', conceptId: entry.id })}
+                  >
+                    <span className="learn__card__title">
+                      {entry.title}
+                      {opened ? (
+                        <span className="learn__tick" title="opened in this browser">
+                          <Icon name="check" size={12} /> read
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="learn__card__summary">{entry.summary}</span>
+                  </a>
+                </li>
+              )
+            })}
           </ul>
         </section>
       ))}
@@ -311,6 +506,7 @@ function ExplorePage() {
         The whole concept graph, and the recorded data behind the claims. The graph is a diagram;
         the list below it is the same information, and is what a screen reader gets.
       </p>
+      <h2>Reading order</h2>
       <AtlasGraph />
     </article>
   )
@@ -339,8 +535,8 @@ function AboutPage() {
         The C port&rsquo;s hand-written backward pass does not correctly propagate the key and value
         gradients of earlier positions back to their embeddings. Only the output head&rsquo;s
         gradient is right. Measured as a directional derivative over all 4,192 parameters, its
-        gradient comes out at <strong>−0.12×</strong> the true value, where a correct gradient is
-        1.0×.
+        gradient comes out at <strong>&minus;0.12&times;</strong> the true value, where a correct
+        gradient is 1.0&times;.
       </p>
       <p>
         The instructive part:{' '}
