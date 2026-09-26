@@ -136,20 +136,32 @@ export function CodePanel({
         <div className="code-gutter" aria-hidden="true">
           {gutter}
         </div>
-        <pre className="code-block" tabIndex={0} aria-label={label}>
+        {/*
+          A `div`, not a `pre`.
+          
+          Shiki's `codeToHtml` returns a complete `<pre class="shiki">`. Wrapping
+          that in another `<pre>` nests one preformatted element inside another,
+          which is invalid HTML and which the browser re-parses -- silently
+          changing the structure the stylesheet and the e2e selectors were written
+          against. So the highlighted output goes in as-is, and the fallback gets
+          its own `<pre>` below.
+        */}
+        <div className="code-panel__code" tabIndex={0} role="group" aria-label={label}>
           {ready && darkReady ? (
             <>
               <span className="light-only" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
               <span className="dark-only" dangerouslySetInnerHTML={{ __html: darkHtml ?? '' }} />
             </>
           ) : (
-            <code>
-              {slice}
-              {/* A polite notice, not a spinner: the text is already readable. */}
-              <span className="code-panel__loading"> (highlighting&hellip;)</span>
-            </code>
+            <pre className="code-block">
+              <code>
+                {slice}
+                {/* A polite notice, not a spinner: the text is already readable. */}
+                <span className="code-panel__loading"> (highlighting&hellip;)</span>
+              </code>
+            </pre>
           )}
-        </pre>
+        </div>
       </div>
     </div>
   )

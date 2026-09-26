@@ -94,7 +94,7 @@ What is unambiguous is the trend. Measured on the reference over 1,000 steps:
 
 | window | mean loss |
 | --- | --- |
-| steps 1–50 | 2.852 |
+| steps 1–50 | 2.851 |
 | steps 151–200 | 2.532 |
 | steps 951–1000 | 2.323 |
 

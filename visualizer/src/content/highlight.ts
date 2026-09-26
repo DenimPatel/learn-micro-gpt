@@ -73,20 +73,41 @@ function loadHighlighter(): Promise<Highlighter> {
           import('@shikijs/themes/github-dark'),
         ])
 
-      // `createdBundledHighlighter`'s return type is narrower than the shape used
-      // here, so it is adapted rather than the caller being widened to accept
-      // anything Shiki might return.
-      // No `loadWasm`: the five grammars here are all TextMate regex grammars
-      // with no embedded wasm, so the TextMate engine alone is enough. Passing
-      // `loadWasm` anyway is accepted by the runtime and rejected by the type,
-      // which is a useful signal that it is not needed.
+      /*
+       * Theme interop, and it is the kind of thing that fails silently.
+       *
+       * In Node, `await import('@shikijs/themes/github-light')` gives a module
+       * namespace with the theme under `default`. Vite pre-bundles the CJS
+       * dependency and hands back the theme *directly*, with no `default`. Code
+       * that only handles the first case registers a theme called `undefined`,
+       * every `codeToHtml` throws `ShikiError: Theme not found`, and
+       * `CodePanel` quietly falls back to unhighlighted text -- so the page looks
+       * fine and nothing says otherwise.
+       *
+       * Hence `themeOf`, and hence the e2e test asserting the code really is
+       * highlighted rather than merely present.
+       */
+      type ThemeRegistration = { name: string; colors: Record<string, string> }
+      const themeOf = (module: unknown): ThemeRegistration => {
+        const candidate = module as { default?: ThemeRegistration } & Partial<ThemeRegistration>
+        const theme = (candidate.default ?? candidate) as ThemeRegistration
+        if (!theme?.name || !theme?.colors) {
+          throw new Error('a Shiki theme module did not expose a theme with a name')
+        }
+        return theme
+      }
+
       return createHighlighterCore({
         langs: [python, c, go, rust, typescript],
-        themes: [light, dark],
+        themes: [themeOf(light), themeOf(dark)],
         // The engine object, not a factory: shiki 4's `engine` option is typed
         // `Awaitable<RegexEngine>`, and `createJavaScriptRegexEngine()` returns
-        // one directly. Passing a factory (the shape older examples use) is a type
-        // error, and the object is what is wanted anyway.
+        // one directly. Passing a factory (the shape older examples use) is a
+        // type error, and the object is what is wanted anyway.
+        //
+        // The JavaScript regex engine rather than oniguruma, which is the point
+        // of importing it explicitly: oniguruma is a 622 kB wasm blob the bundler
+        // would emit whether or not any of the five grammars needed it.
         engine: engine.createJavaScriptRegexEngine(),
       }) as unknown as Highlighter
     })()

@@ -302,6 +302,73 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
             )
 
 
+class TestQuotedStatistics(unittest.TestCase):
+    """Numbers the prose quotes, checked against the trace that produced them.
+
+    The widget that shows the loss curve was once labelling an EMA value "first 50
+    mean" while the prose quoted the raw window mean -- 3.075 against 2.851, a
+    disagreement nobody would have noticed without looking. The concepts quote
+    several measured figures; this is what keeps them honest.
+    """
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        import json as _json
+
+        trace_dir = REPO_ROOT / "traces" / "python" / "micro"
+        meta = _json.loads((trace_dir / "meta.json").read_text(encoding="utf-8"))
+        losses = [
+            _json.loads(line)["loss"]
+            for line in (trace_dir / "steps.jsonl").read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        cls.stats = meta["loss_stats"]
+        mean = lambda xs: sum(xs) / len(xs)  # noqa: E731
+        cls.first_window = mean(losses[:50])
+        cls.last_window = mean(losses[-50:])
+
+    def test_the_window_means_are_what_they_are(self) -> None:
+        self.assertAlmostEqual(self.first_window, 2.8515, places=4)
+        self.assertAlmostEqual(self.last_window, 2.3233, places=4)
+
+    def test_the_training_loop_concept_quotes_them_exactly(self) -> None:
+        body = (REPO_ROOT / "content" / "concepts" / "training-loop.md").read_text(
+            encoding="utf-8"
+        )
+        # `f"{x:.3f}"` in Python and `toFixed(3)` in JS agree on these values, so
+        # the quoted digits can be compared directly. (They did not agree on
+        # 2.8515, which is a value this trace does not contain -- 2.851452 rounds
+        # to 2.851 in both.)
+        self.assertIn(f"| steps 1\u201350 | {self.first_window:.3f} |", body)
+        self.assertIn(f"| steps 951\u20131000 | {self.last_window:.3f} |", body)
+
+    def test_the_cross_entropy_concept_quotes_the_noise(self) -> None:
+        body = (REPO_ROOT / "content" / "concepts" / "cross-entropy-loss.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(f"| mean | {self.stats['mean']:.3f} |", body)
+        self.assertIn(f"| standard deviation | {self.stats['stdev']:.3f} |", body)
+        self.assertIn(
+            f"| **step-to-step moves that increase** | **{self.stats['upward_moves']} of "
+            f"{self.stats['total_moves']}** |",
+            body,
+        )
+        self.assertIn(f"| minimum | {self.stats['min']:.3f} (step {self._argmin_step()}) |", body)
+        self.assertIn(f"| maximum | {self.stats['max']:.3f} |", body)
+
+    def _argmin_step(self) -> int:
+        import json as _json
+
+        rows = [
+            _json.loads(line)
+            for line in (REPO_ROOT / "traces" / "python" / "micro" / "steps.jsonl")
+            .read_text(encoding="utf-8")
+            .splitlines()
+            if line.strip()
+        ]
+        return min(rows, key=lambda row: row["loss"])["step"] + 1
+
+
 class TestBenchmarksDoc(unittest.TestCase):
     """`docs/BENCHMARKS.md` is generated from `benchmarks/results.json`.
 

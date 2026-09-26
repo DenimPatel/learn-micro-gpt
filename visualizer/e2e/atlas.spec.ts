@@ -92,6 +92,61 @@ test.describe('content and anchors', () => {
     await expect(focused.last()).toHaveText('100')
   })
 
+  test('the code is actually highlighted, not silently falling back', async ({ page }) => {
+    /*
+     * `CodePanel` falls back to an unhighlighted `<pre><code>` when highlighting
+     * fails, so a broken highlighter renders a page that *looks* fine. That is
+     * exactly what happened: the Shiki themes were registered under
+     * `undefined-transparent` because a dynamic import of a theme module gives
+     * the namespace object rather than the theme, and every `codeToHtml` threw.
+     * A screenshot of the working-looking result was read as the fix working.
+     *
+     * So this asserts the *absence* of the fallback, not the presence of a <pre>.
+     */
+    const failures: string[] = []
+    page.on('console', (message) => {
+      if (message.type() === 'error') failures.push(message.text())
+    })
+    page.on('pageerror', (error) => failures.push(error.message))
+
+    await page.goto('#/learn/softmax')
+    const pre = page.locator('.code-panel pre').first()
+    await expect(pre).toBeVisible()
+    // Shiki marks its output, and wraps every token in a coloured span.
+    await expect(pre).toHaveClass(/shiki/)
+    expect(await pre.locator('span[style*="color"]').count()).toBeGreaterThan(10)
+    // The fallback's marker text must not be present.
+    await expect(pre).not.toContainText('highlighting…')
+    expect(failures.join('\n')).not.toMatch(/ShikiError|not found/)
+  })
+
+  test('the code panel background comes from the design tokens', async ({ page }) => {
+    /*
+     * Shiki writes an inline `style="background-color:#24292e"` onto the <pre>
+     * it returns, and an inline style beats any stylesheet -- so left alone a code
+     * panel is an off-grey box in a tokenised page. The themes are registered with
+     * `bg: 'transparent'` so the panel's own background applies.
+     */
+    for (const dark of [false, true]) {
+      await page.goto(dark ? '#/learn/softmax' : '#/learn/softmax')
+      await page.evaluate((on) => {
+        document.documentElement.classList.toggle('dark', on)
+        localStorage.setItem('atlas:theme', on ? 'dark' : 'light')
+      }, dark)
+      await page.reload()
+      const pre = page.locator('.code-panel pre').first()
+      await expect(pre).toBeVisible()
+      const background = await pre.evaluate((node) => getComputedStyle(node).backgroundColor)
+      const page_ = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
+      expect(background, `dark=${dark}: pre ${background} vs body ${page_}`).not.toBe(
+        'rgb(36, 41, 46)',
+      )
+      expect(background, `dark=${dark}: pre ${background} vs body ${page_}`).not.toBe(
+        'rgb(255, 255, 255)',
+      )
+    }
+  })
+
   test('shiki output is not split mid-token', async ({ page }) => {
     // The reference opens with a multi-line docstring, which is a *single* token.
     // The previous implementation split highlighted HTML on newlines and cut it

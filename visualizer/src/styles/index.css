@@ -523,6 +523,35 @@
     border: 0;
     border-radius: 0;
   }
+  /* The highlighted output: Shiki's own <pre>, styled to match the fallback so
+     the panel does not jump when highlighting arrives. */
+  .code-panel__code {
+    min-width: 0;
+  }
+  .code-panel__code pre {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0.85rem 1rem;
+    overflow: visible;
+    line-height: 1.55;
+    tab-size: 4;
+  }
+  .code-panel__code pre code {
+    background: none;
+    padding: 0;
+  }
+  /*
+   * Shiki writes `style="background-color:#24292e"` onto the <pre> it returns,
+   * and an inline style beats any stylesheet -- including the panel's own
+   * background, which is the one thing about a code panel that should come from
+   * the design tokens. `bg: 'transparent'` in the theme does not remove it, so
+   * this does, once, in the one place that knows what is going on.
+   */
+  .code-panel pre.shiki {
+    background: transparent !important;
+  }
   .code-panel__missing,
   .code-panel__loading {
     color: var(--fg-subtle);
@@ -740,6 +769,15 @@
     stroke-width: 0.7;
     vector-effect: non-scaling-stroke;
   }
+  /* The raw per-step loss, behind the smoothed one. Faint on purpose: it is
+     there to show the noise the smoothing removes, and a prominent version of it
+     is unreadable. */
+  .chart__raw {
+    stroke: var(--fg-subtle);
+    stroke-width: 0.35;
+    opacity: 0.45;
+    vector-effect: non-scaling-stroke;
+  }
   .chart__mean {
     stroke: var(--fg-subtle);
     stroke-width: 0.4;
@@ -800,6 +838,26 @@
     align-items: center;
     margin: 1.6rem 0 2.2rem;
   }
+  .caveats {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.6rem;
+    max-width: var(--measure);
+    font-size: 0.88rem;
+    color: var(--fg-muted);
+  }
+  .caveats li {
+    padding-left: 1.1rem;
+    position: relative;
+    margin-bottom: 0.4rem;
+  }
+  .caveats li::before {
+    content: '\2014';
+    position: absolute;
+    left: 0;
+    color: var(--fg-subtle);
+  }
+
   .home__points li {
     margin-bottom: 0.9rem;
     max-width: var(--measure);

@@ -199,20 +199,15 @@ provenance:
 trace:
 	$(PYTHON) -m tools.trace --all
 
-# The point of committed traces: they are regenerated and diffed, so they can
+# The point of committed traces: they are regenerated and compared, so they can
 # never quietly stop describing the code they came from.
+#
+# The comparison is done by tools/trace.py rather than by `git diff`, because
+# `meta.json` carries a timestamp and a wall-clock time. Diffing the directory
+# reports drift on every single run, and a check that always fails is one that
+# everyone learns to ignore.
 trace-check:
-	$(PYTHON) -m tools.trace --all
-	@if command -v git >/dev/null 2>&1 && git rev-parse --git-dir >/dev/null 2>&1; then \
-		if ! git diff --quiet -- $(TRACES); then \
-			echo "error: traces/ drifted from a fresh run. Commit the regenerated traces." >&2; \
-			git --no-pager diff --stat -- $(TRACES) >&2; \
-			exit 1; \
-		fi; \
-		echo "traces reproducible"; \
-	else \
-		echo "not a git repository; skipping drift diff"; \
-	fi
+	$(PYTHON) -m tools.trace --check
 
 parity:
 	$(PYTHON) -m tools.parity

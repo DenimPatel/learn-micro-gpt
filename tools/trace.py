@@ -560,6 +560,92 @@ def record(config: str, steps: int, seed: int, quiet: bool = False) -> Path:
     return out_dir
 
 
+#: Keys in `meta.json` that describe *when* or *where* the run happened rather
+#: than what it produced. They are excluded from the reproducibility check, which
+#: exists to prove the trace still describes the code -- and a wall-clock time, a
+#: timestamp and a CPU model can never be byte-stable, so leaving them in makes
+#: the check fail on every run and teaches everyone to ignore it.
+#:
+#: `timing` is excluded as a whole block because `wall_seconds` is nested inside
+#: it. An earlier version listed `wall_seconds` as a top-level key, which
+#: stripped nothing: the field is one level down, so the check still reported
+#: drift on every run -- with a message about the trace, pointing at the one
+#: field that was never going to be stable.
+VOLATILE_META = ("created", "host", "timing")
+
+
+def trace_fingerprint(root: Path = REPO_ROOT) -> dict[str, Any]:
+    """Every committed trace file, with the volatile metadata normalised away."""
+    import json as _json
+
+    fingerprint: dict[str, Any] = {}
+    for path in sorted(TRACES_DIR.rglob("*")):
+        if not path.is_file() or path.name in DEBUG_ONLY_FILES:
+            continue
+        relative = str(path.relative_to(root))
+        if path.name == "meta.json":
+            meta = _json.loads(path.read_text(encoding="utf-8"))
+            fingerprint[relative] = {
+                key: value for key, value in meta.items() if key not in VOLATILE_META
+            }
+        else:
+            fingerprint[relative] = path.read_text(encoding="utf-8")
+    return fingerprint
+
+
+def check_reproducible(root: Path = REPO_ROOT) -> int:
+    """Regenerate and compare, ignoring only the volatile metadata.
+
+    Replaces a `git diff` over `traces/` in the Makefile. Diffing the directory
+    directly is simpler and wrong: `meta.json` carries a timestamp and a wall
+    time, so it differs on every single run and the check reports drift every
+    time. A check that always fails is worse than no check, because it is a check
+    everyone learns to ignore.
+    """
+    print("checking that the committed traces still describe the code")
+    before = trace_fingerprint(root)
+
+    try:
+        record("micro", 1000, 42, quiet=True)
+    except SystemExit as error:
+        print(f"error: the trace run failed: {error}", file=sys.stderr)
+        return 1
+
+    after = trace_fingerprint(root)
+
+    if before == after:
+        count = sum(1 for name in after if not name.endswith("meta.json"))
+        print(f"  traces reproducible ({count} data files, {len(after)} total)")
+        return 0
+
+    print("\ntraces have drifted from a fresh run:", file=sys.stderr)
+    for name in sorted(set(before) | set(after)):
+        if before.get(name) != after.get(name):
+            print(f"  ! {name}", file=sys.stderr)
+            if name.endswith(".jsonl"):
+                old = (before.get(name) or "").splitlines()
+                new = (after.get(name) or "").splitlines()
+                for index, (a, b) in enumerate(zip(old, new)):
+                    if a != b:
+                        print(f"      first difference at line {index + 1}:", file=sys.stderr)
+                        print(f"        committed {a[:160]}", file=sys.stderr)
+                        print(f"        fresh     {b[:160]}", file=sys.stderr)
+                        break
+                else:
+                    print(
+                        f"      length differs: {len(old)} committed vs {len(new)} fresh",
+                        file=sys.stderr,
+                    )
+    print(
+        "\nIf the change is intended -- the selection settings moved, or the "
+        "reference changed -- commit the regenerated traces and re-read every "
+        "concept that quotes a number. If it is not, the code no longer produces "
+        "the recorded run and that is the finding.",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Record a trace for a track.")
     parser.add_argument("--lang", default="python")
@@ -569,7 +655,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--all", action="store_true", help="record every configured track"
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="regenerate and fail if anything but the volatile metadata changed",
+    )
     args = parser.parse_args(argv)
+
+    if args.check:
+        return check_reproducible()
 
     if args.lang != "python":
         print(

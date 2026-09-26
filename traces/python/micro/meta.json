@@ -62,7 +62,7 @@
     "python": "3.14.3"
   },
   "timing": {
-    "wall_seconds": 105.83,
+    "wall_seconds": 159.408,
     "honesty": "CPython on the host, not a benchmark. The recorded throughput in benchmarks/results.json is the only number this repository treats as a speed measurement; see docs/BENCHMARKS.md."
   },
   "loss_stats": {
@@ -80,5 +80,5 @@
     "ema_step200": 2.492426,
     "ema_final50": 2.277575
   },
-  "created": "2026-09-26T18:07:36Z"
+  "created": "2026-09-26T21:09:04Z"
 }

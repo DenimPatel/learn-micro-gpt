@@ -180,71 +180,105 @@ export function SoftmaxBars({ step = 0, pos = 0 }: { step?: number; pos?: number
   )
 }
 
-export function LossChart({ highlightSteps = [50, 200] }: { highlightSteps?: number[] }) {
-  const [smoothed, setSmoothed] = useState(true)
-  const series = smoothed ? ema(trace.steps.map((s) => s.loss)) : trace.steps.map((s) => s.loss)
+/**
+ * The recorded loss curve.
+ *
+ * Two series, because one of them lies. The raw per-step loss is the actual
+ * number the reference prints, and it is so noisy (standard deviation 0.392 on a
+ * mean of 2.45) that plotting it alone looks like static. The exponentially
+ * smoothed curve is readable — and plotting *that* alone is its own kind of lie,
+ * because an EMA seeded with its first value has not converged for the first
+ * ~20 steps, and drawing those produces a vertical cliff at the left edge that
+ * looks like a dramatic early collapse and is an artefact of the initialiser.
+ *
+ * So: raw behind, faint, in full; EMA in front, solid, starting once it has
+ * converged. The caption says so, and the burned-in region is genuinely dropped
+ * rather than drawn misleadingly.
+ */
+export function LossChart() {
+  const [showSmoothed, setShowSmoothed] = useState(true)
+  const raw = useMemo(() => trace.steps.map((row) => row.loss), [])
+  const series = useMemo(() => ema(raw), [raw])
   const stats = trace.meta.loss_stats
 
   /*
-   * `reduce` rather than a `map` that mutates captured `let`s: the map version
-   * worked, and eslint's `immutability` rule flagged it because from the
-   * compiler's point of view the closure escapes. The reduce is also one pass
-   * instead of two, and it has no reason for the values to be in two places.
+   * The EMA's effective window is 1/alpha = 20 steps, and it is seeded with the
+   * first value, so it is not a useful summary of anything before then. 25 is a
+   * whole number of windows: after that the curve is converged and the number it
+   * shows is the trend rather than the initialiser.
    */
-  const { min, max, points } = useMemo(() => {
-    const points = series.map((value, index) => ({ index, value }))
-    if (points.length === 0) return { min: 0, max: 1, points }
-    const bounds = points.reduce(
-      (acc, point) => ({
-        lo: point.value < acc.lo ? point.value : acc.lo,
-        hi: point.value > acc.hi ? point.value : acc.hi,
-      }),
-      { lo: Infinity, hi: -Infinity },
-    )
-    return { min: bounds.lo, max: bounds.hi, points }
-  }, [series])
+  const BURN_IN = 25
 
-  const width = 100
-  const height = 100
-  const x = (index: number) => (index / (series.length - 1)) * width
-  const y = (value: number) => height - ((value - min) / (max - min || 1)) * height
+  const rawWindow = useMemo(() => {
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
+    return {
+      first: mean(raw.slice(0, 50)),
+      last: mean(raw.slice(-50)),
+    }
+  }, [raw])
 
-  const path = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${y(p.value).toFixed(2)}`)
-    .join(' ')
+  const { min, max } = useMemo(() => {
+    const lo = Math.min(...series, ...raw)
+    const hi = Math.max(...series, ...raw)
+    return { min: lo, max: hi }
+  }, [series, raw])
+
+  const path = useMemo(() => {
+    const total = Math.max(1, series.length - 1)
+    const x = (index: number) => (index / total) * 100
+    const y = (value: number) => 100 - ((value - min) / (max - min || 1)) * 100
+    const points = series
+      .map((value, index) => ({ index, value }))
+      .filter((point) => point.index >= BURN_IN)
+    return points
+      .map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.index).toFixed(2)},${y(p.value).toFixed(2)}`)
+      .join(' ')
+  }, [series, min, max])
+
+  const rawPath = useMemo(() => {
+    const total = Math.max(1, raw.length - 1)
+    return raw
+      .map(
+        (value, index) =>
+          `${index === 0 ? 'M' : 'L'}${((index / total) * 100).toFixed(2)},${(100 - ((value - min) / (max - min || 1)) * 100).toFixed(2)}`,
+      )
+      .join(' ')
+  }, [raw, min, max])
 
   return (
     <figure className="widget">
       <figcaption className="widget__caption">
-        Loss over {trace.meta.steps} steps of a real run.{' '}
-        {smoothed
-          ? 'Smoothed with an exponential moving average (alpha 0.05), which removes the document-to-document noise without moving the trend.'
-          : 'Raw per-step loss. It rises on ' +
-            stats.upward_moves +
-            ' of ' +
-            stats.total_moves +
-            ' steps, because each step is a different document.'}
+        Loss over {trace.meta.steps} steps of a real run. The faint line is the raw per-step loss —
+        the number the reference actually prints — and it rises on {stats.upward_moves} of its{' '}
+        {stats.total_moves} steps, because each step is a different document. The solid line is an
+        exponential moving average (alpha 0.05, a 20-step window), which removes that noise without
+        moving the trend; its first {BURN_IN} steps are omitted, because a moving average seeded
+        with its first value has not converged there and drawing them makes the start of the curve
+        look like a cliff that did not happen.
       </figcaption>
 
       <svg
-        viewBox={`0 0 ${width} ${height}`}
+        viewBox="0 0 100 100"
         className="chart"
         role="img"
-        aria-label={`Loss over ${trace.meta.steps} steps, from ${stats.first} to ${stats.final}, minimum ${stats.min} at step ${trace.steps.findIndex((s) => s.loss === stats.min)}.`}
+        aria-label={`Loss over ${trace.meta.steps} steps, smoothed. The mean over the first 50 steps is ${rawWindow.first.toFixed(3)} and over the last 50 is ${rawWindow.last.toFixed(3)}; the lowest single step is ${stats.min} and the highest ${stats.max}. The per-step standard deviation is ${stats.stdev.toFixed(3)}.`}
         preserveAspectRatio="none"
       >
-        <line x1="0" y1={y(2.4517)} x2={width} y2={y(2.4517)} className="chart__mean" />
-        <path d={path} className="chart__line" fill="none" />
+        {/* The raw curve is always drawn: it is what the reference prints, and
+            hiding it would make the smoothed line look like the model's actual
+            behaviour rather than a summary of it. */}
+        <path d={rawPath} className="chart__raw" fill="none" />
+        {showSmoothed ? <path d={path} className="chart__line" fill="none" /> : null}
       </svg>
 
       <dl className="stats">
         <div>
-          <dt>first 50 mean</dt>
-          <dd>{stats.ema_first50.toFixed(3)}</dd>
+          <dt>mean, steps 1&ndash;50</dt>
+          <dd>{rawWindow.first.toFixed(3)}</dd>
         </div>
         <div>
-          <dt>last 50 mean</dt>
-          <dd>{stats.ema_final50.toFixed(3)}</dd>
+          <dt>mean, last 50</dt>
+          <dd>{rawWindow.last.toFixed(3)}</dd>
         </div>
         <div>
           <dt>per-step s.d.</dt>
@@ -257,17 +291,24 @@ export function LossChart({ highlightSteps = [50, 200] }: { highlightSteps?: num
           </dd>
         </div>
       </dl>
+      <p className="widget__note">
+        The first two are plain means over the raw curve, which is what the cross-entropy concept
+        quotes (2.852 &rarr; 2.323). The smoothed values in
+        <code> meta.json</code> are <em>not</em> those numbers: averaging a window of an EMA is not
+        the same as the EMA over that window, and the earlier version of this widget labelled the
+        latter &ldquo;first 50 mean&rdquo; and quietly disagreed with the prose.
+      </p>
 
       <div className="widget__controls">
         <button
           type="button"
-          aria-pressed={smoothed}
-          onClick={() => setSmoothed((value) => !value)}
+          aria-pressed={showSmoothed}
+          onClick={() => setShowSmoothed((value) => !value)}
         >
-          {smoothed ? 'show raw' : 'show smoothed'}
+          {showSmoothed ? 'hide the smoothed curve' : 'show the smoothed curve'}
         </button>
         <span className="widget__hint">
-          checkpoints {highlightSteps.join(' and ')} are the ones the parity gate compares
+          checkpoints 50 and 200 are the ones the parity gate compares
         </span>
       </div>
     </figure>

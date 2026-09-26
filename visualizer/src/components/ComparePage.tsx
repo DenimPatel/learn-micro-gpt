@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react'
 import { Markdown } from '../content/markdown'
-import { TRACK_ORDER, benchmarks, index, loadSource, loadedSource } from '../data/sources'
+import { TRACK_ORDER, benchmarks, index, loadSource, loadedSource, trace } from '../data/sources'
 import type { Language } from '../data/types'
 import { CodePanel } from './CodePanel'
 import { LossChart } from './widgets'
@@ -93,6 +93,17 @@ export function ComparePage() {
               </table>
             </div>
 
+            {benchmarks.caveats?.length ? (
+              <>
+                <h3>What the numbers do not say</h3>
+                <ul className="caveats">
+                  {benchmarks.caveats.map((caveat) => (
+                    <li key={caveat}>{caveat}</li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+
             <div className="callout">
               <p className="callout__title">The interesting part is not the ranking</p>
               <Markdown>
@@ -158,9 +169,13 @@ export function ComparePage() {
         <h2 id="parity-heading">Do they agree?</h2>
         <p>
           The gate is statistical, and the reason is not a hedge. Each step of the reference trains
-          on <em>one document</em>, so its printed loss is a single sample: standard deviation 0.392
-          on a mean of 2.452, and it rises on <strong>{trace_upward()}</strong> of its steps. Any
-          check on raw per-step values is comparing noise. So the gate compares an
+          on <em>one document</em>, so its printed loss is a single sample: standard deviation{' '}
+          {trace.meta.loss_stats.stdev.toFixed(3)} on a mean of{' '}
+          {trace.meta.loss_stats.mean.toFixed(3)}, and it rises on{' '}
+          <strong>
+            {trace.meta.loss_stats.upward_moves} of its {trace.meta.loss_stats.total_moves}
+          </strong>{' '}
+          steps. Any check on raw per-step values is comparing noise. So the gate compares an
           exponentially-smoothed loss at fixed checkpoints, and separately requires the windowed
           trend to improve by at least 10%.
         </p>
@@ -195,10 +210,4 @@ export function ComparePage() {
       </section>
     </article>
   )
-}
-
-function trace_upward(): number {
-  // Kept as a function so the sentence reads as prose; the value is the same one
-  // `LossChart` shows, from the same committed trace.
-  return 500
 }
