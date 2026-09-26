@@ -1,0 +1,31 @@
+# Normalize line endings in the repo; keep vendored data and the pinned
+# reference byte-exact.
+* text=auto eol=lf
+
+# Vendored datasets: huge, and their exact bytes are part of reproducibility.
+data/*.txt -text
+data/*.bin binary
+
+# The pinned reference is byte-identical to upstream. It has no trailing
+# newline. `tools/check_provenance.py` enforces its sha256.
+reference/microgpt.py -text
+
+# Lockfiles: resolved bytes matter.
+package-lock.json -text
+pnpm-lock.yaml -text
+go.sum -text
+Cargo.lock -text linguist-generated=true
+
+# Generated / vendored assets
+visualizer/src/data/generated/*.json linguist-generated=true
+benchmarks/raw/*.json linguist-generated=true
+traces/**/*.jsonl linguist-generated=true
+*.svg linguist-generated=true
+docs/screenshots/*.png binary
+
+# Binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

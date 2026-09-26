@@ -1,0 +1,60 @@
+# NOTICE
+
+This repository is a teaching artifact built **around** other people's work. The
+repository's own code — the tools, the visualizer, the docs, the CI — is MIT
+licensed (see `LICENSE`). The files below are *not* ours; they carry their
+upstream authors' terms. Full detail, including sha256 digests, is in
+`CREDITS.md` and `docs/PROVENANCE.md`.
+
+## microgpt.py — © Andrej Karpathy
+
+```
+"""
+The most atomic way to train and inference a GPT in pure, dependency-free Python.
+This file is the complete algorithm.
+Everything else is just efficiency.
+@karpathy
+"""
+```
+
+`reference/microgpt.py` and `reference/microgpt-annotated.py` are derived from
+Andrej Karpathy's `microgpt.py`, originally published in his *Intro to Large
+Language Models* talk (November 2023) and maintained as a public gist:
+
+- gist: <https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95>
+
+The original header comment is retained verbatim in both files. Karpathy has not
+published an explicit license for `microgpt.py`; it is reproduced here for
+educational commentary and is attributed in full. Its 199 lines are the entire
+subject matter of this repository, and none of them are modified in
+`reference/microgpt.py` — that file is byte-for-byte the revision we vendored
+(pinned by sha256 in CI).
+
+## The C ports — MIT, © 2026 Vishal (TheVixhal)
+
+`implementations/c/microgpt.c` and `implementations/c/microgpt-scaled.c` descend
+from the C port published in `vixhal-baraiya/microgpt-c`:
+
+- <https://github.com/vixhal-baraiya/microgpt-c> — MIT License
+- Upstream copyright: `Copyright (c) 2026 Vishal (TheVixhal)`
+
+The MIT license text is reproduced at `THIRD_PARTY_LICENSES/microgpt-c-LICENSE`.
+Our modifications (Apple Accelerate / NEON paths, a portable scalar fallback,
+configurable build flags, JSONL trace output, and a real finite-difference
+gradient test) are distributed under this repository's MIT `LICENSE`.
+
+## Datasets
+
+- `data/input.txt` — the `names.txt` list from `karpathy/makemore`
+  (<https://github.com/karpathy/makemore>), commit `988aa59`. Byte-identical to
+  the upstream file. Karpathy's `makemore` is released under the MIT License.
+- `data/shakespeare.txt` — the canonical "Tiny Shakespeare" character-level
+  corpus (40,000 lines) used in `karpathy/char-rnn`. The text is William
+  Shakespeare's, in the public domain.
+
+## Third-party runtime dependencies
+
+The visualizer depends on open-source packages, each under its own license
+(React, Vite, Tailwind, Shiki, KaTeX, dagre, Vitest, Playwright, Pyodide). None
+of their source is vendored here. Run `npm ls --all` inside `visualizer/` for
+the resolved tree, or see the lockfile.

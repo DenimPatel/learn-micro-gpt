@@ -1,0 +1,87 @@
+{
+  "$comment": "The curriculum spine: chapters, their order, and the concepts in each. Concept frontmatter is authoritative for graph edges (prereqs/related); this file is authoritative for *sequence*. tools/validate_concepts.py enforces that the two agree, so neither can drift from the other.",
+  "version": 1,
+  "reference": {
+    "language": "python",
+    "path": "reference/microgpt.py",
+    "lines": 199,
+    "lines_note": "199 numbered lines; the file has no trailing newline, so it splits into 199 elements in some tools and 200 in others. The check below tolerates that.",
+    "sha256": "4e0c321442692d5a2ccf0328c5e472cd7efa27fa2c8a243438e783054f4eb6ae",
+    "author": "Andrej Karpathy",
+    "note": "Byte-pinned. Do not edit; see docs/PROVENANCE.md."
+  },
+  "hyperparameters": {
+    "note": "The shape annotations in every concept are written for this exact configuration. Changing a number here is a deliberate act: re-run `make trace && make parity`, because every recorded number describes this setting.",
+    "n_embd": 16,
+    "n_head": 4,
+    "n_layer": 1,
+    "block_size": 16,
+    "head_dim": 4,
+    "vocab_size": 27,
+    "num_params": 4192
+  },
+  "chapters": [
+    {
+      "id": "data",
+      "order": 1,
+      "title": "Data",
+      "blurb": "Before there is a model there are strings, and the strings have to become numbers. Two small ideas do all of the work here, and both of them are the kind you will reuse forever.",
+      "concepts": ["data-loading", "tokenizer"]
+    },
+    {
+      "id": "machinery",
+      "order": 2,
+      "title": "Machinery",
+      "blurb": "The three pieces that let 199 lines of Python train a neural network with no libraries: a number that remembers where it came from, a way to walk that memory backwards, and a place to put the result.",
+      "concepts": ["autograd-value", "autograd-backward", "params-init"]
+    },
+    {
+      "id": "architecture",
+      "order": 3,
+      "title": "Architecture",
+      "blurb": "The model itself. Three tiny building blocks, one attention loop, and a head that turns the machinery back into probabilities. This is the longest chapter and the one worth slowing down in.",
+      "concepts": [
+        "linear",
+        "softmax",
+        "rmsnorm",
+        "embedding",
+        "multi-head-attention",
+        "mlp-block",
+        "attention-block",
+        "lm-head",
+        "gpt-forward"
+      ]
+    },
+    {
+      "id": "training",
+      "order": 4,
+      "title": "Training",
+      "blurb": "How the model learns: turn the right answer into a number worth minimising, then walk the gradient back through everything. Adam is where the magic stops being magic.",
+      "concepts": ["cross-entropy-loss", "adam", "training-loop"]
+    },
+    {
+      "id": "inference",
+      "order": 5,
+      "title": "Inference",
+      "blurb": "The model babbles back. One function, the same code path as training, and a single number -- temperature -- that decides whether the output is memorised or invented.",
+      "concepts": ["inference-sampling"]
+    }
+  ],
+  "glossary": {
+    "note": "Terms used in concept bodies. The :::term directive links to these, and validate_concepts.py fails on a :::term whose term is not defined here.",
+    "terms": {
+      "BOS": "Beginning-of-Sequence. A token id one past the last character id, used to mark the start and the end of a document.",
+      "autograd": "Automatic differentiation: building a graph of the computation while you run it forwards, then applying the chain rule over that graph to get derivatives.",
+      "backward pass": "Walking the computation graph in reverse to accumulate the gradient of the loss with respect to every parameter.",
+      "embedding": "A learned lookup table mapping a token id to a vector. 'wte' is the token table, 'wpe' is the position table.",
+      "head_dim": "n_embd // n_head. How wide each attention head is. Here 16 // 4 = 4.",
+      "kv cache": "The growing list of keys and values from earlier positions, so position t only recomputes its own query. In this file it is the `keys`/`values` pair threaded through the training loop.",
+      "logit": "An unnormalised score. A probability is a distribution over logits; a logit is one number in it.",
+      "loss": "A single number measuring how wrong the model was. Lower is better. Here it is the mean negative log-likelihood over a document.",
+      "residual connection": "Adding a block's input back onto its output, so gradients have a short path home and the block only has to learn a difference.",
+      "rmsnorm": "Root-mean-square normalisation: rescale a vector by 1/rms(x) so activations do not drift in scale as they pass through layers.",
+      "tokenizer": "The reversible mapping from strings to integers. Here it is character-level, so the tokenizer is `sorted(set(all characters))`.",
+      "top-k": "Restricting a sample to the k most probable tokens. Not used in the reference; mentioned in the sampling concept for contrast."
+    }
+  }
+}

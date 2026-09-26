@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://denimpatel.github.io/learn-micro-gpt/schema.json",
+  "title": "learn-micro-gpt concept frontmatter",
+  "description": "The YAML frontmatter of every file in content/concepts/. Validated by tools/validate_concepts.py. The parser is tools/yamlite.py, a strict subset -- see that module for exactly which YAML features are allowed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "title", "chapter", "order", "summary", "anchors", "related", "prereqs"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Slug. Must equal the filename stem. Globally unique.",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Human title.",
+      "minLength": 3,
+      "maxLength": 80
+    },
+    "chapter": {
+      "type": "string",
+      "description": "Chapter id; must exist in content/index.json.",
+      "enum": ["data", "machinery", "architecture", "training", "inference"]
+    },
+    "order": {
+      "type": "integer",
+      "description": "Position within the chapter, 1-based. Unique per chapter; must match the position in content/index.json's chapter concept list.",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "summary": {
+      "type": "string",
+      "description": "One or two sentences. This is the graph node label and the meta description, so it has to work out of context.",
+      "minLength": 20,
+      "maxLength": 400
+    },
+    "difficulty": {
+      "type": "integer",
+      "description": "1 = skimmable, 2 = the main event, 3 = will make you think. Optional; defaults to 2.",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "math": {
+      "type": "string",
+      "description": "Optional KaTeX/LaTeX. Rendered in a display block. No delimiters -- the app supplies them."
+    },
+    "shapes": {
+      "type": "array",
+      "description": "Optional tensor shapes at this hyperparameter setting, so a reader can see that [T, 4] really is 4 columns and not an abstraction.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "shape"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "shape": { "type": "string", "minLength": 1 },
+          "note": { "type": "string" }
+        }
+      }
+    },
+    "anchors": {
+      "type": "object",
+      "description": "Where this concept lives in each language, as AST selectors -- never line numbers. Required: python. Optional per language, and CI fails if a key names a language that has no source file.",
+      "additionalProperties": false,
+      "required": ["python"],
+      "properties": {
+        "python": { "$ref": "#/definitions/anchor" },
+        "c": { "$ref": "#/definitions/anchor" },
+        "go": { "$ref": "#/definitions/anchor" },
+        "rust": { "$ref": "#/definitions/anchor" },
+        "typescript": { "$ref": "#/definitions/anchor" }
+      }
+    },
+    "related": {
+      "type": "array",
+      "description": "Concept ids shown as 'see also'. Not prerequisites -- a reader may go here in any order.",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true
+    },
+    "prereqs": {
+      "type": "array",
+      "description": "Concept ids that should be read first. Drives the chapter nav and the graph edges. CI rejects cycles.",
+      "items": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+      "uniqueItems": true
+    },
+    "traces": {
+      "type": "array",
+      "description": "Optional recorded-run widgets to inline in the body. Each entry is a :::trace directive argument set; see docs/TRACE-FORMAT.md.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind"],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["loss-curve", "attention", "softmax", "shapes", "tokens", "samples"]
+          },
+          "step": { "type": "integer", "minimum": 0 },
+          "pos": { "type": "integer", "minimum": 0 },
+          "head": { "type": "integer", "minimum": 0 },
+          "top": { "type": "integer", "minimum": 1, "maximum": 30 }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "anchor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector"],
+      "properties": {
+        "selector": {
+          "type": "string",
+          "description": "Selector grammar: def:<name>, assign:<name>, comment:<exact prefix>, section:<exact prefix> (that comment through to the next section boundary), plus an optional offset:[dStart, dEnd] of deltas applied after resolution.",
+          "pattern": "^(def|assign|comment|section):.+"
+        },
+        "offset": {
+          "type": "array",
+          "description": "Deltas relative to the resolved span. Optional here; may also be written inline in the selector as `offset:[a, b]`.",
+          "items": { "type": "integer" },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    }
+  }
+}

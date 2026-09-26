@@ -1,0 +1,38 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+max_line_length = 120
+
+[*.{c,h}]
+indent_size = 4
+
+[*.{go,rs}]
+indent_style = tab
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false
+
+[{Makefile,*.mk}]
+indent_style = tab
+
+[data/*]
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+# Byte-identical upstream: no trailing newline, and the sha256 is pinned in CI.
+# Do not "fix" the missing final newline here.
+[reference/microgpt.py]
+insert_final_newline = false
+trim_trailing_whitespace = false
