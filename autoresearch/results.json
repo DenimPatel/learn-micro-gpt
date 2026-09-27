@@ -80,10 +80,10 @@
     "description": "Restore the per-update batch size from nine documents to eight"
   },
   "counts": {
-    "experiments": 37,
+    "experiments": 38,
     "keep": 24,
     "discard": 2,
-    "crash": 11
+    "crash": 12
   },
   "pareto": [
     "0011",
@@ -625,6 +625,20 @@
       "reason": "",
       "description": "Batch six documents per Adam update instead of eight",
       "measured": "2026-09-27T08:00:09Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0038",
+      "parent": "ff6ba204e312647e000f086fba71409f5d3b1045",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace per-token string formatting and parameter lookups with direct deterministic state indexing",
+      "measured": "2026-09-27T08:02:05Z",
       "has_record": true
     }
   ],

@@ -37,3 +37,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0035	4f0bb71054d3499bfb66fb20dea04c2835fa7ffa	2.200248	74.668351	+0.095992	+0.270643	1.038945	keep		Fuse RMSNorm square and reduction tape nodes while retaining identical forward arithmetic
 0036	e7e1d0b36b0d5df6acb275c686e2475d8b653540	2.195606	74.998238	+0.097900	+0.276256	0.999933	keep		Correct the fused RMSNorm sum-of-squares derivative
 0037	d1aca4242e15bf1fc436e3f6301c33262acf8c08	2.242406	102.515554	+0.078671	+0.744523	0.999933	keep		Batch six documents per Adam update instead of eight
+0038	ff6ba204e312647e000f086fba71409f5d3b1045	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-token string formatting and parameter lookups with direct deterministic state indexing
