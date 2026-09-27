@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 78,
+    "experiments": 79,
     "keep": 52,
     "discard": 2,
-    "crash": 24
+    "crash": 25
   },
   "pareto": [
     "0011",
@@ -1200,6 +1200,20 @@
       "reason": "cargo clippy failed with -D warnings",
       "description": "Fuse residual projections and training cross-entropy to cut tape nodes",
       "measured": "2026-09-27T10:15:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0079",
+      "parent": "5dfef81e54cea319108ca07d98cef90044d6212a",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Restore an independently initialized untied language-model head",
+      "measured": "2026-09-27T10:17:35Z",
       "has_record": true
     }
   ],
