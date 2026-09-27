@@ -925,6 +925,14 @@ pub fn run() {
             config.num_steps,
             Tensor::data(loss)
         );
+
+        // Model parameters are the first arena nodes; discard the graph and its
+        // allocations before the next step so the working set stays small.
+        ARENA.with(|a| {
+            let mut arena = a.borrow_mut();
+            arena.nodes.truncate(params.len());
+            arena.visited.truncate(params.len());
+        });
     }
 
     let elapsed = started.elapsed();

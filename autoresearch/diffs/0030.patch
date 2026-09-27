@@ -1,0 +1,17 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -944,6 +944,13 @@
+             config.num_steps,
+             Tensor::data(loss)
+         );
++
++        // Model parameters are the first arena nodes; discard the graph and its
++        // allocations before the next step so the working set stays small.
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            arena.nodes.truncate(params.len());
++            arena.visited.truncate(params.len());
++        });
+     }
+ 
+     let elapsed = started.elapsed();
