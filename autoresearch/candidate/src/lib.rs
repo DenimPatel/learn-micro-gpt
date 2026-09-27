@@ -930,9 +930,9 @@ pub fn run() {
             * (1.0 - step as f32 / config.num_steps as f32);
         let beta1_power = BETA1.powi(step as i32 + 1);
         let beta2_power = BETA2.powi(step as i32 + 1);
-        for (i, p) in params.iter().enumerate() {
-            ARENA.with(|a| {
-                let arena = &mut a.borrow_mut();
+        ARENA.with(|a| {
+            let arena = &mut a.borrow_mut();
+            for (i, p) in params.iter().enumerate() {
                 let node = &mut arena.nodes[p.0];
                 let g = node.grad;
                 moments[i] = BETA1 * moments[i] + (1.0 - BETA1) * g;
@@ -941,8 +941,8 @@ pub fn run() {
                 let v_hat = velocities[i] / (1.0 - beta2_power);
                 node.data -= lr_t * m_hat / (v_hat.sqrt() + EPS_ADAM);
                 node.grad = 0.0;
-            });
-        }
+            }
+        });
 
         println!(
             "step {:4} / {:4} | loss {:.4}",

@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "0edb7943294c1df6a6d464c1da8bd3033caca471326bd4535f3935ae0d0f7604",
+    "candidate_sha256": "afb29f892e35f40c173e8e6574abe63c48f29f03f9039a316557638b2f176aa3",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,20 +68,20 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0044",
-    "parent": "6f8731841c587dbd0f040e95da0a5cdba3b2bd16",
+    "run_id": "0048",
+    "parent": "fe8319dece9ed0c5fe290f425d4a06ec46785b21",
     "loss": 2.190858,
-    "steps_per_sec": 125.056591,
+    "steps_per_sec": 125.657376,
     "loss_gain": 0.09985,
-    "speed_gain": 1.128107,
+    "speed_gain": 1.13833,
     "grad_ratio": 1.000037,
     "status": "keep",
     "reason": "",
-    "description": "Lower positional embedding initialization standard deviation to 0.02"
+    "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
   },
   "counts": {
-    "experiments": 47,
-    "keep": 31,
+    "experiments": 48,
+    "keep": 32,
     "discard": 2,
     "crash": 14
   },
@@ -90,8 +90,7 @@
     "0019",
     "0030",
     "0031",
-    "0042",
-    "0044"
+    "0048"
   ],
   "runs": [
     {
@@ -764,6 +763,20 @@
       "reason": "the patch did not apply",
       "description": "Replace runtime parameter-name formatting and hash-map lookup with fixed state indices",
       "measured": "2026-09-27T08:30:16Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0048",
+      "parent": "fe8319dece9ed0c5fe290f425d4a06ec46785b21",
+      "loss": 2.190858,
+      "steps_per_sec": 125.657376,
+      "loss_gain": 0.09985,
+      "speed_gain": 1.13833,
+      "grad_ratio": 1.000037,
+      "status": "keep",
+      "reason": "",
+      "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup",
+      "measured": "2026-09-27T08:32:41Z",
       "has_record": true
     }
   ],
