@@ -72,3 +72,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0070	9c07f5661acd5039625f9939762d13ecc80b6a46	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0071	0d92ef7f829118f6775653767525ee9b967f5a89	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reuse autograd node storage and gradient vectors across training steps
 0072	b15cbc9ec8022fcc976f505cb7eff7906e53bcca	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd parents and local gradients into one compact allocation per node
+0073	4913bac1b95d3ae0c08d4b551a7c154797801350	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Omit tape parents and local gradients for inactive fused ReLU outputs

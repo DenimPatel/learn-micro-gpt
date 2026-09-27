@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 72,
+    "experiments": 73,
     "keep": 48,
     "discard": 2,
-    "crash": 22
+    "crash": 23
   },
   "pareto": [
     "0011",
@@ -1114,6 +1114,20 @@
       "reason": "the patch did not apply",
       "description": "Pack autograd parents and local gradients into one compact allocation per node",
       "measured": "2026-09-27T09:49:47Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0073",
+      "parent": "4913bac1b95d3ae0c08d4b551a7c154797801350",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Omit tape parents and local gradients for inactive fused ReLU outputs",
+      "measured": "2026-09-27T09:55:34Z",
       "has_record": true
     }
   ],
