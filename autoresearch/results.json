@@ -80,10 +80,10 @@
     "description": "Hoist Adam bias corrections and fuse each parameter update into one arena borrow"
   },
   "counts": {
-    "experiments": 22,
+    "experiments": 23,
     "keep": 11,
     "discard": 2,
-    "crash": 9
+    "crash": 10
   },
   "pareto": [
     "0011",
@@ -410,6 +410,20 @@
       "reason": "the patch did not apply",
       "description": "Replace the per-step topological DFS with reverse arena-order backpropagation",
       "measured": "2026-09-27T07:22:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0023",
+      "parent": "0ce16cc22866a35627675eaa2fa2b3041143f927",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Reduce repeated arena borrows in hot tensor primitives with identical arithmetic",
+      "measured": "2026-09-27T07:23:33Z",
       "has_record": true
     }
   ],
