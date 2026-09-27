@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 102,
+    "experiments": 103,
     "keep": 63,
     "discard": 2,
-    "crash": 37
+    "crash": 38
   },
   "pareto": [
     "0011",
@@ -1536,6 +1536,20 @@
       "reason": "",
       "description": "Restore the five-document Adam batch",
       "measured": "2026-09-27T11:38:08Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0103",
+      "parent": "9ebe918e5c1cee92259bbd675b281249f0592d78",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Store tape parent-gradient pairs in one allocation per node to halve allocator traffic",
+      "measured": "2026-09-27T11:44:17Z",
       "has_record": true
     }
   ],
