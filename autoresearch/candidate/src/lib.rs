@@ -881,7 +881,7 @@ pub fn run() {
 
     // Adam, with the reference's betas. The bias correction is what makes the
     // first step the same size as every other one.
-    const LEARNING_RATE: f32 = 0.012;
+    const LEARNING_RATE: f32 = 0.01;
     const BETA1: f32 = 0.85;
     const BETA2: f32 = 0.98;
     const EPS_ADAM: f32 = 1e-8;

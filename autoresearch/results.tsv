@@ -62,3 +62,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0060	880ba81e7574dd52170140ca22b3c2ecba692d99	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic
 0061	d2c4d3ff9cb254e2b1e1433308c49becf340a025	2.198530	126.028342	+0.096698	+1.144643	1.000259	keep		Raise the peak Adam learning rate from 0.01 to 0.012
 0062	583c640aee071f5240b3506cdad10b878033c7e2	2.196994	75.817800	+0.097329	+0.290203	1.000259	keep		Increase the Adam batch size from five documents to eight
+0063	11e67e06c73738823f10ecf54398f70a7ebe0b40	2.195292	75.685509	+0.098029	+0.287952	1.000259	keep		Restore the peak Adam learning rate to 0.01 with the eight-document batch
