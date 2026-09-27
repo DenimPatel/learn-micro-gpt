@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "3e7c20bc05dc19ad3ee9e5356eb4b8f4448c56ebaae7b85ad72be77226fbd8de",
+    "candidate_sha256": "42f7d4a06b206a9ba07949c24e30fb8a75104dda7e34b7b60a52bde6a46b78d0",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,25 +68,25 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0004",
-    "parent": "92c0bd290f36012cfda98723f58f9cb8e131b748",
+    "run_id": "0005",
+    "parent": "aab107aa00ed4ce77f433c363d248dfd196efe40",
     "loss": 2.433882,
-    "steps_per_sec": 959.50666,
+    "steps_per_sec": 1054.328215,
     "loss_gain": 0.0,
-    "speed_gain": 15.328069,
+    "speed_gain": 16.941662,
     "grad_ratio": 1.06316,
     "status": "keep",
     "reason": "",
-    "description": "Fuse linear dot products into correctly differentiated tape nodes"
+    "description": "Fuse attention score dot products into the existing linear tape node"
   },
   "counts": {
-    "experiments": 4,
-    "keep": 2,
+    "experiments": 5,
+    "keep": 3,
     "discard": 1,
     "crash": 1
   },
   "pareto": [
-    "0004"
+    "0005"
   ],
   "runs": [
     {
@@ -157,6 +157,20 @@
       "reason": "",
       "description": "Fuse linear dot products into correctly differentiated tape nodes",
       "measured": "2026-09-27T06:42:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0005",
+      "parent": "aab107aa00ed4ce77f433c363d248dfd196efe40",
+      "loss": 2.433882,
+      "steps_per_sec": 1054.328215,
+      "loss_gain": 0.0,
+      "speed_gain": 16.941662,
+      "grad_ratio": 1.06316,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse attention score dot products into the existing linear tape node",
+      "measured": "2026-09-27T06:43:08Z",
       "has_record": true
     }
   ],

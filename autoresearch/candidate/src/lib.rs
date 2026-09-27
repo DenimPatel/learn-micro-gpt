@@ -572,11 +572,7 @@ impl Model {
                 let attn_logits: Vec<TensorHandle> = k_h
                     .iter()
                     .map(|kt| {
-                        let mut acc = Tensor::leaf(0.0);
-                        for j in 0..self.config.head_dim {
-                            acc = Tensor::add(acc, Tensor::mul(q_h[j], kt[j]));
-                        }
-                        Tensor::div_scalar(acc, inv_sqrt_head)
+                        Tensor::div_scalar(Tensor::linear(q_h, kt), inv_sqrt_head)
                     })
                     .collect();
                 let attn_weights = Self::softmax(&attn_logits);
