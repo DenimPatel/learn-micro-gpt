@@ -65,3 +65,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0063	11e67e06c73738823f10ecf54398f70a7ebe0b40	2.195292	75.685509	+0.098029	+0.287952	1.000259	keep		Restore the peak Adam learning rate to 0.01 with the eight-document batch
 0064	8c70743dbe4efc87ff1c2599e5364a9064fb5859	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore five-document Adam batches and tie the token embedding to the output head
 0065	8309a3487c0ca14979efdb3a55e6430cf063eef8	2.185464	126.002227	+0.102067	+1.144199	1.000259	keep		Restore the five-document batch that reached the best recorded loss
+0066	f52a9e86bf504e764a93e021ebe7aa19acb914cf	2.185464	131.987549	+0.102067	+1.246052	1.000259	keep		Correctly fold ReLU into the FC1 autograd node to cut tape allocations

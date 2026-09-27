@@ -61,7 +61,7 @@
      fn spawn(data: f32, parents: Vec<usize>, local_grads: Vec<f32>) -> TensorHandle {
          debug_assert_eq!(
              parents.len(),
-@@ -215,24 +244,90 @@
+@@ -215,24 +244,129 @@
  
      /// `self + n` for a plain float.
      pub fn add_scalar(a: TensorHandle, n: f32) -> TensorHandle {
@@ -120,6 +120,45 @@
 +        Self::spawn(data, parents, local_grads)
 +    }
 +
++    /// A fused linear-plus-ReLU node. Nonpositive outputs have exactly zero
++    /// derivatives for both their weights and inputs, matching the separate
++    /// ReLU node without allocating one additional tape node per activation.
++    fn linear_relu(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
++        debug_assert_eq!(w.len(), x.len());
++        let (data, parents, local_grads) = ARENA.with(|a| {
++            let arena = a.borrow();
++            let mut data = 0.0f32;
++            let mut local_grads = Vec::with_capacity(w.len() + x.len());
++
++            for (weight, input) in w.iter().zip(x.iter()) {
++                let weight_data = arena.nodes[weight.0].data;
++                let input_data = arena.nodes[input.0].data;
++                data = weight_data.mul_add(input_data, data);
++                local_grads.push(input_data);
++            }
++
++            let active = data > 0.0;
++            for weight in w {
++                let weight_data = arena.nodes[weight.0].data;
++                local_grads.push(if active { weight_data } else { 0.0 });
++            }
++
++            if !active {
++                data = 0.0;
++                local_grads.fill(0.0);
++            }
++
++            let parents = w
++                .iter()
++                .chain(x.iter())
++                .copied()
++                .map(|handle| handle.0)
++                .collect();
++            (data, parents, local_grads)
++        });
++        Self::spawn(data, parents, local_grads)
++    }
++
 +    /// One weighted sum over the cached values, recorded as a single tape
 +    /// node rather than a multiply and add for every cached position.
 +    fn weighted_sum(
@@ -156,7 +195,7 @@
      }
  
      /// `__pow__` for a constant exponent.
-@@ -256,6 +351,58 @@
+@@ -256,6 +390,58 @@
      pub fn exp(a: TensorHandle) -> TensorHandle {
          let data = Self::data(a).exp();
          Self::spawn(data, vec![a.0], vec![data])
@@ -215,7 +254,7 @@
      }
  
      /// `relu()`. The derivative is 1 above zero and 0 below, and ambiguous
-@@ -294,9 +441,6 @@
+@@ -294,9 +480,6 @@
              let node_count = arena.nodes.len();
              if arena.visited.len() < node_count {
                  arena.visited.resize(node_count, false);
@@ -225,7 +264,7 @@
              }
  
              // Iterative depth-first walk, parents-first.
-@@ -333,16 +477,14 @@
+@@ -333,16 +516,14 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -249,7 +288,7 @@
              }
          });
      }
-@@ -379,7 +521,7 @@
+@@ -379,7 +560,7 @@
          let mut state: Vec<(String, Matrix)> = Vec::new();
          let std = 0.08;
          state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
@@ -258,7 +297,7 @@
          state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
          for i in 0..config.n_layer {
              let p = format!("layer{i}.");
-@@ -436,13 +578,7 @@
+@@ -436,13 +617,14 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -270,10 +309,17 @@
 -                acc
 -            })
 +            .map(|row| Tensor::linear(row, x))
++            .collect()
++    }
++
++    /// Linear followed by ReLU as one correctly differentiated tape node.
++    fn linear_relu(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
++        w.iter()
++            .map(|row| Tensor::linear_relu(row, x))
              .collect()
      }
  
-@@ -453,26 +589,18 @@
+@@ -453,26 +635,18 @@
          let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
          let exps: Vec<TensorHandle> = logits
              .iter()
@@ -305,7 +351,7 @@
      }
  
      /// `gpt(token_id, pos_id, keys, values)` — a stateless function from one
-@@ -521,11 +649,7 @@
+@@ -521,11 +695,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -318,7 +364,7 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -533,13 +657,7 @@
+@@ -533,13 +703,7 @@
                  // A convex combination of the values, so the output magnitude
                  // does not grow with sequence length.
                  let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
@@ -333,7 +379,17 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -765,48 +883,65 @@
+@@ -553,8 +717,7 @@
+             // 2) MLP block. The same four steps: save, normalise, transform, add.
+             let x_residual = x.clone();
+             x = Self::rmsnorm(&x);
+-            x = Self::linear(&x, self.get(&format!("{p}mlp_fc1")));
+-            x = x.iter().map(|v| Tensor::relu(*v)).collect();
++            x = Self::linear_relu(&x, self.get(&format!("{p}mlp_fc1")));
+             x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
+             x = x
+                 .iter()
+@@ -765,48 +928,65 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
@@ -430,7 +486,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +949,14 @@
+@@ -814,6 +994,14 @@
              config.num_steps,
              Tensor::data(loss)
          );

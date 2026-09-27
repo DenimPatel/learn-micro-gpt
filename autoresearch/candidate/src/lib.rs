@@ -295,6 +295,45 @@ impl Tensor {
         Self::spawn(data, parents, local_grads)
     }
 
+    /// A fused linear-plus-ReLU node. Nonpositive outputs have exactly zero
+    /// derivatives for both their weights and inputs, matching the separate
+    /// ReLU node without allocating one additional tape node per activation.
+    fn linear_relu(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
+        debug_assert_eq!(w.len(), x.len());
+        let (data, parents, local_grads) = ARENA.with(|a| {
+            let arena = a.borrow();
+            let mut data = 0.0f32;
+            let mut local_grads = Vec::with_capacity(w.len() + x.len());
+
+            for (weight, input) in w.iter().zip(x.iter()) {
+                let weight_data = arena.nodes[weight.0].data;
+                let input_data = arena.nodes[input.0].data;
+                data = weight_data.mul_add(input_data, data);
+                local_grads.push(input_data);
+            }
+
+            let active = data > 0.0;
+            for weight in w {
+                let weight_data = arena.nodes[weight.0].data;
+                local_grads.push(if active { weight_data } else { 0.0 });
+            }
+
+            if !active {
+                data = 0.0;
+                local_grads.fill(0.0);
+            }
+
+            let parents = w
+                .iter()
+                .chain(x.iter())
+                .copied()
+                .map(|handle| handle.0)
+                .collect();
+            (data, parents, local_grads)
+        });
+        Self::spawn(data, parents, local_grads)
+    }
+
     /// One weighted sum over the cached values, recorded as a single tape
     /// node rather than a multiply and add for every cached position.
     fn weighted_sum(
@@ -582,6 +621,13 @@ impl Model {
             .collect()
     }
 
+    /// Linear followed by ReLU as one correctly differentiated tape node.
+    fn linear_relu(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
+        w.iter()
+            .map(|row| Tensor::linear_relu(row, x))
+            .collect()
+    }
+
     /// `softmax(logits)` — subtract the max before exponentiating. Not a
     /// numerical nicety: it is what makes the function usable, since the
     /// subtraction leaves the result exactly unchanged.
@@ -671,8 +717,7 @@ impl Model {
             // 2) MLP block. The same four steps: save, normalise, transform, add.
             let x_residual = x.clone();
             x = Self::rmsnorm(&x);
-            x = Self::linear(&x, self.get(&format!("{p}mlp_fc1")));
-            x = x.iter().map(|v| Tensor::relu(*v)).collect();
+            x = Self::linear_relu(&x, self.get(&format!("{p}mlp_fc1")));
             x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
             x = x
                 .iter()
