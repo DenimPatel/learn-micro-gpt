@@ -27,3 +27,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0025	08616133b1186089f180c09bfab78b018842d344	2.465502	1054.504806	-0.012992	+16.944667	0.999933	keep		Double Adam learning rate to 0.02 and restore beta2 to 0.99
 0026	9580574948059ada3a8a14d0aabc363a44e0f07e	2.431324	934.628319	+0.001051	+14.904711	0.999933	keep		Restore the peak Adam learning rate from 0.02 to 0.01
 0027	8191c25d1f3bd510fe33f6890bea656c82a40333	2.427764	336.327470	+0.002514	+4.723335	0.999933	keep		Double default residual width to 32 and head dimension to 8
+0028	8f78358a1b4bc71be562d1d708f6410b6e16cae9	2.435330	172.242536	-0.000595	+1.931077	0.999933	keep		Double the default model depth from one transformer block to two

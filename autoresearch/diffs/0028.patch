@@ -1,0 +1,10 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -52,7 +52,7 @@
+             n_embd: 32,
+             n_head: 4,
+-            n_layer: 1,
++            n_layer: 2,
+             block_size: 16,
+             head_dim: 8,
+             vocab_size: 27,

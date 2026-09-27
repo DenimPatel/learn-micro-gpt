@@ -70,7 +70,7 @@ impl Default for Config {
         Config {
             n_embd: 32,
             n_head: 4,
-            n_layer: 1,
+            n_layer: 2,
             block_size: 16,
             head_dim: 8,
             vocab_size: 27,
