@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "316f30c722258fcb741efe0f2a5dd0f075139ea14c9baa6ad0632f64f15abe7e",
+    "candidate_sha256": "0edb7943294c1df6a6d464c1da8bd3033caca471326bd4535f3935ae0d0f7604",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Lower positional embedding initialization standard deviation to 0.02"
   },
   "counts": {
-    "experiments": 45,
-    "keep": 30,
+    "experiments": 46,
+    "keep": 31,
     "discard": 2,
     "crash": 13
   },
@@ -736,6 +736,20 @@
       "reason": "",
       "description": "Replace linear learning-rate decay with cosine decay",
       "measured": "2026-09-27T08:27:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0046",
+      "parent": "d5be34702cf0bbeca16c577ee923cee32c9efef1",
+      "loss": 2.190858,
+      "steps_per_sec": 124.434951,
+      "loss_gain": 0.09985,
+      "speed_gain": 1.117528,
+      "grad_ratio": 1.000037,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore linear learning-rate decay after cosine decay worsened loss",
+      "measured": "2026-09-27T08:28:45Z",
       "has_record": true
     }
   ],
