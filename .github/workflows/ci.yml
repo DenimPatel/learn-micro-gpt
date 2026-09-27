@@ -259,6 +259,14 @@ jobs:
         # The property that makes the Pages deployment work. This fails if a
         # `fetch('/...')` creeps back in, and it is the one check that would
         # have caught the original bug.
+        #
+        # The working directory matters here more than it looks. Without it this
+        # runs from the repository root, where `dist/` does not exist: the glob
+        # never matches, grep is handed a literal filename, and the step prints
+        # "no absolute fetches" and passes without having looked at anything.
+        # A check that cannot fail is worse than no check, because it is read as
+        # evidence.
+        working-directory: visualizer
         run: |
           if grep -rEn "fetch\(\s*['\"]/" dist/assets/*.js; then
             echo "error: an absolute fetch() in the built bundle."
@@ -273,6 +281,12 @@ jobs:
       - name: The 404 fallback is emitted
         # GitHub Pages serves 404.html for unresolvable paths, which is what
         # keeps a deep link working if the router ever moves off the hash.
+        #
+        # Also `working-directory: visualizer`, for the same reason: `dist/` is
+        # the visualizer's, not the repository's, and `test -f dist/404.html`
+        # from the root is false -- which fails this step and, through `needs`,
+        # the deploy that depends on it.
+        working-directory: visualizer
         run: |
           test -f dist/404.html
           cmp dist/index.html dist/404.html
@@ -294,8 +308,14 @@ jobs:
           path: visualizer/playwright-report
           retention-days: 7
 
+      # No `if: failure()` on this one, and the absence is the point rather than
+      # an oversight. `deploy` downloads an artifact named `dist` from this run,
+      # and `deploy` only runs when this job succeeded -- so gating the upload on
+      # failure guaranteed that a successful build published nothing and the
+      # download had nothing to find. The report above is the one that should
+      # only exist when something broke; the build is the one that should only
+      # exist when nothing did.
       - uses: actions/upload-artifact@v4
-        if: failure()
         with:
           name: dist
           path: visualizer/dist
