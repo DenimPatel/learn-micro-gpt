@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "55733de6061aba7e1e37a4b8fa0185deb8ec6dcdb09f81da25efc4ff152d0530",
+    "candidate_sha256": "7fced5a9a339e27c72a260d094daa52562a3a526cf6dcf94f91618e74aca3a5a",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 67,
-    "keep": 46,
+    "experiments": 68,
+    "keep": 47,
     "discard": 2,
     "crash": 19
   },
@@ -89,10 +89,9 @@
     "0011",
     "0019",
     "0030",
-    "0031",
-    "0050",
     "0066",
-    "0067"
+    "0067",
+    "0068"
   ],
   "runs": [
     {
@@ -1045,6 +1044,20 @@
       "reason": "",
       "description": "Add a 10% learning-rate floor to the linear decay",
       "measured": "2026-09-27T09:34:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0068",
+      "parent": "ce19ff69adc9cc07ccefde5d2ac8079765f66ee0",
+      "loss": 2.196448,
+      "steps_per_sec": 201.570442,
+      "loss_gain": 0.097554,
+      "speed_gain": 2.430155,
+      "grad_ratio": 1.000259,
+      "status": "keep",
+      "reason": "",
+      "description": "Reverse-order training backpropagation using tape allocation order",
+      "measured": "2026-09-27T09:36:04Z",
       "has_record": true
     }
   ],

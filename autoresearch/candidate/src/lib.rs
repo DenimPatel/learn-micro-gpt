@@ -527,6 +527,26 @@ impl Tensor {
             }
         });
     }
+
+    /// Backpropagate a training graph directly in reverse allocation order.
+    /// Model parameters occupy the first arena nodes, and every operation
+    /// records only handles that were allocated before it. Consequently, arena
+    /// order is already a topological order for the graph built by `run`.
+    fn backward_reverse(root: TensorHandle, first_computed: usize) {
+        ARENA.with(|a| {
+            let mut arena = a.borrow_mut();
+            arena.nodes[root.0].grad = 1.0;
+            for index in (first_computed..=root.0).rev() {
+                let grad = arena.nodes[index].grad;
+                let parent_count = arena.nodes[index].parents.len();
+                for slot in 0..parent_count {
+                    let child = arena.nodes[index].parents[slot];
+                    let local_grad = arena.nodes[index].local_grads[slot];
+                    arena.nodes[child].grad += local_grad * grad;
+                }
+            }
+        });
+    }
 }
 
 // ─── Model ─────────────────────────────────────────────────────────────────
@@ -969,7 +989,7 @@ pub fn run() {
         }
         let loss = Tensor::div_scalar(loss, token_count as f32);
 
-        Tensor::backward(loss);
+        Tensor::backward_reverse(loss, params.len());
 
         let lr_t = LEARNING_RATE * (0.1 + 0.9 * (1.0 - step as f32 / config.num_steps as f32));
         let beta1_power = BETA1.powi(step as i32 + 1);

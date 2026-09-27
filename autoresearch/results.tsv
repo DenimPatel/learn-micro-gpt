@@ -67,3 +67,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0065	8309a3487c0ca14979efdb3a55e6430cf063eef8	2.185464	126.002227	+0.102067	+1.144199	1.000259	keep		Restore the five-document batch that reached the best recorded loss
 0066	f52a9e86bf504e764a93e021ebe7aa19acb914cf	2.185464	131.987549	+0.102067	+1.246052	1.000259	keep		Correctly fold ReLU into the FC1 autograd node to cut tape allocations
 0067	cbf7f533110d90c8858e5b0c9c847fb5fbe944a2	2.196144	132.321962	+0.097679	+1.251743	1.000259	keep		Add a 10% learning-rate floor to the linear decay
+0068	ce19ff69adc9cc07ccefde5d2ac8079765f66ee0	2.196448	201.570442	+0.097554	+2.430155	1.000259	keep		Reverse-order training backpropagation using tape allocation order

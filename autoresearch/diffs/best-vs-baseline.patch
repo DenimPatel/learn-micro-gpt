@@ -264,7 +264,7 @@
              }
  
              // Iterative depth-first walk, parents-first.
-@@ -333,16 +516,14 @@
+@@ -333,15 +516,33 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -283,12 +283,31 @@
 +                    let child = arena.nodes[*index].parents[slot];
 +                    let local_grad = arena.nodes[*index].local_grads[slot];
 +                    arena.nodes[child].grad += local_grad * grad;
-                 }
++                }
 +                arena.visited[*index] = false;
++            }
++        });
++    }
++
++    /// Backpropagate a training graph directly in reverse allocation order.
++    /// Model parameters occupy the first arena nodes, and every operation
++    /// records only handles that were allocated before it. Consequently, arena
++    /// order is already a topological order for the graph built by `run`.
++    fn backward_reverse(root: TensorHandle, first_computed: usize) {
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            arena.nodes[root.0].grad = 1.0;
++            for index in (first_computed..=root.0).rev() {
++                let grad = arena.nodes[index].grad;
++                let parent_count = arena.nodes[index].parents.len();
++                for slot in 0..parent_count {
++                    let child = arena.nodes[index].parents[slot];
++                    let local_grad = arena.nodes[index].local_grads[slot];
++                    arena.nodes[child].grad += local_grad * grad;
+                 }
              }
          });
-     }
-@@ -379,7 +560,7 @@
+@@ -379,7 +580,7 @@
          let mut state: Vec<(String, Matrix)> = Vec::new();
          let std = 0.08;
          state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
@@ -297,7 +316,7 @@
          state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
          for i in 0..config.n_layer {
              let p = format!("layer{i}.");
-@@ -436,13 +617,14 @@
+@@ -436,13 +637,14 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -319,7 +338,7 @@
              .collect()
      }
  
-@@ -453,26 +635,18 @@
+@@ -453,26 +655,18 @@
          let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
          let exps: Vec<TensorHandle> = logits
              .iter()
@@ -351,7 +370,7 @@
      }
  
      /// `gpt(token_id, pos_id, keys, values)` — a stateless function from one
-@@ -521,11 +695,7 @@
+@@ -521,11 +715,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -364,7 +383,7 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -533,13 +703,7 @@
+@@ -533,13 +723,7 @@
                  // A convex combination of the values, so the output magnitude
                  // does not grow with sequence length.
                  let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
@@ -379,7 +398,7 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -553,8 +717,7 @@
+@@ -553,8 +737,7 @@
              // 2) MLP block. The same four steps: save, normalise, transform, add.
              let x_residual = x.clone();
              x = Self::rmsnorm(&x);
@@ -389,7 +408,7 @@
              x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
              x = x
                  .iter()
-@@ -765,48 +928,65 @@
+@@ -765,48 +948,65 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
@@ -450,10 +469,9 @@
 -            loss = Tensor::add(loss, *l);
 -        }
 -        let loss = Tensor::div_scalar(loss, n as f32);
-+        let loss = Tensor::div_scalar(loss, token_count as f32);
- 
-         Tensor::backward(loss);
- 
+-
+-        Tensor::backward(loss);
+-
 -        let lr_t = LEARNING_RATE * (1.0 - step as f32 / config.num_steps as f32);
 -        for (i, p) in params.iter().enumerate() {
 -            let g = Tensor::grad(*p);
@@ -468,6 +486,10 @@
 -                arena.nodes[p.0].grad = 0.0;
 -            });
 -        }
++        let loss = Tensor::div_scalar(loss, token_count as f32);
++
++        Tensor::backward_reverse(loss, params.len());
++
 +        let lr_t = LEARNING_RATE * (0.1 + 0.9 * (1.0 - step as f32 / config.num_steps as f32));
 +        let beta1_power = BETA1.powi(step as i32 + 1);
 +        let beta2_power = BETA2.powi(step as i32 + 1);
@@ -487,7 +509,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +994,14 @@
+@@ -814,6 +1014,14 @@
              config.num_steps,
              Tensor::data(loss)
          );
