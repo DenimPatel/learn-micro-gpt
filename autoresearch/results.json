@@ -80,10 +80,10 @@
     "description": "Lower Adam beta2 from 0.99 to 0.98"
   },
   "counts": {
-    "experiments": 63,
+    "experiments": 64,
     "keep": 43,
     "discard": 2,
-    "crash": 18
+    "crash": 19
   },
   "pareto": [
     "0011",
@@ -990,6 +990,20 @@
       "reason": "",
       "description": "Restore the peak Adam learning rate to 0.01 with the eight-document batch",
       "measured": "2026-09-27T09:18:01Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0064",
+      "parent": "8c70743dbe4efc87ff1c2599e5364a9064fb5859",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Restore five-document Adam batches and tie the token embedding to the output head",
+      "measured": "2026-09-27T09:24:44Z",
       "has_record": true
     }
   ],
