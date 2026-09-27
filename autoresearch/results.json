@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 69,
+    "experiments": 70,
     "keep": 48,
     "discard": 2,
-    "crash": 19
+    "crash": 20
   },
   "pareto": [
     "0011",
@@ -1072,6 +1072,20 @@
       "reason": "",
       "description": "Remove the learning-rate floor and restore full linear decay",
       "measured": "2026-09-27T09:37:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0070",
+      "parent": "9c07f5661acd5039625f9939762d13ecc80b6a46",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-27T09:43:50Z",
       "has_record": true
     }
   ],
