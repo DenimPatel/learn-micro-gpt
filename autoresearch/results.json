@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 70,
+    "experiments": 71,
     "keep": 48,
     "discard": 2,
-    "crash": 20
+    "crash": 21
   },
   "pareto": [
     "0011",
@@ -1086,6 +1086,20 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-27T09:43:50Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0071",
+      "parent": "0d92ef7f829118f6775653767525ee9b967f5a89",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Reuse autograd node storage and gradient vectors across training steps",
+      "measured": "2026-09-27T09:47:54Z",
       "has_record": true
     }
   ],
