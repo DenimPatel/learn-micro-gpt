@@ -13,7 +13,16 @@ out of a real run.
 
 **[Open the atlas](docs/HOW-TO-READ.md)** ·
 **[Run the 199 lines](docs/HOW-TO-READ.md#just-run-it)** ·
-**[What is known to be wrong](docs/KNOWN-ISSUES.md)**
+**[What is known to be wrong](docs/KNOWN-ISSUES.md)** ·
+**[Let a model try to improve the Rust port](docs/AUTORESEARCH.md)**
+
+> **The research track.** `make autoresearch-rust` lets a model rewrite the Rust
+> port while a harness measures every attempt, keeps the ones that win on either
+> loss or speed without regressing the other, and commits all of them — the
+> failures included. The frozen track it is measured against is sha256-pinned and
+> cannot move, and every candidate is finite-difference checked before it is
+> allowed to compete, because a loss number cannot tell a correct gradient from a
+> wrong one. Start at [`docs/AUTORESEARCH.md`](docs/AUTORESEARCH.md).
 
 ---
 
@@ -139,6 +148,7 @@ for the purpose, and it has a test suite.
 | read the file properly | [`docs/HOW-TO-READ.md`](docs/HOW-TO-READ.md) |
 | understand the code layout | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | know what is broken | [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) |
+| see what a model did to the Rust track | [`docs/AUTORESEARCH.md`](docs/AUTORESEARCH.md), or `#/research` on the site |
 | add a sixth language | [`docs/ADDING-A-LANGUAGE.md`](docs/ADDING-A-LANGUAGE.md) |
 | understand the numbers | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
 | write a concept | `content/concepts/*.md` and `content/schema.json` |

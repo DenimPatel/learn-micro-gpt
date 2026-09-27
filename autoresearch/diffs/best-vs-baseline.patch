@@ -1,0 +1,49 @@
+--- a/implementations/rust/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -31,9 +31,22 @@
+ //! intrinsics. Those are the C port's job, and they belong in a different file
+ //! with a different purpose. This one is here to be read.
+ //!
+-//! Compare [`../../docs/KNOWN-ISSUES.md`]: the C port hand-writes its backward
++//! Compare [`../../../docs/KNOWN-ISSUES.md`]: the C port hand-writes its backward
+ //! pass and gets it wrong. This one cannot, because the tape computes the
+ //! derivatives.
++
++// ─── The autoresearch candidate ──────────────────────────────────────────────
++//
++// This file began as a byte-for-byte copy of `implementations/rust/src/lib.rs`,
++// plus the one method `Tensor::set_data` below. That baseline is frozen and
++// sha256-pinned in `tools/provenance.py`, and the site renders it, so the tuned
++// copy lives here instead of there. See `autoresearch/README.md`.
++//
++// A model is free to rewrite everything below this line. It is not free to
++// change `tests/gradient_check.rs`, whose digest `tools/autoresearch.py` checks
++// before every experiment, and it must keep the three things the harness reads:
++// `run()`, the `--input/--steps/--seed` arguments, and the
++// `step N / M | loss X` line on stdout.
+ 
+ use std::fmt;
+ use std::fs::File;
+@@ -166,6 +179,22 @@
+ 
+     pub fn grad(handle: TensorHandle) -> f32 {
+         ARENA.with(|a| a.borrow().nodes[handle.0].grad)
++    }
++
++    /// Write `value` into a parameter.
++    ///
++    /// This method exists for exactly one reason, and it is the only difference
++    /// between this file and the frozen baseline it was copied from. An external
++    /// finite-difference probe has to move the model to `w ± h·d` to check the
++    /// tape, and the arena is private, so there is no way to do that from
++    /// outside without a way in. `tests/gradient_check.rs` is that probe.
++    ///
++    /// It deliberately does *not* touch `grad`. The training loop zeroes
++    /// gradients as it updates, because `backward` accumulates rather than
++    /// assigns; a caller that reuses a model for a second `backward` has the
++    /// same obligation, and hiding it inside a setter would be worse.
++    pub fn set_data(handle: TensorHandle, value: f32) {
++        ARENA.with(|a| a.borrow_mut().nodes[handle.0].data = value);
+     }
+ 
+     fn spawn(data: f32, parents: Vec<usize>, local_grads: Vec<f32>) -> TensorHandle {

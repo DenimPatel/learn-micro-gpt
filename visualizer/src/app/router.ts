@@ -29,7 +29,8 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-export type RouteName = 'home' | 'learn' | 'concept' | 'explore' | 'compare' | 'run' | 'about'
+export type RouteName =
+  'home' | 'learn' | 'concept' | 'explore' | 'compare' | 'research' | 'run' | 'about'
 
 export interface Route {
   name: RouteName
@@ -45,6 +46,7 @@ const ROUTES: {
   { pattern: /^#\/learn\/?$/, name: 'learn' },
   { pattern: /^#\/explore\/?$/, name: 'explore' },
   { pattern: /^#\/compare\/?$/, name: 'compare' },
+  { pattern: /^#\/research\/?$/, name: 'research' },
   { pattern: /^#\/run\/?$/, name: 'run' },
   { pattern: /^#\/about\/?$/, name: 'about' },
   { pattern: /^#?\/?$/, name: 'home' },
@@ -73,6 +75,8 @@ export function hrefFor(route: Route): string {
       return '#/explore'
     case 'compare':
       return '#/compare'
+    case 'research':
+      return '#/research'
     case 'run':
       return '#/run'
     case 'about':

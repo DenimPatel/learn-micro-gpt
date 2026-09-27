@@ -175,9 +175,36 @@ jobs:
         working-directory: implementations/go
         run: go vet ./... && go build -o /dev/null .
 
-      - name: Build the Rust track
+      - name: Build the Rust track (frozen)
         working-directory: implementations/rust
         run: cargo build --release && cargo clippy -- -D warnings
+
+      - name: Build the research candidate (the tuned Rust track)
+        # A model rewrites this crate unsupervised, so "it compiles and it is
+        # clippy-clean" is the only thing between a bad patch and the published
+        # page. Same bar as the frozen track above, deliberately.
+        working-directory: autoresearch/candidate
+        run: cargo build --release && cargo clippy --release -- -D warnings
+
+      - name: The committed research results still describe the committed candidate
+        # No API key, no OpenRouter, no loop, and nothing is written to the
+        # candidate. This is the "traces never stop describing the code they came
+        # from" property, applied to the research track: the source digest the best
+        # run recorded must still be the committed file, the gradient probe must
+        # pass, and the loss axis must re-measure within the tolerance a candidate
+        # is held to.
+        #
+        # The speed axis is deliberately NOT checked, and the tool says so out
+        # loud. It was measured on whichever machine ran the loop and this is not
+        # that machine; a check that quietly cannot pass is worse than no check.
+        run: python3 -m tools.autoresearch verify
+
+      - name: The generated research results are current
+        # If this fails, results.json is stale and the site is showing numbers
+        # that no run produced.
+        run: |
+          python3 -m tools.autoresearch render
+          git diff --exit-code -- autoresearch/results.json
 
       - name: Typecheck the TypeScript track
         working-directory: implementations/typescript

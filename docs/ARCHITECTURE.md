@@ -22,7 +22,8 @@ content/concepts/*.md          authored prose: frontmatter + :::  directives
 reference/microgpt.py ──?raw──┐
 implementations/*/*      ──?raw──┼── visualizer/src/data/sources.ts ──→ the app
 traces/**/*.jsonl        ──?raw──┤
-benchmarks/results.json  ──?raw──┘
+benchmarks/results.json  ──?raw──┤
+autoresearch/results.json ──json─┘
 ```
 
 The two Python entry points are `make validate` (which runs
@@ -206,6 +207,59 @@ losses at checkpoints and a trend over 50-step windows, and 200 steps is enough
 for both to be meaningful; the full run is a `workflow_dispatch` input and the
 nightly job. Timings are regenerated weekly into a PR rather than committed on
 every push, because a benchmark change is a thing a human should look at.
+
+## The research track, and the three things it is fenced off from
+
+`autoresearch/` is a second Rust crate that a model rewrites unsupervised, a
+harness that measures it, and a ledger. `docs/AUTORESEARCH.md` explains how it
+works; this section is about why it is shaped the way it is, because all three
+constraints are ones that would look arbitrary without the reasoning.
+
+**The frozen track is pinned, not merely documented.** `implementations/rust/`
+gets sha256 entries in `tools/provenance.py`, which the `provenance` CI job
+enforces and which every deploy depends on. This is the mechanism behind the
+claim "the first version is preserved": a claim in a README is worth nothing, a
+claim with a failing build behind it is worth something. The flag is `derived=True`
+rather than pinned, because the file is our adaptation of Karpathy's Python and
+not bytes fetched from anywhere &mdash; the comparison happens either way, and the
+entry's `note` says explicitly that for this file "derived" means the opposite of
+what it usually means.
+
+**The parity gate was not modified.** The obvious alternative was to make
+`tools/parity.py`'s symmetric ±10% band one-sided so a better Rust track could
+pass it. That would have been a mistake twice over: `test_trace_parity.py` pins
+`parity.BAND == 0.10` and defends the symmetric band on purpose, and more
+importantly the gate's job is to show that five languages compute the same
+function. A track that is deliberately diverging is no longer evidence of that,
+so the candidate is not gated by it at all. It has its own gate &mdash; a
+digest-pinned finite-difference probe plus a two-axis keep/discard rule &mdash; and
+that separation is what lets the parity job, and every number recorded against it,
+stay exactly as they were.
+
+**The candidate lives outside `implementations/`.** Not for tidiness.
+`tools/selectors.py` resolves concept anchors per language and
+`anchors.json` records each source's line count; a rewritten
+`implementations/rust/src/lib.rs` would eventually break a resolved range, and
+`gen_anchors.py` records that file's size for any language a concept declares an
+anchor in. Putting the tuned crate at `autoresearch/candidate/` means no existing
+tool can mistake it for a track, and `autoresearch/candidate/src/lib.rs` is *not*
+a member of the `Language` union &mdash; the site's `LOADERS` map is keyed by that
+type, and adding a sixth key to it would make the type lie by claiming all six are
+cross-linked tracks.
+
+**What CI added.** Three steps in the `tracks` job, which already owns the language
+tracks and gates `deploy`: the candidate builds and is clippy-clean at the same bar
+as the frozen one; `python3 -m tools.autoresearch verify` re-checks the committed
+results against the committed source; and `results.json` is regenerated and
+diffed. The `verify` step's checks are ordered by how much they can actually
+establish. The source digest comparison is exact and free. The gradient probe and
+the loss re-measurement are the same checks a candidate is held to, run on a
+different machine, so the loss is checked against the tolerance rather than for
+bit-equality &mdash; `f32` contraction under a different LLVM means two honest
+runs of the same code agree to about the third significant figure, which
+`docs/BENCHMARKS.md` already says. The speed axis is not checked at all, and
+`verify` prints that it is not, because a check that quietly cannot pass is
+indistinguishable from one that quietly did.
 
 ## Things that would be reasonable to change
 

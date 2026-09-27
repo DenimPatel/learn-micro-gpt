@@ -1,0 +1,31 @@
+# No dependencies, on purpose -- same as the baseline, and for the same reason.
+# The reference's whole point is that the algorithm fits in one file with nothing
+# but a standard library; a port that needed a BLAS crate would be measuring the
+# crate. An agent is allowed to rewrite everything in `src/`, and the thing it is
+# not allowed to do is quietly swap the arithmetic for someone else's.
+[package]
+name = "microgpt-tuned"
+version = "0.1.0"
+edition = "2021"
+description = "The autoresearch candidate: microgpt.py in Rust, freely rewritten by a model"
+license = "MIT"
+publish = false
+
+# A library plus a binary, so the model code is testable without spawning a
+# process: `tests/gradient_check.rs` drives the tape directly.
+[lib]
+name = "microgpt_tuned"
+path = "src/lib.rs"
+
+[[bin]]
+name = "microgpt-tuned"
+path = "src/main.rs"
+
+[profile.release]
+# Same as the baseline, and for the same reason. The point of this port is to be
+# read and measured, so keep the debug assertions and the overflow checks on. A
+# model that silently wraps a float is worse than one that stops -- and, for the
+# research loop, one that stops is measurable while one that wraps is not.
+debug-assertions = true
+overflow-checks = true
+lto = true

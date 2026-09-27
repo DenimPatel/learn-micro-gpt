@@ -34,6 +34,9 @@ test_gradients
 /go.sum
 # Rust
 implementations/rust/target/
+# The tuned candidate is a second Rust crate and needs its own line here, or
+# `git add` in the research loop sweeps 200 MB of build output into a commit.
+autoresearch/candidate/target/
 # Go coverage / test binaries
 *.test
 # C
@@ -51,6 +54,12 @@ model.bin
 # things to disagree about.
 traces/**/stdout.txt
 .run/
+
+# --- Autoresearch -----------------------------------------------------------
+# The unedited model response behind each experiment. The parsed record is
+# committed in autoresearch/runs/*.json; this is the raw text, which is only
+# interesting when a session is going wrong.
+autoresearch/logs/
 
 # --- Tooling / editors ------------------------------------------------------
 .DS_Store

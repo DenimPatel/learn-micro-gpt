@@ -1,0 +1,27 @@
+{
+  "$comment": "Pinned OpenRouter model and request shape for tools/autoresearch.py. Do not guess these values: `reasoning_effort` is a top-level parameter, NOT `reasoning.effort`, and OpenRouter rejects an effort it does not recognise with a 400 that enumerates the values it will take. `tools/autoresearch.py` reads this file, and fails loudly on a 400 that names reasoning_effort, printing the set the API just reported.",
+  "verified": "2026-09-26",
+  "verification": "GET https://openrouter.ai/api/v1/models -> this id is listed, name 'Space Bunny Alpha', context_length 1000000, supported_parameters includes reasoning_effort. A 1-token POST to the chat endpoint with reasoning_effort='max' returned 200; the same request with an unrecognised value returned HTTP 400 'expected one of \"max\"|\"xhigh\"|\"high\"|\"medium\"|\"low\"|\"minimal\"|\"none\"'. The reasoning object form {effort: ...} also works but cannot be combined with reasoning.max_tokens, so the top-level parameter is the one to use.",
+  "model": "stealth/space-bunny-alpha",
+  "model_display_name": "Space Bunny Alpha",
+  "context_length": 1000000,
+  "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+  "models_endpoint": "https://openrouter.ai/api/v1/models",
+  "reasoning_parameter": "reasoning_effort",
+  "reasoning_effort": "max",
+  "reasoning_effort_enum": [
+    "max",
+    "xhigh",
+    "high",
+    "medium",
+    "low",
+    "minimal",
+    "none"
+  ],
+  "max_tokens": 32768,
+  "temperature": 1.0,
+  "http_referer": "https://github.com/denimpatel/learn-micro-gpt",
+  "title": "learn-micro-gpt autoresearch",
+  "key_env": "OPENROUTER_API_KEY",
+  "pricing_note": "prompt and completion are both priced at 0 on this model as of the verification date, so a session costs tokens rather than money. The harness still reports total token usage per experiment in the run record, because a free model today is not a promise about tomorrow."
+}

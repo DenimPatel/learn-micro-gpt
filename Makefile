@@ -111,12 +111,18 @@ help:
 	@echo "  fmt                      every formatter, in place"
 	@echo "  check                    lint + test + validate + parity (what CI runs)"
 	@echo
+	@echo "AUTORESEARCH  (a model improves the Rust track; see docs/AUTORESEARCH.md)"
+	@echo "  autoresearch-rust        run the loop, committing and pushing every experiment"
+	@echo "  autoresearch-verify      what CI runs: rebuild, re-check, re-measure the loss axis"
+	@echo "  autoresearch-render      regenerate autoresearch/results.json from the ledger"
+	@echo
 	@echo "HOUSEKEEPING"
 	@echo "  provenance               regenerate docs/PROVENANCE.md from the pins"
 	@echo "  clean                    remove build artifacts and generated data"
 	@echo "  distclean                clean, plus node_modules and cargo target"
 	@echo
 	@echo "VARIABLES: PYTHON=$(PYTHON) CC=$(CC) GO=$(GO) CARGO=$(CARGO) NPM=$(NPM) STEPS=$(if $(STEPS),$(STEPS),1000)"
+	@echo "            EXPERIMENTS=$(if $(EXPERIMENTS),$(EXPERIMENTS),1) RESEARCH_BRANCH=$(if $(RESEARCH_BRANCH),$(RESEARCH_BRANCH),main)"
 
 ## ------------------------------------------------------------- setup ------
 
@@ -215,6 +221,46 @@ parity:
 bench:
 	$(PYTHON) -m tools.bench
 
+## ---------------------------------------------------------- autoresearch ------
+
+# The research loop. Three knobs, all overridable:
+#
+#   make autoresearch-rust EXPERIMENTS=5
+#   make autoresearch-rust EXPERIMENTS=1 PUSH=0        # commit locally, do not push
+#   make autoresearch-rust RESEARCH_BRANCH=my-branch   # the branch it must be on
+#
+# It commits and pushes one commit per experiment, so the GitHub Page updates
+# without anyone pressing anything. Note the cost of that: CI cancels
+# in-progress runs on the same ref, so a burst of pushes leaves only the last one
+# validated and deployed. EXPERIMENTS=5 is a sane first run; a hundred is a
+# hundred full CI cycles.
+#
+# It needs OPENROUTER_API_KEY in the environment you run make from. The model and
+# its reasoning setting are pinned in autoresearch/model.json.
+autoresearch-rust:
+	@$(call require,$(PYTHON),Install Python 3.9+.)
+	@$(if $(shell git rev-parse --abbrev-ref HEAD),,\
+		echo "error: this is not a git repository, so there is nowhere to commit to." >&2; exit 1;)
+	$(PYTHON) -m tools.autoresearch seed
+	$(PYTHON) -m tools.autoresearch loop \
+		--track rust \
+		--experiments $(if $(EXPERIMENTS),$(EXPERIMENTS),1) \
+		--branch $(if $(RESEARCH_BRANCH),$(RESEARCH_BRANCH),main) \
+		$(if $(PUSH_DELAY),--push-delay $(PUSH_DELAY),) \
+		$(if $(filter 0,$(PUSH)),--no-push,)
+
+# What CI runs: no API key, no loop, no writes to the candidate. Rebuilds the
+# candidate, checks the gradient probe, confirms the committed source still
+# matches the run the site is quoting, and re-measures the loss axis. It
+# deliberately does not check the speed axis and says so out loud.
+autoresearch-verify:
+	@$(call require,$(PYTHON),Install Python 3.9+.)
+	$(PYTHON) -m tools.autoresearch verify
+
+autoresearch-render:
+	@$(call require,$(PYTHON),Install Python 3.9+.)
+	$(PYTHON) -m tools.autoresearch render
+
 ## -------------------------------------------------------------- ship ------
 
 dev:
@@ -240,6 +286,7 @@ fmt:
 	$(PYTHON) -m tools.fmt
 
 check: lint test validate test-web c-test parity build
+	$(PYTHON) -m tools.autoresearch verify
 
 ## ------------------------------------------------------ housekeeping ------
 
@@ -248,12 +295,12 @@ clean:
 	rm -f $(C_DIR)/microgpt $(C_DIR)/microgpt-scaled $(C_DIR)/*.o
 	rm -f model.bin *.profraw *.profdata
 	rm -rf $(VIS)/dist $(VIS)/playwright-report $(VIS)/test-results
-	rm -rf implementations/rust/target
+	rm -rf implementations/rust/target autoresearch/candidate/target
 	rm -f benchmarks/results.json.orig
 
 distclean: clean
 	rm -rf node_modules $(VIS)/node_modules implementations/typescript/node_modules
-	rm -rf implementations/rust/target
+	rm -rf implementations/rust/target autoresearch/candidate/target
 	find . -name __pycache__ -type d -prune -exec rm -rf {} +
 
 ## ------------------------------------------------------------- meta ------
@@ -261,4 +308,5 @@ distclean: clean
 .PHONY: setup setup-python setup-web run run-python run-c run-scaled \
         run-go run-rust run-ts validate test test-web install-web \
         verify-provenance provenance trace trace-check parity bench c-test \
+        autoresearch-rust autoresearch-verify autoresearch-render \
         dev build preview lint fmt check clean distclean

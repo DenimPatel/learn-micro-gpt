@@ -60,6 +60,75 @@ export function loadedSource(language: Language): string | undefined {
 
 export const TRACK_ORDER: readonly Language[] = ['python', 'c', 'rust', 'go', 'typescript']
 
+/*
+ * The research candidate, lazily.
+ *
+ * It is a *separate* file from the Rust track and it is not a `Language`: it has
+ * no entry in `anchors.json`, no concept resolves into it, and nothing else on
+ * the site links it. Only the research page shows it, and only to put the frozen
+ * track and the tuned one next to each other.
+ *
+ * Kept out of `LOADERS` on purpose. `LOADERS` is keyed by `Language`, and adding
+ * a sixth key would make the type lie -- it would say "these are the five
+ * cross-linked tracks" while containing one that is not. A separate loader with a
+ * separate cache keeps the type honest.
+ */
+const CANDIDATE_LOADER = () =>
+  import('../../../autoresearch/candidate/src/lib.rs?raw').then((m) => m.default)
+
+let candidateCache: string | undefined
+
+export async function loadCandidate(): Promise<string> {
+  if (candidateCache !== undefined) return candidateCache
+  candidateCache = await CANDIDATE_LOADER()
+  return candidateCache
+}
+
+export function loadedCandidate(): string | undefined {
+  return candidateCache
+}
+
+/*
+ * Per-experiment patches, one chunk each, loaded on demand.
+ *
+ * `eager: false` is the important half. A hundred experiments is a hundred
+ * patches, and a reader who opens the page to look at the chart should not
+ * download all of them to look at the best one. Same reasoning, and the same
+ * "still no runtime URL to get wrong" property, as the lazy language sources
+ * above: the bundler resolves every one of these at build time.
+ *
+ * The negation is not optional. `*.patch` also matches the best-vs-baseline
+ * patch, and having it in both this map and the eager one below makes the
+ * bundler warn that the module is in two chunks and resolve the ambiguity
+ * itself. One owner per file.
+ */
+const PATCH_LOADERS = import.meta.glob(
+  ['../../../autoresearch/diffs/*.patch', '!../../../autoresearch/diffs/best-vs-baseline.patch'],
+  {
+    query: '?raw',
+    import: 'default',
+  },
+)
+
+const PATCH_BEST = import.meta.glob('../../../autoresearch/diffs/best-vs-baseline.patch', {
+  query: '?raw',
+  eager: true,
+  import: 'default',
+}) as Record<string, string>
+
+const PATCH_BEST_TEXT = Object.values(PATCH_BEST)[0] ?? ''
+
+/** The frozen-track-to-current-candidate patch. Eager, and always present. */
+export const bestVsBaselinePatch = PATCH_BEST_TEXT
+
+/** The patch for one experiment, by run id. Rejected if that run never happened. */
+export async function loadPatch(runId: string): Promise<string | null> {
+  const key = `../../../autoresearch/diffs/${runId}.patch`
+  const loader = PATCH_LOADERS[key]
+  if (!loader) return null
+  return (await loader()) as string
+}
+
 export const LANGUAGES: Record<Language, { label: string; id: string; note: string }> = {
   python: { id: 'python', label: 'Python', note: 'the reference — 199 lines, stdlib only' },
   c: { id: 'c', label: 'C', note: 'the parity track — same config, hand-written backward pass' },
@@ -86,6 +155,7 @@ import contentJson from './generated/content.json'
 import indexJson from './generated/index.json'
 import anchorsJson from './generated/anchors.json'
 import benchmarksJson from '../../../benchmarks/results.json'
+import researchJson from '../../../autoresearch/results.json'
 
 import type {
   AttnRow,
@@ -93,6 +163,7 @@ import type {
   Concept,
   ContentIndex,
   ProbsRow,
+  ResearchResults,
   ResolvedAnchors,
   SampleRow,
   StepRow,
@@ -103,6 +174,15 @@ export const content = contentJson as unknown as { concepts: Concept[] }
 export const index = indexJson as unknown as ContentIndex
 export const anchors = anchorsJson as unknown as ResolvedAnchors
 export const benchmarks = benchmarksJson as unknown as Benchmarks
+
+/*
+ * The research track's data, eager for the same reason `benchmarks` is: it is a
+ * few kilobytes, and a page that cannot render is worse than a page that is 4 kB
+ * heavier. The two things that are *not* eager are the candidate's source and the
+ * per-experiment patches, both of which grow without bound -- see `loadCandidate`
+ * and `PATCH_LOADERS` below.
+ */
+export const research = researchJson as unknown as ResearchResults
 
 export const concepts: Concept[] = content.concepts
 export const conceptsById: Record<string, Concept> = Object.fromEntries(

@@ -178,3 +178,123 @@ next document's gradients.
 Not a bug today. Noted because it is the kind of thing that becomes one
 silently, and because the C track is explicitly not a model of good practice —
 see issue 1.
+
+---
+
+## 5. The Rust port's `rmsnorm` is not on the autograd tape
+
+**Track:** `implementations/rust/src/lib.rs` (the parity track)
+**Status:** open. Deliberately unfixed — see "Why it was not fixed" below.
+**Severity:** low for anyone studying gradients, because the error is small and
+one-sided. High for anyone assuming this file is a faithful port in every respect.
+
+### What is wrong
+
+`rmsnorm` reads its input's *values*, not its handles:
+
+```rust
+fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle> {
+    let mut ms = 0.0f32;
+    for v in x {
+        let d = Tensor::data(*v);      // <- a number, not a node
+        ms += d * d;
+    }
+    ms /= x.len() as f32;
+    let scale = (ms + 1e-5).powf(-0.5);
+    x.iter().map(|v| Tensor::mul_scalar(*v, scale)).collect()
+}
+```
+
+`ms` and `scale` are `f32`. They are not tensors, so no tape node is recorded
+for them, and `Tensor::backward` has no path from the loss back through the
+normalisation. The forward pass is exactly right. The gradient is the gradient
+of a slightly different function than the one the loss evaluates.
+
+### Why the reference does not have this bug
+
+`reference/microgpt.py:102-105`:
+
+```python
+def rmsnorm(x):
+    ms = sum(xi * xi for xi in x) / len(x)
+    scale = (ms + 1e-5) ** -0.5
+    return [xi * scale for xi in x]
+```
+
+Three lines, and every operation is an overload rather than an arithmetic:
+
+| expression | method | recorded? |
+| --- | --- | --- |
+| `xi * xi` | `Value.__mul__` | yes |
+| `sum(...)` | `Value.__add__` | yes |
+| `/ len(x)` | `Value.__truediv__` | yes |
+| `** -0.5` | `Value.__pow__` | yes |
+
+Python hands the reference a complete tape for a function that never mentions
+autograd. Rust has no operator overloading, so transliterating the three lines is
+a *decision*, and this port made the wrong one by reading it as arithmetic. That
+is the same class of mistake as issue 1 — something the source language gave away
+for free and the target language did not — which is why it went unnoticed for as
+long as it did.
+
+### How it was found
+
+By finite difference, on the first run of the research loop's gradient probe
+(`autoresearch/candidate/tests/gradient_check.rs`). The probe exists for issue 1;
+it is the first evidence that it was needed for anything else too.
+
+### The measurement
+
+The directional derivative of the loss along one fixed pseudo-random unit
+direction, over all parameters at once, against a central difference at two step
+sizes. For a correct gradient the ratio is `1.0`:
+
+| step size `h` | ratio |
+| --- | --- |
+| `1e-1` | 1.0685 |
+| `3e-2` | 1.0641 |
+| `1e-2` | 1.0632 |
+| `3e-3` | 1.0640 |
+| `1e-3` | 1.0632 |
+| `3e-4` | 1.0746 |
+| `1e-4` | 1.0829 |
+| `1e-5` | 0.9313 |
+| `1e-6` | 0.4657 |
+
+**The gradient is 6.32% too large, and the number is a property of the tape
+rather than of the step size.** That is what the middle of the table shows: flat
+across four orders of magnitude of `h`. The `h^2` behaviour below `3e-4` is
+`f32` roundoff in the difference quotient, not the gradient — it is differencing
+two losses of magnitude ~2.08 to extract a signal of ~1e-5, and `f32` spacing at
+2.08 is `2.4e-7`. The measurement is trustworthy in the range the probe uses and
+no further, and the probe says so.
+
+6.32% is a *small* error and a *real* one. It is invisible to everything else in
+this repository, for the same reason issue 1's much larger error was: Adam divides
+by an estimate of the gradient's own magnitude, so a gradient that is uniformly
+too large takes almost exactly the same size step.
+
+### What actually happened next
+
+The research loop's first experiment put `rmsnorm` on the tape. The gradient ratio
+went from **1.0632 to 0.9999** — correct to within 0.01% — and the experiment was
+then *discarded*, because it cost 4.8% throughput for a 0.1% loss improvement,
+which is below the 2% noise floor on the loss axis. That is the system working:
+a real defect found, a real fix measured, and a keep/discard rule that is about
+performance rather than about how good the story is.
+
+See `autoresearch/results.tsv` and `autoresearch/runs/0001.json`.
+
+### Why it was not "fixed"
+
+Because the research track needs something to measure against, and this file is
+what it measures against. `implementations/rust/src/lib.rs` is frozen in place
+with a sha256 pin in `tools/provenance.py` precisely so that "the first version"
+is a claim with a mechanism behind it.
+
+It is also the more interesting artifact. A port with a correct gradient and no
+story is worth less here than a port with a *measured, bounded, documented* one,
+and a reader who is told "the C port's backward pass is wrong, here is the number"
+has learned something they can use. They can now also learn that the same class
+of bug cost the Rust port 6.32% and was caught by a probe built for a different
+port entirely.

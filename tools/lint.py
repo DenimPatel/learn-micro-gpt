@@ -19,6 +19,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VIS = REPO_ROOT / "visualizer"
+CANDIDATE = REPO_ROOT / "autoresearch" / "candidate"
 
 failures: list[str] = []
 
@@ -36,12 +37,25 @@ def _have(tool: str) -> bool:
     return subprocess.run(["which", tool], capture_output=True).returncode == 0
 
 
-def _clippy_available() -> bool:
+def _locate(tool: str) -> str | None:
+    """Find a tool, including where a toolchain installer puts one.
+
+    `cargo` installs to `~/.cargo/bin`, which is on an interactive shell's PATH
+    and is frequently *not* on the PATH a subprocess inherits -- from a launchd
+    job, an editor task, or a container entrypoint. Reporting "skipped (no cargo
+    on PATH)" for a machine that has Rust installed is worse than not checking:
+    the advice it gives is wrong, and a linter that lies about what it skipped is
+    a linter nobody trusts.
+    """
+    from tools.autoresearch import find_tool
+
+    return find_tool(tool)
+
+
+def _clippy_available(cargo: str) -> bool:
     """`cargo clippy` exists, and the toolchain actually has the component."""
-    if not _have("cargo-clippy"):
-        return False
     probe = subprocess.run(
-        ["cargo", "clippy", "--version"], capture_output=True, text=True
+        [cargo, "clippy", "--version"], capture_output=True, text=True
     )
     return probe.returncode == 0 and "not installed" not in probe.stderr
 
@@ -69,13 +83,24 @@ def main() -> int:
     else:
         print("  go vet ... skipped (no go on PATH)")
 
-    if not _have("cargo"):
-        print("  cargo clippy ... skipped (no cargo on PATH)")
-    elif not _clippy_available():
+    cargo = _locate("cargo")
+    if not cargo:
+        print("  cargo clippy ... skipped (no cargo; install Rust from https://rustup.rs)")
+    elif not _clippy_available(cargo):
         print("  cargo clippy ... skipped (clippy is not installed; "
               "`rustup component add clippy`)")
     else:
-        step("cargo clippy", ["cargo", "clippy", "--quiet"], cwd=REPO_ROOT / "implementations" / "rust")
+        step("cargo clippy (frozen track)", [cargo, "clippy", "--quiet"],
+             cwd=REPO_ROOT / "implementations" / "rust")
+        # The research track is a second Rust crate and a model rewrites it
+        # unsupervised, so "it compiles and it is clippy-clean" is the only thing
+        # standing between a bad patch and the page. Linted here rather than only
+        # in the loop so that a commit which breaks it is caught before it lands.
+        if (CANDIDATE / "Cargo.toml").is_file():
+            step("cargo clippy (research candidate)", [cargo, "clippy", "--release", "--quiet"],
+                 cwd=CANDIDATE)
+        else:
+            print("  cargo clippy (research candidate) ... skipped (no candidate crate; run `make autoresearch-rust`)")
 
     if failures:
         print(f"\nlint failed: {', '.join(failures)}", file=sys.stderr)

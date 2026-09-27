@@ -22,6 +22,7 @@ import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
 import { RunPlayground } from './components/RunPlayground'
+import { ResearchPage } from './components/ResearchPage'
 import { LossChart, SamplesList } from './components/widgets'
 
 export function App() {
@@ -63,6 +64,9 @@ export function App() {
           </NavLink>
           <NavLink route={{ name: 'compare' }} current={route.name}>
             compare
+          </NavLink>
+          <NavLink route={{ name: 'research' }} current={route.name}>
+            research
           </NavLink>
           <NavLink route={{ name: 'run' }} current={route.name}>
             run
@@ -185,6 +189,8 @@ function Router({
       return <ExplorePage />
     case 'compare':
       return <ComparePage />
+    case 'research':
+      return <ResearchPage />
     case 'run':
       return <RunPlayground />
     case 'about':

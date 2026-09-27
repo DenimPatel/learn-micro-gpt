@@ -67,6 +67,29 @@ better that they find them from here:
 
 ---
 
+## The research loop
+
+**Andrej Karpathy** — [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch) — MIT
+
+`tools/autoresearch.py` and the `autoresearch/` directory descend from that
+project, and the shape of the thing is his: a fixed measurement protocol, one
+editable file, an append-only `results.tsv` ledger, a keep/discard decision, and a
+brief in `program.md` that tells the agent what it may and may not touch. His
+`program.md` is also where the idea of writing the brief as a document the agent
+reads &mdash; rather than as code that prompts it &mdash; came from.
+
+The differences are deliberate and are listed with their reasons in
+[`docs/AUTORESEARCH.md`](docs/AUTORESEARCH.md): a fixed step count instead of a
+wall-clock budget, a two-axis Pareto objective instead of a single scalar, a
+baseline re-measured every session, a digest-pinned finite-difference gradient gate
+that his version does not have, failures committed rather than discarded, and a
+verdict computed by the harness rather than read off a number by the model.
+
+No code is copied from upstream. What is borrowed is the *design*, and it is
+credited here rather than in a file header because the borrowing is structural.
+
+---
+
 ## Datasets
 
 **Andrej Karpathy** — [`karpathy/makemore`](https://github.com/karpathy/makemore) — MIT
@@ -89,5 +112,6 @@ and possibly break the reference".
 
 ## Ours
 
-Everything else — `tools/`, `content/`, `visualizer/`, `docs/`, the CI workflows,
-the trace and benchmark harnesses — is MIT, in [`LICENSE`](LICENSE).
+Everything else — `tools/`, `content/`, `visualizer/`, `docs/`, `autoresearch/`,
+the CI workflows, the trace and benchmark harnesses — is MIT, in
+[`LICENSE`](LICENSE).

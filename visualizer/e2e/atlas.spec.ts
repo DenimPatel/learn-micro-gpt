@@ -134,8 +134,23 @@ test.describe('content and anchors', () => {
         localStorage.setItem('atlas:theme', on ? 'dark' : 'light')
       }, dark)
       await page.reload()
-      const pre = page.locator('.code-panel pre').first()
-      await expect(pre).toBeVisible()
+      /*
+       * `pre.shiki:visible`, not `.code-panel pre`.
+       *
+       * CodePanel renders Shiki's output twice, once in a `.light-only` span and
+       * once in a `.dark-only` span, and hides the one that does not match the
+       * theme. So a plain `.code-panel pre` .first() resolves to whichever copy
+       * comes first in the DOM -- the *light* one -- which is `display: none` in
+       * dark mode, and the test failed there intermittently depending on whether
+       * highlighting had arrived inside the timeout.
+       *
+       * `:visible` picks the copy actually on screen, and `.shiki` keeps the
+       * assertion pointed at the element that has Shiki's inline background,
+       * which is the whole point: the plain-text fallback before highlighting
+       * arrives carries no inline background and would pass vacuously.
+       */
+      const pre = page.locator('.code-panel pre.shiki:visible').first()
+      await expect(pre, `Shiki never rendered a visible code panel (dark=${dark})`).toBeVisible()
       const background = await pre.evaluate((node) => getComputedStyle(node).backgroundColor)
       const page_ = await page.evaluate(() => getComputedStyle(document.body).backgroundColor)
       expect(background, `dark=${dark}: pre ${background} vs body ${page_}`).not.toBe(

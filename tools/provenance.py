@@ -76,6 +76,60 @@ REFERENCE = ProvenanceEntry(
 PROVENANCE: tuple[ProvenanceEntry, ...] = (
     REFERENCE,
     ProvenanceEntry(
+        path="implementations/rust/src/lib.rs",
+        sha256="4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
+        origin="Rust port of microgpt.py (micro config, parity track) -- FROZEN",
+        url="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95",
+        license="MIT",
+        author="Karpathy (algorithm), this repository (port)",
+        note=(
+            "FROZEN IN PLACE, and the digest above is the mechanism. `derived=True` "
+            "is the honest flag -- this is our adaptation of Karpathy's Python, not "
+            "bytes fetched from somewhere -- but the check compares the digest either "
+            "way, so editing this file fails the build. It is called out here because "
+            "'derived' normally means the opposite.\n"
+            "The research loop in tools/autoresearch.py measures every candidate "
+            "against this file and the site renders it, so 'the first version' is only "
+            "a real claim while its bytes cannot move. The tuned copy lives at "
+            "autoresearch/candidate/src/lib.rs and is expected to diverge freely; this "
+            "one is not. tools/tests/test_autoresearch.py asserts this digest by name.\n"
+            "It is also wrong about gradients -- docs/KNOWN-ISSUES.md issue 5, a 6.32% "
+            "overestimate found by finite difference -- and that is left in place on "
+            "purpose, because it is the thing every candidate is measured against."
+        ),
+        derived=True,
+    ),
+    ProvenanceEntry(
+        path="implementations/rust/Cargo.toml",
+        sha256="0b743d919a98011f7f995db246ebc45f22dafc24233580aab342960cd380aa7b",
+        origin="Rust port build manifest -- FROZEN with its crate",
+        url="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95",
+        license="MIT",
+        author="Karpathy (algorithm), this repository (port)",
+        note=(
+            "Frozen with the crate it belongs to; see the note on lib.rs beside it. "
+            "The profile settings are part of what the research loop measures: "
+            "debug-assertions and overflow-checks are on in release, deliberately, "
+            "because a model that silently wraps a float is worse than one that stops "
+            "-- and for the research loop, one that stops is measurable and one that "
+            "wraps is not."
+        ),
+        derived=True,
+    ),
+    ProvenanceEntry(
+        path="implementations/rust/src/main.rs",
+        sha256="0160147568e6ac5a1c0448dccefd638931467cdcd1225e47529d078d97fbc324",
+        origin="Rust port binary entry point -- FROZEN with its crate",
+        url="https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95",
+        license="MIT",
+        author="Karpathy (algorithm), this repository (port)",
+        note=(
+            "Six lines that call microgpt::run(). Frozen with its crate; see the note "
+            "on lib.rs."
+        ),
+        derived=True,
+    ),
+    ProvenanceEntry(
         path="reference/microgpt-annotated.py",
         sha256="57e51f2ccb8d8655f1cf9de9955f019283a14222d59d9b3b90ca686f58150244",
         origin="Heavily commented fork of microgpt.py",

@@ -785,6 +785,160 @@
     vector-effect: non-scaling-stroke;
   }
 
+  /* --- research (#/research) ---
+     The two charts on the research page are hand-rolled SVG, like `.chart` above,
+     and these are their classes. No charting library: the site has two <svg>
+     elements and no dependency on one, and adding a package to draw a scatter
+     plot would cost more than it saves in a repository whose argument is that
+     you can read all of its code. */
+  .research__scatter {
+    height: 17rem;
+  }
+  .research__gains {
+    height: 11rem;
+  }
+  .research__grid {
+    stroke: var(--border);
+    stroke-width: 0.25;
+    vector-effect: non-scaling-stroke;
+  }
+  /* The staircase between frontier points. A straight segment would imply an
+     interpolation through a region that is dominated, not intermediate. */
+  .research__frontier {
+    stroke: var(--fg-subtle);
+    stroke-width: 0.5;
+    stroke-dasharray: 2 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .research__point {
+    /* `r` is an SVG attribute, so the sizing is in user units and needs
+       `vector-effect` on the stroke to stay hairline under `preserveAspectRatio:
+       none`, which stretches the box non-uniformly. */
+    stroke-width: 0.3;
+    vector-effect: non-scaling-stroke;
+  }
+  .research__point--baseline {
+    fill: var(--fg-muted);
+    stroke: var(--fg);
+  }
+  .research__point--keep {
+    fill: var(--ok);
+    stroke: var(--bg);
+  }
+  .research__point--discard {
+    fill: var(--border-strong);
+    stroke: var(--bg);
+  }
+  .research__point.is-frontier {
+    stroke: var(--accent);
+  }
+  .research__zero {
+    stroke: var(--fg-subtle);
+    stroke-width: 0.4;
+    vector-effect: non-scaling-stroke;
+  }
+  /* The regression tolerance, drawn rather than described: a point outside this
+     band on either axis is a discard however far the other axis went. */
+  .research__band {
+    fill: var(--bg-inset);
+    opacity: 0.7;
+  }
+  .research__series {
+    stroke-width: 0.5;
+    vector-effect: non-scaling-stroke;
+  }
+  .research__series--loss {
+    stroke: var(--accent);
+  }
+  .research__series--speed {
+    stroke: var(--warn);
+  }
+  .research__keep-tick {
+    stroke: var(--ok);
+    stroke-width: 0.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .research__badge {
+    display: inline-block;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 0 0.5rem;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+  .research__badge--keep {
+    background: var(--ok-bg);
+    color: var(--ok);
+    border-color: var(--ok);
+  }
+  .research__badge--discard {
+    background: var(--bg-inset);
+    color: var(--fg-muted);
+  }
+  .research__badge--crash {
+    background: var(--warn-bg);
+    color: var(--warn);
+    border-color: var(--warn);
+  }
+  .research__row--keep th {
+    border-left: 3px solid var(--ok);
+  }
+  .research__row--discard th {
+    border-left: 3px solid var(--border-strong);
+  }
+  .research__row--crash th {
+    border-left: 3px solid var(--warn);
+  }
+  .research__failure {
+    color: var(--fg-muted);
+    font-size: 0.88rem;
+  }
+  .research__ledger td,
+  .research__ledger th {
+    font-variant-numeric: tabular-nums;
+  }
+  .research__empty {
+    max-width: var(--measure);
+    padding: 0.8rem 1rem;
+    border-left: 3px solid var(--border-strong);
+    background: var(--bg-subtle);
+    color: var(--fg-muted);
+  }
+  .research__diff {
+    overflow-x: auto;
+    max-height: 26rem;
+    font-size: 0.82rem;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.7rem 0.9rem;
+  }
+  /* The measured gradient ratios. Shares `.caveats`' visual treatment -- a short
+     muted list with a leading dash -- but is a different class, because it means
+     something different: those are results, not warnings about how to read them.
+     The first version reused `.caveats` outright, and then the e2e test asserting
+     "the caveats are on the page" matched this list instead. */
+  .research__ratios {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.6rem;
+    max-width: var(--measure);
+    font-size: 0.88rem;
+    color: var(--fg-muted);
+  }
+  .research__ratios li {
+    padding-left: 1.1rem;
+    position: relative;
+    margin-bottom: 0.4rem;
+  }
+  .research__ratios li::before {
+    content: '\2014';
+    position: absolute;
+    left: 0;
+    color: var(--fg-subtle);
+  }
+
   .samples {
     list-style: none;
     margin: 0;
