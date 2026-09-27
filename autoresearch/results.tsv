@@ -6,3 +6,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0004	92c0bd290f36012cfda98723f58f9cb8e131b748	2.433882	959.506660	+0.000000	+15.328069	1.063160	keep		Fuse linear dot products into correctly differentiated tape nodes
 0005	aab107aa00ed4ce77f433c363d248dfd196efe40	2.433882	1054.328215	+0.000000	+16.941662	1.063160	keep		Fuse attention score dot products into the existing linear tape node
 0006	6dc7cc7e4177d3c3b3929e16f49fe89cd43f0be3	2.433882	953.153688	+0.000000	+15.219960	1.063160	keep		Reset only graph nodes visited during each backward pass
+0007	2c92dec4f07d7c121c8da0be33feecb383ac5d00	2.604630	1078.780897	-0.070155	+17.357777	1.063160	discard	no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance	Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero

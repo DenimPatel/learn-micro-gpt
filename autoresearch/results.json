@@ -80,9 +80,9 @@
     "description": "Fuse attention score dot products into the existing linear tape node"
   },
   "counts": {
-    "experiments": 6,
+    "experiments": 7,
     "keep": 4,
-    "discard": 1,
+    "discard": 2,
     "crash": 1
   },
   "pareto": [
@@ -185,6 +185,20 @@
       "reason": "",
       "description": "Reset only graph nodes visited during each backward pass",
       "measured": "2026-09-27T06:43:56Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0007",
+      "parent": "2c92dec4f07d7c121c8da0be33feecb383ac5d00",
+      "loss": 2.60463,
+      "steps_per_sec": 1078.780897,
+      "loss_gain": -0.070155,
+      "speed_gain": 17.357777,
+      "grad_ratio": 1.06316,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance",
+      "description": "Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero",
+      "measured": "2026-09-27T06:45:21Z",
       "has_record": true
     }
   ],
