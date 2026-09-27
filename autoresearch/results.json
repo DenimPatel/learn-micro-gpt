@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "7f3c1eac8c24846552bdb737f7e56f4c3a76d7690ca7ab883e94d8bc870ac188",
+    "candidate_sha256": "63abc258432c5d1856128f5e17957b349c9c3feab7d9073a609d27c3c17a4c26",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 92,
-    "keep": 57,
+    "experiments": 93,
+    "keep": 58,
     "discard": 2,
     "crash": 33
   },
@@ -91,7 +91,8 @@
     "0030",
     "0066",
     "0087",
-    "0090"
+    "0090",
+    "0093"
   ],
   "runs": [
     {
@@ -1394,6 +1395,20 @@
       "reason": "",
       "description": "Restore the terminal RMSNorm on the better five-document batch",
       "measured": "2026-09-27T11:01:51Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0093",
+      "parent": "b21226ad64a0c7fa163c1fbfb237b6bed4fad5f1",
+      "loss": 2.2429,
+      "steps_per_sec": 205.513525,
+      "loss_gain": 0.078468,
+      "speed_gain": 2.497255,
+      "grad_ratio": 1.000213,
+      "status": "keep",
+      "reason": "",
+      "description": "Cap default training contexts at eight characters to avoid long-name tail work",
+      "measured": "2026-09-27T11:05:24Z",
       "has_record": true
     }
   ],
