@@ -24,3 +24,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0022	8118d7ad573f52176ad64283d2a6d44fc75c4b80	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace the per-step topological DFS with reverse arena-order backpropagation
 0023	0ce16cc22866a35627675eaa2fa2b3041143f927	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce repeated arena borrows in hot tensor primitives with identical arithmetic
 0024	cb5e5e4a3d828c653b35bac90691efc4fe811991	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Share softmax reciprocals and reuse tape reduction scratch to accelerate training without changing model arithmetic
+0025	08616133b1186089f180c09bfab78b018842d344	2.465502	1054.504806	-0.012992	+16.944667	0.999933	keep		Double Adam learning rate to 0.02 and restore beta2 to 0.99
