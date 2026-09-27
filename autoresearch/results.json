@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "b628991d9c3a48954250f8393bcb980d314ef1b1710e17a60a7caa3762e98965",
+    "candidate_sha256": "55d9e12df22f0436cd38a3301557cfacbd0d379ad1e15aa1b7b987d5a1f715ae",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 83,
-    "keep": 52,
+    "experiments": 84,
+    "keep": 53,
     "discard": 2,
     "crash": 29
   },
@@ -1270,6 +1270,20 @@
       "reason": "the patch did not apply",
       "description": "Store autograd edges in shared buffers written in place without changing arithmetic",
       "measured": "2026-09-27T10:34:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0084",
+      "parent": "ab725cc3bceb1dfb10fed5f9a6c68d4dcdc6e895",
+      "loss": 2.25883,
+      "steps_per_sec": 166.531883,
+      "loss_gain": 0.071923,
+      "speed_gain": 1.833898,
+      "grad_ratio": 0.999802,
+      "status": "keep",
+      "reason": "",
+      "description": "Increase the Adam batch size from five documents to six",
+      "measured": "2026-09-27T10:36:03Z",
       "has_record": true
     }
   ],
