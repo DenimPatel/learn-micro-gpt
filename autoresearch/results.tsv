@@ -77,3 +77,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0075	158fe0c4211ecbdc64587b19c172b99c57749803	2.318052	125.547324	+0.047591	+1.136458	1.000259	keep		Widen the model from 32 to 48 embedding dimensions
 0076	19a5243295e64aaba0517985d3ae650fc2a593a5	2.187488	201.562917	+0.101235	+2.430026	1.000259	keep		Restore the 32-dimensional model and five-document Adam batch
 0077	57d66c1211b8e3d770d9310debe0e4b9793f77a9	2.205084	203.393218	+0.094005	+2.461173	0.999802	keep		Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream
+0078	7027be5541e523e737361884f416a497b597db2f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo clippy failed with -D warnings	Fuse residual projections and training cross-entropy to cut tape nodes

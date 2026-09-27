@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 77,
+    "experiments": 78,
     "keep": 52,
     "discard": 2,
-    "crash": 23
+    "crash": 24
   },
   "pareto": [
     "0011",
@@ -1186,6 +1186,20 @@
       "reason": "",
       "description": "Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream",
       "measured": "2026-09-27T10:09:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0078",
+      "parent": "7027be5541e523e737361884f416a497b597db2f",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo clippy failed with -D warnings",
+      "description": "Fuse residual projections and training cross-entropy to cut tape nodes",
+      "measured": "2026-09-27T10:15:02Z",
       "has_record": true
     }
   ],
