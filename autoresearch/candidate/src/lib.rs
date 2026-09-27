@@ -521,7 +521,7 @@ impl Model {
         let mut state: Vec<(String, Matrix)> = Vec::new();
         let std = 0.08;
         state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
-        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, std)));
+        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, 0.02)));
         state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
         for i in 0..config.n_layer {
             let p = format!("layer{i}.");

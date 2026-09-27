@@ -1,0 +1,7 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -447,3 +447,3 @@
+         state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
+-        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, std)));
++        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, 0.02)));
+         state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
