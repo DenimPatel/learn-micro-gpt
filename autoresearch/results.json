@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 95,
+    "experiments": 96,
     "keep": 58,
     "discard": 2,
-    "crash": 35
+    "crash": 36
   },
   "pareto": [
     "0011",
@@ -1437,6 +1437,20 @@
       "reason": "the patch did not apply",
       "description": "Fuse stable training cross entropy into one correctly differentiated tape node",
       "measured": "2026-09-27T11:13:48Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0096",
+      "parent": "162354650ca89b67b2d6008e540e31bc95d79387",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic",
+      "measured": "2026-09-27T11:18:18Z",
       "has_record": true
     }
   ],
