@@ -926,7 +926,9 @@ pub fn run() {
 
         Tensor::backward(loss);
 
-        let lr_t = LEARNING_RATE * (1.0 - step as f32 / config.num_steps as f32);
+        let lr_t = LEARNING_RATE
+            * (0.5
+                * (1.0 + (std::f32::consts::FRAC_PI_2 * step as f32 / config.num_steps as f32).cos()));
         let beta1_power = BETA1.powi(step as i32 + 1);
         let beta2_power = BETA2.powi(step as i32 + 1);
         for (i, p) in params.iter().enumerate() {

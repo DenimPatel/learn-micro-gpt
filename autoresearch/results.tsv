@@ -44,3 +44,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0042	1ff5cee419d0d291d81c841c5cae0aeaeb306742	2.198572	125.471447	+0.096681	+1.135166	0.999933	keep		Batch five shuffled documents per Adam update
 0043	843d867d953cfa3a306ca24ec2d6481c068e3683	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace autograd DFS and visited tracking with reverse arena-order backward propagation
 0044	6f8731841c587dbd0f040e95da0a5cdba3b2bd16	2.190858	125.056591	+0.099850	+1.128107	1.000037	keep		Lower positional embedding initialization standard deviation to 0.02
+0045	5ece3460f5e36bfe277382a98bbf31dd9a551e5a	2.272280	113.181516	+0.066397	+0.926027	1.000037	keep		Replace linear learning-rate decay with cosine decay
