@@ -1,0 +1,9 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -1029,5 +1029,5 @@
+     const BETA1: f32 = 0.85;
+     const BETA2: f32 = 0.98;
+     const EPS_ADAM: f32 = 1e-8;
+-    const BATCH_SIZE: usize = 4;
++    const BATCH_SIZE: usize = 5;
+     let mut moments = vec![0.0f32; params.len()];

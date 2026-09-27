@@ -101,3 +101,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0099	3758437084dc417f78b941593a5e1850e6464594	2.193898	250.668355	+0.098601	+3.265661	1.000259	keep		Shrink model width from 32 to 28 for a lower-cost speed candidate
 0100	d805e22089167e360c13e7bf6d9b7fce018f052a	2.190140	248.581918	+0.100145	+3.230156	1.000259	keep		Extend causal contexts and positional embeddings from 16 to 24 tokens
 0101	58b3dbe4b5413e022e809cc7b84e8c5c266a3512	2.293352	314.380898	+0.057739	+4.349867	1.000259	keep		Reduce the Adam batch from five documents to four
+0102	388cbe003f35660e91d88eabde1504269952f1d9	2.190140	251.094495	+0.100145	+3.272913	1.000259	keep		Restore the five-document Adam batch

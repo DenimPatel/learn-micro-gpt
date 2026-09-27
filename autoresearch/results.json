@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "fd738dd49ae8db6cfe2be575f1934a93d8e4bda7f0b2cb57baa00d51641126c6",
+    "candidate_sha256": "99326ce38891f27483c0db2e0cb953f65c516f525ad81a2e167f4876a8c7c785",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 101,
-    "keep": 62,
+    "experiments": 102,
+    "keep": 63,
     "discard": 2,
     "crash": 37
   },
@@ -92,9 +92,8 @@
     "0066",
     "0087",
     "0090",
-    "0099",
-    "0100",
-    "0101"
+    "0101",
+    "0102"
   ],
   "runs": [
     {
@@ -1523,6 +1522,20 @@
       "reason": "",
       "description": "Reduce the Adam batch from five documents to four",
       "measured": "2026-09-27T11:30:45Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0102",
+      "parent": "388cbe003f35660e91d88eabde1504269952f1d9",
+      "loss": 2.19014,
+      "steps_per_sec": 251.094495,
+      "loss_gain": 0.100145,
+      "speed_gain": 3.272913,
+      "grad_ratio": 1.000259,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore the five-document Adam batch",
+      "measured": "2026-09-27T11:38:08Z",
       "has_record": true
     }
   ],
