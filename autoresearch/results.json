@@ -80,10 +80,10 @@
     "description": "Hoist Adam bias corrections and fuse each parameter update into one arena borrow"
   },
   "counts": {
-    "experiments": 20,
+    "experiments": 21,
     "keep": 11,
     "discard": 2,
-    "crash": 7
+    "crash": 8
   },
   "pareto": [
     "0011",
@@ -382,6 +382,20 @@
       "reason": "cargo build failed",
       "description": "Share each softmax denominator and fuse its probability divisions into one tape node",
       "measured": "2026-09-27T07:13:23Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0021",
+      "parent": "b8ea86cbc5870a86262446f77f612f06483c020e",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes",
+      "measured": "2026-09-27T07:19:02Z",
       "has_record": true
     }
   ],

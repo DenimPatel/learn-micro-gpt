@@ -20,3 +20,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0018	f7fad465223dce888728556e56b194d0be45d6f1	2.430954	1234.952807	+0.001203	+20.015378	0.999933	keep		Differentiate RMSNorm through its mean square and inverse scale on the autograd tape
 0019	96f095a89b7a88490f75a63fc70afc17723c855d	2.430954	1288.426791	+0.001203	+20.925353	0.999933	keep		Hoist Adam bias corrections and fuse each parameter update into one arena borrow
 0020	eb0ab5e626ef5e7f054aaf80132e8d3ab7835880	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Share each softmax denominator and fuse its probability divisions into one tape node
+0021	b8ea86cbc5870a86262446f77f612f06483c020e	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes
