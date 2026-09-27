@@ -4,6 +4,7 @@ import {
   bestRow,
   diffCounts,
   experiments,
+  frontierIds,
   formatGain,
   formatRatio,
   isFrontier,
@@ -14,7 +15,10 @@ import {
   ratioErrorPercent,
   shortDigest,
   speedTicks,
+  rowTrack,
   statusCount,
+  trackRows,
+  tracks,
 } from '../src/data/research'
 
 /**
@@ -66,9 +70,41 @@ describe('the ledger reached the browser intact', () => {
   })
 
   it('records the digests the page links a reader to', () => {
-    expect(research.provenance_of.baseline_sha256).toMatch(/^[0-9a-f]{64}$/)
-    expect(research.provenance_of.candidate_sha256).toMatch(/^[0-9a-f]{64}$/)
-    expect(research.provenance_of.gradient_probe_sha256).toMatch(/^[0-9a-f]{64}$/)
+    const rust = research.provenance_of.rust
+    expect(rust.baseline_sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(rust.candidate_sha256).toMatch(/^[0-9a-f]{64}$/)
+    expect(rust.gradient_probe_sha256).toMatch(/^[0-9a-f]{64}$/)
+  })
+
+  it("names each track's own comparator and its own probe", () => {
+    // The failure this catches: `provenance_of` is a per-track map, and the
+    // cheapest way to fill it is to write the Rust paths into all three entries.
+    // Everything downstream -- the page's "against <code>...</code>, whose sha256
+    // is" line, and a reader's decision about which build a number is about --
+    // would then be confidently wrong for two of the three tracks.
+    //
+    // Note what is *not* asserted: that an unseeded track has empty digests. The
+    // digest of `implementations/go/main.go` is a true fact about the repository
+    // whether or not the loop has ever been run on Go, and recording it is more
+    // useful than a blank. What must be blank is the research output.
+    const comparators = new Set<string>()
+    for (const track of tracks()) {
+      const provenance = research.provenance_of[track]
+      expect(provenance.baseline_source, `${track} names another track's comparator`).toContain(
+        `implementations/${track === 'rust' ? 'rust' : track}/`,
+      )
+      expect(provenance.candidate_source, `${track} names another track's candidate`).toContain(
+        `autoresearch/${research.tracks[track].candidate_dir}/`,
+      )
+      expect(provenance.gradient_probe, `${track} names another track's probe`).toContain(
+        research.tracks[track].probe,
+      )
+      expect(provenance.baseline_sha256).toMatch(/^[0-9a-f]{64}$/)
+      expect(provenance.gradient_probe_sha256).toMatch(/^[0-9a-f]{64}$/)
+      comparators.add(provenance.baseline_source)
+    }
+    // Three tracks, three comparators: no two of them share a frozen build.
+    expect(comparators.size).toBe(tracks().length)
   })
 })
 
@@ -88,9 +124,28 @@ describe('measured rows exclude crashes', () => {
     expect(research.counts.experiments).toBe(experiments().length)
   })
 
-  it('excludes the baseline from the experiment count', () => {
-    expect(experiments().some((row) => row.status === 'baseline')).toBe(false)
-    expect(experiments().length).toBe(research.runs.length - 1)
+  it("excludes every track's baseline from the experiment count", () => {
+    // There is one baseline row per seeded track, not one for the ledger, so the
+    // subtracted count is the number of tracks with a baseline rather than a
+    // literal 1. Getting this wrong inflates the count by one per track and the
+    // page never notices, because the stat is compared against nothing else.
+    expect(experiments('rust').some((row) => row.status === 'baseline')).toBe(false)
+    const baselines = research.runs.filter((row) => row.status === 'baseline').length
+    expect(baselines).toBeGreaterThan(0)
+    expect(experiments('rust').length).toBe(research.runs.length - baselines)
+  })
+
+  it("gives each track its own experiments, and never another track's", () => {
+    const total = tracks().reduce((sum, track) => sum + experiments(track).length, 0)
+    expect(total).toBe(
+      research.runs.length - research.runs.filter((r) => r.status === 'baseline').length,
+    )
+    for (const track of tracks()) {
+      const mine = new Set(trackRows(track).map((row) => row.run_id))
+      for (const row of experiments(track)) {
+        expect(mine.has(row.run_id)).toBe(true)
+      }
+    }
   })
 })
 
@@ -119,7 +174,7 @@ describe('the best run', () => {
 describe('the Pareto frontier', () => {
   it('contains only rows that exist and were measured', () => {
     const ids = new Set(research.runs.map((row) => row.run_id))
-    for (const id of research.pareto) {
+    for (const id of research.pareto.rust) {
       expect(ids.has(id), `${id} is on the frontier but is not in the ledger`).toBe(true)
       const row = research.runs.find((r) => r.run_id === id)
       expect(row?.status === 'crash').toBe(false)
@@ -128,7 +183,7 @@ describe('the Pareto frontier', () => {
 
   it('has no point dominated by another point on it', () => {
     const rows = new Map(research.runs.map((row) => [row.run_id, row]))
-    const frontier = research.pareto.map((id) => rows.get(id)!)
+    const frontier = research.pareto.rust.map((id) => rows.get(id)!)
     for (const a of frontier) {
       for (const b of frontier) {
         if (a === b) continue
@@ -145,14 +200,29 @@ describe('the Pareto frontier', () => {
     // Only true while there is at most one measured candidate; the seed state.
     // Stated rather than assumed so that if it ever fails it fails loudly here
     // instead of quietly rendering a chart with no reference point.
-    if (measuredRows().length === 1) {
-      expect(research.pareto).toContain(research.runs.at(0)?.run_id)
+    if (measuredRows('rust').length === 1) {
+      expect(research.pareto.rust).toContain(research.runs.at(0)?.run_id)
     }
   })
 
   it('agrees with the isFrontier helper the chart uses', () => {
     for (const row of research.runs) {
-      expect(isFrontier(row.run_id)).toBe(research.pareto.includes(row.run_id))
+      const track = rowTrack(row)
+      expect(isFrontier(row.run_id, track)).toBe(frontierIds(track).includes(row.run_id))
+    }
+  })
+
+  it("puts no run of one track on another track's frontier", () => {
+    // A frontier is a claim about one comparator. If the Go candidate\'s run id
+    // were on the Rust frontier, the scatter would be plotting a Go loss against a
+    // Rust speed, and nothing downstream could tell.
+    for (const track of tracks()) {
+      const mine = new Set(trackRows(track).map((row) => row.run_id))
+      for (const id of frontierIds(track)) {
+        expect(mine.has(id), `${id} is on the ${track} frontier but is a different track`).toBe(
+          true,
+        )
+      }
     }
   })
 })
@@ -311,13 +381,27 @@ describe('the diff tally', () => {
     expect(diffCounts('--- a/x.rs\n+++ b/x.rs\n')).toEqual({ added: 0, removed: 0 })
   })
 
-  it('tallies the seed patch as the one method it is', () => {
-    // The candidate began as the frozen track plus `Tensor::set_data`, so the
-    // best-vs-baseline patch cannot have grown before any experiment has been
-    // kept. If this ever fails, a discarded experiment leaked into the candidate.
-    const counts = diffCounts(bestVsBaselinePatch)
-    expect(counts.added).toBeGreaterThan(0)
-    expect(bestVsBaselinePatch).toContain('set_data')
-    expect(bestVsBaselinePatch).not.toContain('fn rmsnorm')
+  it('tallies the Rust best-vs-baseline patch as a real diff against the Rust track', () => {
+    // Not "the one method it is", any more, and deliberately. This test used to
+    // assert the patch did *not* contain `fn rmsnorm`, which is to say it asserted
+    // that docs/KNOWN-ISSUES.md issue 5 was still unfixed -- and the loop fixed it,
+    // which is the loop working. A test that fails when the research succeeds is
+    // a test encoding a moment rather than a property. What is a property: the
+    // patch is a well-formed diff of something, and the per-run digests the page
+    // quotes still match the files on disk.
+    const patch = bestVsBaselinePatch('rust')
+    expect(patch).toContain('--- a/implementations/rust/src/lib.rs')
+    expect(patch).toContain('+++ b/autoresearch/candidate/src/lib.rs')
+    expect(diffCounts(patch).added).toBeGreaterThan(0)
+  })
+
+  it("reports an unseeded track's best-vs-baseline patch as empty, not another track's", () => {
+    // Every other track is unseeded at the moment this is written. Showing the
+    // Rust patch under a Go heading would be the whole failure mode this
+    // multi-track change is trying to avoid.
+    for (const track of tracks()) {
+      if (track === 'rust' || research.baselines[track] !== null) continue
+      expect(bestVsBaselinePatch(track), `${track} has no patch of its own`).toBe('')
+    }
   })
 })

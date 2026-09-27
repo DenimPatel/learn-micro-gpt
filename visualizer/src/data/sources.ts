@@ -73,19 +73,37 @@ export const TRACK_ORDER: readonly Language[] = ['python', 'c', 'rust', 'go', 't
  * cross-linked tracks" while containing one that is not. A separate loader with a
  * separate cache keeps the type honest.
  */
-const CANDIDATE_LOADER = () =>
-  import('../../../autoresearch/candidate/src/lib.rs?raw').then((m) => m.default)
-
-let candidateCache: string | undefined
-
-export async function loadCandidate(): Promise<string> {
-  if (candidateCache !== undefined) return candidateCache
-  candidateCache = await CANDIDATE_LOADER()
-  return candidateCache
+/*
+ * One per track, because each candidate is a different language in a different
+ * directory. The paths are written out rather than globbed: `import.meta.glob`
+ * with a variable is not statically analysable, so a track that did not exist
+ * would only fail at run time, in the browser, on the one page that shows it.
+ * `tsc` is the check that this list and the harness's `Track` table agree.
+ *
+ * Still lazy, and still a separate loader from `LOADERS`: a candidate has no
+ * entry in `anchors.json` and is not one of the five cross-linked tracks, so
+ * adding it as a sixth `Language` would make that type lie.
+ */
+const CANDIDATE_LOADERS: Record<string, () => Promise<string>> = {
+  rust: () => import('../../../autoresearch/candidate/src/lib.rs?raw').then((m) => m.default),
+  go: () => import('../../../autoresearch/candidate-go/main.go?raw').then((m) => m.default),
+  typescript: () =>
+    import('../../../autoresearch/candidate-ts/src/index.ts?raw').then((m) => m.default),
 }
 
-export function loadedCandidate(): string | undefined {
-  return candidateCache
+const candidateCaches: Record<string, string> = {}
+
+export async function loadCandidate(track = 'rust'): Promise<string> {
+  if (candidateCaches[track] !== undefined) return candidateCaches[track]
+  const loader = CANDIDATE_LOADERS[track]
+  if (!loader) return ''
+  const text = await loader()
+  candidateCaches[track] = text
+  return text
+}
+
+export function loadedCandidate(track = 'rust'): string | undefined {
+  return candidateCaches[track]
 }
 
 /*
@@ -103,23 +121,39 @@ export function loadedCandidate(): string | undefined {
  * itself. One owner per file.
  */
 const PATCH_LOADERS = import.meta.glob(
-  ['../../../autoresearch/diffs/*.patch', '!../../../autoresearch/diffs/best-vs-baseline.patch'],
+  [
+    '../../../autoresearch/diffs/*.patch',
+    // Every best-vs-baseline patch, one file per track, and each needs exactly one
+    // owner: a file in both this map and the eager one below makes the bundler
+    // warn that the module is in two chunks and resolve the ambiguity itself.
+    '!../../../autoresearch/diffs/best-vs-baseline*.patch',
+  ],
   {
     query: '?raw',
     import: 'default',
   },
 )
 
-const PATCH_BEST = import.meta.glob('../../../autoresearch/diffs/best-vs-baseline.patch', {
+const PATCH_BEST = import.meta.glob('../../../autoresearch/diffs/best-vs-baseline*.patch', {
   query: '?raw',
   eager: true,
   import: 'default',
 }) as Record<string, string>
 
-const PATCH_BEST_TEXT = Object.values(PATCH_BEST)[0] ?? ''
+/**
+ * The frozen-track-to-current-candidate patch, per track. Eager, and empty for a
+ * track that has never been seeded -- which is the honest answer, and the page
+ * says so rather than showing another track's patch.
+ */
+export function bestVsBaselinePatch(track = 'rust'): string {
+  const entry = Object.entries(PATCH_BEST).find(([key]) => key.endsWith(trackPatchSuffix(track)))
+  return entry ? entry[1] : ''
+}
 
-/** The frozen-track-to-current-candidate patch. Eager, and always present. */
-export const bestVsBaselinePatch = PATCH_BEST_TEXT
+/** `typescript` -> `-typescript.patch`, and `rust` -> `.patch` (the original name). */
+function trackPatchSuffix(track: string): string {
+  return track === 'rust' ? 'best-vs-baseline.patch' : `best-vs-baseline-${track}.patch`
+}
 
 /** The patch for one experiment, by run id. Rejected if that run never happened. */
 export async function loadPatch(runId: string): Promise<string | null> {

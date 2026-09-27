@@ -12,39 +12,73 @@
  */
 
 import { research } from './sources'
-import type { ResearchRow, ResearchVerdict } from './types'
+import type { ResearchRow, ResearchTrack, ResearchVerdict } from './types'
+
+/**
+ * The tracks the loop can be asked to optimise, in the order the page lists them.
+ *
+ * Read from `results.json` rather than repeated here, because the generator is
+ * the thing that decides which tracks exist: a track added to the harness and
+ * missed in this array would be a track the site silently refuses to show.
+ */
+export function tracks(): ResearchTrack[] {
+  return Object.keys(research.tracks) as ResearchTrack[]
+}
+
+/** A row's track, defaulted. Rows predating the column are all Rust. */
+export function rowTrack(row: ResearchRow): ResearchTrack {
+  return row.track ?? 'rust'
+}
+
+/** Every row for one track. The first filter everything else applies. */
+export function trackRows(track: ResearchTrack): ResearchRow[] {
+  return research.runs.filter((row) => rowTrack(row) === track)
+}
 
 /** Rows with a real measurement. A `crash` has none, and its zeros are absence. */
-export function measuredRows(): ResearchRow[] {
-  return research.runs.filter((row) => row.status !== 'crash' && row.loss > 0)
+export function measuredRows(track: ResearchTrack = 'rust'): ResearchRow[] {
+  return trackRows(track).filter((row) => row.status !== 'crash' && row.loss > 0)
 }
 
-/** Everything the loop actually tried, baseline excluded. */
-export function experiments(): ResearchRow[] {
-  return research.runs.filter((row) => row.status !== 'baseline')
+/** Everything the loop actually tried on one track, baseline excluded. */
+export function experiments(track: ResearchTrack = 'rust'): ResearchRow[] {
+  return trackRows(track).filter((row) => row.status !== 'baseline')
 }
 
-export function statusCount(status: ResearchVerdict): number {
-  return research.runs.filter((row) => row.status === status).length
-}
-
-export function bestRow(): ResearchRow | null {
-  return research.best
+export function statusCount(status: ResearchVerdict, track: ResearchTrack = 'rust'): number {
+  return trackRows(track).filter((row) => row.status === status).length
 }
 
 /**
- * The run ids on the frontier, as recorded.
+ * The best kept candidate for one track, or null when nothing has been kept.
+ *
+ * Null rather than a number borrowed from another track, because a "best" across
+ * languages would be a comparison between a Go build and a Rust build measured
+ * against different comparators -- two numbers about different machines' worth of
+ * work, ranked against each other.
+ */
+export function bestRow(track: ResearchTrack = 'rust'): ResearchRow | null {
+  return research.bests[track] ?? null
+}
+
+/** A track's frozen comparator as this session measured it. */
+export function baselineRow(track: ResearchTrack = 'rust'): ResearchRow | null {
+  return research.baselines[track] ?? null
+}
+
+/**
+ * The run ids on one track's frontier, as recorded.
  *
  * `tools/autoresearch.py` computes this and `results.json` carries it, rather
  * than this file recomputing it. Two implementations of "is this dominated" is
  * two chances to disagree, and the disagreement would be invisible.
  */
-export function frontierIds(): string[] {
-  return research.pareto
+export function frontierIds(track: ResearchTrack = 'rust'): string[] {
+  return research.pareto[track] ?? []
 }
 
-export function isFrontier(runId: string): boolean {
-  return research.pareto.includes(runId)
+export function isFrontier(runId: string, track: ResearchTrack = 'rust'): boolean {
+  return frontierIds(track).includes(runId)
 }
 
 // --- scales -----------------------------------------------------------------
@@ -182,11 +216,14 @@ export function formatSpeed(value: number): string {
 /**
  * A gradient ratio, with the number that matters beside it.
  *
- * `1.0` is a correct gradient. The frozen track measures 1.063, which is not a
- * fault in the measurement but a real property of the tape -- `rmsnorm` is not on
- * it, which is `docs/KNOWN-ISSUES.md` issue 5. So the function does not colour a
- * ratio by distance from 1.0; it reports the ratio and lets the note carry the
- * meaning.
+ * `1.0` is a correct gradient, and no port measures it: each tape computes
+ * `rmsnorm` outside the tape, so each measures a fixed ratio above 1 -- 1.063 on
+ * the Rust candidate as it stood, 1.127 for the frozen Go build, 0.722 for
+ * TypeScript. That is not a fault in the measurement but a real property of the
+ * tape, and it is `docs/KNOWN-ISSUES.md` issue 5. So the function does not colour
+ * a ratio by distance from 1.0, and does not quote a single expected value: the
+ * number belongs to whichever port produced it, and a reader comparing two tracks
+ * needs each track's own, not a constant that is right for one of them.
  */
 export function formatRatio(value: number): string {
   return value === 0 ? '—' : value.toFixed(4)

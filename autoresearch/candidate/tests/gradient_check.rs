@@ -26,6 +26,24 @@
 //! same model would attend to the previous one's keys and quietly measure
 //! something else.
 //!
+//! # Update, 2026-09-27: this candidate no longer measures 1.063
+//!
+//! The argument below is that the Rust *frozen* tape omits `rmsnorm`, so the
+//! honest answer for a faithful copy of it is 1.063 and the band is therefore
+//! off-centre. That was true when this probe was written. The loop then put
+//! `rmsnorm` on the tape in the candidate -- experiment 0001, kept and then
+//! superseded -- and this candidate now measures **1.0003**, with the
+//! implementation in the probe unchanged. So the band is currently centred, and
+//! the frozen track at `implementations/rust` still measures 1.063.
+//!
+//! The Go and TypeScript candidates carry the same omission and no fix, at 1.127
+//! and 0.722, which is `docs/KNOWN-ISSUES.md` issue 6: the band is written for
+//! 1.0 and none of the three frozen tapes is at 1.0.
+//!
+//! Nothing below changed. The band stays [0.5, 2.0] for the reason the last
+//! paragraph of this module gives, which is that it is a tripwire against a
+//! collapsed or inverted gradient rather than a precision measurement.
+//!
 //! # The ratio is 1.063 on a correct tape, and that is not a bug in this probe
 //!
 //! This is the second thing `docs/KNOWN-ISSUES.md` has to say about gradients,

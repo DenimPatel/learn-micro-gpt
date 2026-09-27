@@ -221,10 +221,24 @@ export interface BenchResult {
 
 export type ResearchVerdict = 'baseline' | 'keep' | 'discard' | 'crash'
 
+/**
+ * Which implementation the loop is optimising.
+ *
+ * A track is a *comparator pair*, not a label: the Rust candidate's speed is a
+ * ratio against the frozen Rust build, and the Go candidate's speed is a ratio
+ * against the frozen Go build. The two are not comparable, so a row's track is
+ * the first thing every selector here filters on -- putting a Go loss and a Rust
+ * loss on one scatter would be a chart about nothing.
+ */
+export type ResearchTrack = 'rust' | 'go' | 'typescript'
+
 export interface ResearchRow {
   run_id: string
   /** The commit the experiment started from, not the commit it produced. */
   parent: string
+  /** Which implementation this run optimised. Absent in rows written before the
+   *  loop learned about Go and TypeScript, which are all Rust. */
+  track?: ResearchTrack
   loss: number
   steps_per_sec: number
   loss_gain: number
@@ -274,7 +288,15 @@ export interface ResearchProvenance {
   candidate_sha256: string
   gradient_probe: string
   gradient_probe_sha256: string
-  dataset_sha256: string
+}
+
+/** What one track is, for the page's switcher. */
+export interface ResearchTrackInfo {
+  language: string
+  candidate_dir: string
+  source: string
+  probe: string
+  build: string
 }
 
 export interface ResearchModel {
@@ -290,18 +312,24 @@ export interface ResearchModel {
 export interface ResearchResults {
   $comment?: string
   generator?: string
+  /** "multi" now that there is more than one. */
   track?: string
-  provenance_of: ResearchProvenance
+  tracks: Record<ResearchTrack, ResearchTrackInfo>
+  /** Per track: a baseline digest is a claim about one comparator. */
+  provenance_of: Record<ResearchTrack, ResearchProvenance>
   protocol: ResearchProtocol
   thresholds: ResearchThresholds
   objective: { kind: string; axes: string[]; decided_by?: string }
   model?: ResearchModel
   runner?: ResearchRunner
-  baseline: ResearchRow | null
-  best: ResearchRow | null
+  dataset_sha256?: string
+  /** Per track, and null for a track that has not been seeded yet. */
+  baselines: Record<ResearchTrack, ResearchRow | null>
+  bests: Record<ResearchTrack, ResearchRow | null>
   counts: { experiments: number; keep: number; discard: number; crash: number }
-  /** Run ids on the frontier: nothing measured is both faster and lower-loss. */
-  pareto: string[]
+  /** Per track. Run ids on the frontier: nothing measured is both faster and
+   *  lower-loss *for that track's comparator*. */
+  pareto: Record<ResearchTrack, string[]>
   runs: ResearchRow[]
   caveats: string[]
 }

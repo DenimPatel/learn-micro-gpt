@@ -188,9 +188,56 @@ class TestProtocolConstantsAreTheDocumentedOnes(unittest.TestCase):
         self.assertEqual(ar.SEED, 42)
         self.assertGreaterEqual(ar.REPEATS, 3)
 
-    def test_only_rust_is_supported_and_saying_so_is_not_optional(self) -> None:
-        self.assertEqual(ar.SUPPORTED_TRACKS, ("rust",))
+    def test_the_supported_tracks_are_the_ones_the_table_can_honour(self) -> None:
+        # `SUPPORTED_TRACKS` is derived from `TRACKS`, so it cannot drift from the
+        # registry. What is asserted is that the registry is internally complete:
+        # a track missing a probe, a digest or a build entry would fail at run
+        # time, in the browser, on the one page that shows it.
+        self.assertEqual(ar.SUPPORTED_TRACKS, tuple(ar.TRACKS))
+        self.assertIn("rust", ar.SUPPORTED_TRACKS)
         self.assertEqual(sorted(ar.VERDICTS), ["crash", "discard", "keep"])
+        for name, track in ar.TRACKS.items():
+            with self.subTest(track=name):
+                self.assertTrue(track.probe_sha256, f"{name} has no probe digest")
+                self.assertTrue(track.tool, f"{name} has no build tool")
+                self.assertTrue(track.fence, f"{name} has no fenced-block language")
+                self.assertTrue(track.loss_parse in ("stdout", "trace"))
+
+    def test_an_unknown_track_is_rejected_loudly(self) -> None:
+        # The alternative is accepting a name it cannot honour, which fails later
+        # and somewhere less obvious.
+        with self.assertRaises(ar.ResearchError) as caught:
+            ar.get_track("cobol")
+        self.assertIn("cobol", str(caught.exception))
+        self.assertIn("rust, go, typescript", str(caught.exception))
+
+    def test_every_track_has_a_distinct_candidate_and_comparator(self) -> None:
+        # The whole reason the per-track map exists: two tracks sharing a frozen
+        # comparator would produce two "speed gains" against one number, and the
+        # page would show them as if they were competing.
+        candidates = [t.candidate for t in ar.TRACKS.values()]
+        comparators = [t.comparator for t in ar.TRACKS.values()]
+        source_keys = [t.source_key for t in ar.TRACKS.values()]
+        for label, values in (
+            ("candidate", candidates),
+            ("comparator", comparators),
+            ("source key", source_keys),
+        ):
+            with self.subTest(kind=label):
+                self.assertEqual(len(set(values)), len(values))
+
+    def test_every_candidate_lives_outside_the_frozen_tracks(self) -> None:
+        for name, track in ar.TRACKS.items():
+            with self.subTest(track=name):
+                self.assertTrue(
+                    str(track.candidate).startswith(str(ar.RESEARCH_DIR)),
+                    f"{name} writes outside autoresearch/, where the parity gate and "
+                    f"the site would pick it up as a track",
+                )
+                self.assertTrue(
+                    str(track.comparator).startswith(str(REPO_ROOT / "implementations")),
+                    f"{name}'s comparator must be one of the frozen, pinned tracks",
+                )
 
 
 class TestTheFrozenBaselineHasNotMoved(unittest.TestCase):
@@ -246,23 +293,37 @@ class TestTheFrozenBaselineHasNotMoved(unittest.TestCase):
 
 
 class TestTheGradientProbeHasNotBeenWeakened(unittest.TestCase):
-    def test_the_probe_digest_is_the_pinned_one(self) -> None:
-        self.assertEqual(
-            ar.sha256_file(ar.PROBE_PATH),
-            ar.PROBE_SHA256,
-            "autoresearch/candidate/tests/gradient_check.rs is not ours any more. "
-            "It is the only thing standing between a model and a broken gradient "
-            "that still trains (docs/KNOWN-ISSUES.md issue 1), so a change to it "
-            "has to be deliberate, in the same commit, with a reason.",
-        )
+    def test_every_probe_digest_is_the_pinned_one(self) -> None:
+        for name, track in ar.TRACKS.items():
+            with self.subTest(track=name):
+                self.assertEqual(
+                    ar.sha256_file(track.probe),
+                    track.probe_sha256,
+                    f"{track.probe.relative_to(REPO_ROOT)} is not ours any more. It is "
+                    "the only thing standing between a model and a broken gradient "
+                    "that still trains (docs/KNOWN-ISSUES.md issue 1), so a change to "
+                    "it has to be deliberate, in the same commit, with a reason.",
+                )
 
-    def test_the_probe_lives_in_the_candidate_and_not_the_baseline(self) -> None:
-        self.assertEqual(ar.PROBE_PATH, ar.CANDIDATE_DIR / "tests" / "gradient_check.rs")
-        self.assertFalse(
-            (ar.BASELINE_CRATE / "tests").exists(),
-            "the frozen crate must not gain a tests/ directory; that would change "
-            "it, and it is pinned",
-        )
+    def test_the_rust_probe_digest_is_also_the_legacy_constant(self) -> None:
+        # `PROBE_SHA256` is a module-level name the Rust-era tests and the error "
+        # messages use. It has to stay the Rust probe's digest, not the most
+        # recently added one.
+        self.assertEqual(ar.PROBE_SHA256, ar.TRACKS["rust"].probe_sha256)
+
+    def test_every_probe_lives_in_the_candidate_and_not_the_baseline(self) -> None:
+        for name, track in ar.TRACKS.items():
+            with self.subTest(track=name):
+                # Under the candidate, not equal to it: the Rust probe is in
+                # `tests/` and the TypeScript one in `src/`, because that is where
+                # each language's runner finds it.
+                self.assertIn(track.candidate, track.probe.parents)
+                self.assertTrue(track.probe.is_file())
+                self.assertFalse(
+                    track.comparator.joinpath(track.probe_path).exists(),
+                    f"the frozen {name} track must not gain the candidate's probe; "
+                    f"that would change it, and it is pinned",
+                )
 
     def test_the_documented_gradient_ratio_is_what_the_ledger_records(self) -> None:
         """1.063, not 1.0, and that is issue 5 rather than a measurement error.
@@ -297,10 +358,26 @@ class TestLedgerRoundTrips(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)), "duplicate run id in the ledger")
         self.assertEqual(ids, [f"{i:04d}" for i in range(len(rows))], rows and ids)
 
-    def test_exactly_one_baseline_row_and_it_is_first(self) -> None:
+    def test_exactly_one_baseline_row_per_seeded_track(self) -> None:
+        """One per track, not one for the ledger.
+
+        `seed` is idempotent per track, so a second run on a track that already
+        has a baseline must not append a second one -- that would mean the
+        comparator for that track was re-measured and the first number silently
+        became wrong.
+        """
         rows = ar.read_ledger()
-        baselines = [row.run_id for row in rows if row.status == "baseline"]
-        self.assertEqual(baselines, ["0000"])
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                baselines = [
+                    row.run_id for row in rows
+                    if row.status == "baseline" and row.track == track.name
+                ]
+                self.assertLessEqual(len(baselines), 1, f"{track.name} has two baselines")
+        # The first track seeded takes 0000, because the sequence is global and it
+        # was seeded first. The others take the next ids, which is why "its
+        # baseline is its first row" is not a property here and is not asserted.
+        self.assertIn("0000", [r.run_id for r in rows if r.status == "baseline"])
 
     def test_a_row_with_a_tab_in_it_is_refused(self) -> None:
         # A description with a stray tab silently becomes two columns, and the
@@ -311,19 +388,40 @@ class TestLedgerRoundTrips(unittest.TestCase):
             ar.clean_field("has a\nnewline in it", "description")
 
     def test_row_json_round_trips(self) -> None:
-        original = ar.Row(
-            run_id="0042",
-            parent="deadbeef",
-            loss=2.123456,
-            steps_per_sec=91.5,
-            loss_gain=-0.0123,
-            speed_gain=0.0456,
-            grad_ratio=1.063160,
-            status="discard",
-            reason="no axis improved materially",
-            description="a summary with no tabs",
-        )
-        self.assertEqual(ar.Row.from_json(original.to_json()), original)
+        for name in ar.SUPPORTED_TRACKS:
+            with self.subTest(track=name):
+                original = ar.Row(
+                    run_id="0042",
+                    parent="deadbeef",
+                    track=name,
+                    loss=2.123456,
+                    steps_per_sec=91.5,
+                    loss_gain=-0.0123,
+                    speed_gain=0.0456,
+                    grad_ratio=1.063160,
+                    status="discard",
+                    reason="no axis improved materially",
+                    description="a summary with no tabs",
+                )
+                self.assertEqual(ar.Row.from_json(original.to_json()), original)
+
+    def test_a_row_written_before_the_track_column_defaults_to_rust(self) -> None:
+        """The migration. `autoresearch/candidate/` was the only candidate that
+        existed when those rows were written, so they are all Rust, and reading
+        one must not raise on a missing key."""
+        legacy = {
+            "run_id": "0007",
+            "parent": "deadbeef",
+            "loss": 2.4,
+            "steps_per_sec": 90.0,
+            "loss_gain": 0.0,
+            "speed_gain": 0.0,
+            "grad_ratio": 1.06316,
+            "status": "discard",
+            "reason": "",
+            "description": "written before the column existed",
+        }
+        self.assertEqual(ar.Row.from_json(legacy).track, "rust")
 
 
 class TestTheGeneratedDocumentIsCurrent(unittest.TestCase):
@@ -360,7 +458,9 @@ class TestTheGeneratedDocumentIsCurrent(unittest.TestCase):
         ):
             self.assertIn(key, document, key)
         self.assertEqual(document["thresholds"]["loss_material"], ar.LOSS_MATERIAL)
-        self.assertEqual(document["provenance_of"]["gradient_probe_sha256"], ar.PROBE_SHA256)
+        self.assertEqual(
+            document["provenance_of"]["rust"]["gradient_probe_sha256"], ar.PROBE_SHA256
+        )
         self.assertTrue(document["caveats"], "a page of numbers with no caveats is a lie")
 
     def test_every_row_has_a_run_record(self) -> None:
@@ -382,20 +482,44 @@ class TestTheGeneratedDocumentIsCurrent(unittest.TestCase):
             payload = ar.read_json(ar.RUNS_DIR / f"{row.run_id}.json")
             if row.status == "baseline":
                 continue
-            self.assertIn("autoresearch/candidate/src/lib.rs", payload.get("source_sha256", {}))
+            self.assertIn(ar.TRACKS[row.track].source_key, payload.get("source_sha256", {}))
 
     def test_the_best_row_is_actually_the_lowest_loss_among_the_keeps(self) -> None:
+        # Per track. A single "best" across tracks would rank a Go candidate
+        # against a Rust one, each measured against a different frozen build, and
+        # the winner would be whichever language happened to be quicker on the
+        # session's machine rather than whichever change was better.
         document = ar.build_results_document()
-        kept = [row for row in ar.read_ledger() if row.status == "keep"]
-        if not kept:
-            self.assertIsNone(document["best"])
-            return
-        best = min(kept, key=lambda row: (row.loss, -row.steps_per_sec))
-        self.assertEqual(document["best"]["run_id"], best.run_id)
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                kept = [
+                    row
+                    for row in ar.read_ledger()
+                    if row.status == "keep" and row.track == track.name
+                ]
+                if not kept:
+                    self.assertIsNone(document["bests"][track.name])
+                    continue
+                best = min(kept, key=lambda row: (row.loss, -row.steps_per_sec))
+                self.assertEqual(document["bests"][track.name]["run_id"], best.run_id)
+
+    def test_every_track_has_a_baseline_slot_even_when_unseeded(self) -> None:
+        # The page renders a zero for an unseeded track and says so. A missing key
+        # would be a `undefined` in the same place, which reads as a bug.
+        document = ar.build_results_document()
+        for track in ar.TRACKS:
+            with self.subTest(track=track):
+                self.assertIn(track, document["baselines"])
+                self.assertIn(track, document["bests"])
+                self.assertIn(track, document["pareto"])
+                self.assertIn(track, document["provenance_of"])
+                self.assertIn(track, document["tracks"])
 
     def test_the_pareto_frontier_is_dominated_by_nothing_on_it(self) -> None:
         rows = {row.run_id: row for row in ar.read_ledger()}
-        frontier = [rows[run_id] for run_id in ar.build_results_document()["pareto"]]
+        frontier = [
+            rows[run_id] for run_id in ar.build_results_document()["pareto"]["rust"]
+        ]
         for candidate in frontier:
             for other in frontier:
                 if other is candidate:
@@ -588,6 +712,66 @@ class TestProposalParsingIsStrict(unittest.TestCase):
         self.assertEqual(ar.parse_proposal(response).description, "no summary given")
 
 
+class TestTheBriefIsWrittenForWhicheverTrackIsRunning(unittest.TestCase):
+    """`autoresearch/program.md` is the system prompt, and it is a template.
+
+    It is sent as the system message, so a leftover `{{...}}` is not a cosmetic
+    slip -- it is an instruction to the model, and a brief that says `cargo
+    clippy` to a model holding Go source is worse than no brief.
+    """
+
+    def test_it_renders_for_every_track_with_nothing_left_over(self) -> None:
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                brief = ar.read_prompt(track)
+                self.assertNotIn("{{", brief)
+                self.assertNotIn("}}", brief)
+                self.assertIn(f"improving a {track.language} implementation", brief)
+
+    def test_it_names_that_track_own_files_and_build(self) -> None:
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                brief = ar.read_prompt(track)
+                self.assertIn(track.source_key, brief)
+                self.assertIn(
+                    track.probe.relative_to(ar.REPO_ROOT).as_posix(), brief
+                )
+                self.assertIn(f"autoresearch/{track.candidate_dir}/", brief)
+                self.assertIn(track.lint_command, brief)
+
+    def test_it_never_tells_one_track_to_satisfy_another_track_toolchain(self) -> None:
+        foreign = {
+            "rust": ("`go.mod`", "`npx tsc"),
+            "go": ("Cargo.toml", "cargo clippy", "npx tsc"),
+            "typescript": ("Cargo.toml", "cargo clippy", "`go.mod`"),
+        }
+        for track in ar.TRACKS.values():
+            for needle in foreign[track.name]:
+                with self.subTest(track=track.name, needle=needle):
+                    self.assertNotIn(
+                        needle,
+                        ar.read_prompt(track),
+                        f"the {track.name} brief tells the model about {needle}, "
+                        f"which belongs to another track",
+                    )
+
+    def test_a_new_placeholder_would_be_caught_rather_than_sent(self) -> None:
+        """The failure mode of substituting into a document by hand.
+
+        `read_prompt` raises on a placeholder it does not know how to fill. This
+        asserts the guard exists by rendering a template with one, rather than
+        trusting that a code path nobody has taken is correct.
+        """
+        original = ar.PROGRAM_MD.read_text(encoding="utf-8")
+        try:
+            ar.PROGRAM_MD.write_text(original + "\n{{a_placeholder_nobody_defines}}\n", encoding="utf-8")
+            with self.assertRaises(ar.ResearchError) as caught:
+                ar.read_prompt(ar.TRACKS["rust"])
+            self.assertIn("a_placeholder_nobody_defines", str(caught.exception))
+        finally:
+            ar.PROGRAM_MD.write_text(original, encoding="utf-8")
+
+
 class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
     """Two regressions this file is guarding, both found by running the loop.
 
@@ -601,27 +785,62 @@ class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
     """
 
     def setUp(self) -> None:
+        self.track = ar.TRACKS["rust"]
         self.prompt = ar.build_prompt(
+            self.track,
             ar.read_ledger(),
             {"loss": 2.433882, "steps_per_sec": 95.38, "grad_ratio": 1.06316},
         )
 
+    #: A marker that must appear in each port's source, to prove the prompt is
+    #: carrying that port's real file rather than a Rust-shaped assumption about
+    #: where the model's forward pass lives.
+    TRACK_MARKERS = {
+        "rust": ("fn rmsnorm", "fn softmax", "struct Tensor", "fn backward"),
+        "go": ("func rmsnorm", "func softmax", "type Value", "func (v *Value) Backward"),
+        "typescript": ("function rmsnorm", "static softmax", "class Value", "backward()"),
+    }
+
     def test_the_whole_candidate_source_is_included(self) -> None:
-        source = ar.CANDIDATE_LIB.read_text(encoding="utf-8")
-        for marker in (
-            "fn rmsnorm",
-            "fn softmax",
-            "struct Tensor",
-            "fn backward",
-            "const LEARNING_RATE",
-            "fn parse_args",
-        ):
+        source = self.track.candidate_file.read_text(encoding="utf-8")
+        for marker in self.TRACK_MARKERS[self.track.name]:
             self.assertIn(marker, self.prompt, f"{marker} is missing from the prompt")
         self.assertIn(
             source.rstrip().splitlines()[-1],
             self.prompt,
             "the prompt stops short of the end of the file",
         )
+
+    def test_the_prompt_names_the_track_it_is_asking_for(self) -> None:
+        """The file path and the diff headers, in this track's own language.
+
+        A model shown Go source and asked for a patch to `src/lib.rs` proposes
+        nothing applicable, and the experiment is wasted for a reason that has
+        nothing to do with the hypothesis.
+        """
+        self.assertIn(self.track.source_key, self.prompt)
+        self.assertIn(f"```{self.track.fence}", self.prompt)
+        self.assertIn(f"--- a/{self.track.source_key}", self.prompt)
+        self.assertIn(f"+++ b/{self.track.source_key}", self.prompt)
+
+    def test_the_prompt_shows_only_its_own_track_ledger(self) -> None:
+        """A Go model must not be offered the Rust track's history.
+
+        It would invite a change already tried, and worse, it implies the two are
+        competing on one axis.
+        """
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                prompt = ar.build_prompt(
+                    track,
+                    ar.read_ledger(),
+                    {"loss": 2.4, "steps_per_sec": 90.0, "grad_ratio": 1.0},
+                )
+                mine = [r for r in ar.read_ledger() if r.track == track.name]
+                for row in mine[-15:]:
+                    self.assertIn(row.description[:30], prompt)
+                for row in [r for r in ar.read_ledger() if r.track != track.name][-15:]:
+                    self.assertNotIn(row.description[:30], prompt)
 
     def test_the_thresholds_and_the_session_baseline_are_included(self) -> None:
         for value in (

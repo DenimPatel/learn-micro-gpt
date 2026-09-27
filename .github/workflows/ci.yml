@@ -185,6 +185,30 @@ jobs:
         working-directory: autoresearch/candidate
         run: cargo build --release && cargo clippy --release -- -D warnings
 
+      - name: Build the research candidate (the tuned Go track)
+        # The Go candidate is a byte-for-byte copy of the frozen Go track plus one
+        # test file, so `go vet` over both the model-facing and the probe is the
+        # same statement about the same thing as the step above.
+        working-directory: autoresearch/candidate-go
+        run: go vet ./... && go build -o /dev/null .
+
+      - name: Build the research candidate (the tuned TypeScript track)
+        working-directory: autoresearch/candidate-ts
+        run: npm ci --no-audit --no-fund && npx tsc --noEmit
+
+      - name: Every gradient probe passes, on every track
+        # The three probes, run directly rather than through the harness, so a
+        # failure here names the file that moved instead of arriving as "the
+        # gradient check did not pass" from inside a measurement. They are the only
+        # thing standing between a model and a broken gradient that still trains:
+        # `docs/KNOWN-ISSUES.md` issue 1 is a port whose loss curve tracks the
+        # reference to within 7% and still has a gradient that is wrong by -8x.
+        run: |
+          cargo test --release --manifest-path autoresearch/candidate/Cargo.toml \
+            --test gradient_check -- --nocapture
+          ( cd autoresearch/candidate-go && go test -run TestGradcheck -v . )
+          ( cd autoresearch/candidate-ts && npx tsx src/probe.ts )
+
       - name: The committed research results still describe the committed candidate
         # No API key, no OpenRouter, no loop, and nothing is written to the
         # candidate. This is the "traces never stop describing the code they came
@@ -192,6 +216,9 @@ jobs:
         # run recorded must still be the committed file, the gradient probe must
         # pass, and the loss axis must re-measure within the tolerance a candidate
         # is held to.
+        #
+        # Every track that has a kept run is verified against its own comparator;
+        # a track with none says so rather than being skipped in silence.
         #
         # The speed axis is deliberately NOT checked, and the tool says so out
         # loud. It was measured on whichever machine ran the loop and this is not

@@ -298,3 +298,55 @@ and a reader who is told "the C port's backward pass is wrong, here is the numbe
 has learned something they can use. They can now also learn that the same class
 of bug cost the Rust port 6.32% and was caught by a probe built for a different
 port entirely.
+
+## 6. The gradient-probe band is centred on 1.0, and no port's ratio is 1.0
+
+**Track:** `autoresearch/candidate{,-go,-ts}/*/gradient_check*`
+**Status:** open, and deliberately not "fixed" by narrowing the band.
+**Severity:** low for catching a *broken* tape, which is what the probe is for.
+Medium for anyone assuming the band is tight, because it is not symmetric about
+what any given port actually measures.
+
+### What is wrong
+
+The three probes assert the ratio lies in `[0.5, 2.0]`, a band written when the
+Rust candidate was the only one and measured 1.0632. Adding Go and TypeScript,
+which measure 1.1269 and 0.7221 for the *same* reason — `rmsnorm` outside the
+tape, which is issue 5 — means the band's edges are not where the numbers are:
+
+| track | measured ratio | tolerated final-gradient scale |
+|---|---|---|
+| Rust | 1.063 | 0.47x – 1.88x |
+| Go | 1.127 | 0.44x – 1.77x |
+| TypeScript | 0.722 | 0.69x – 2.77x |
+
+TypeScript's is the loosest in the one direction that matters most. A probe run
+against the TypeScript tape with `relu' = 2` above zero — a real bug, a
+mis-transcribed derivative — measures **0.598 and passes both the band and the
+step-size stability check**. The same bug on the Rust tape measures 1.24 and fails.
+Both were measured, in scratch copies, with the tapes deliberately broken.
+
+### Why it was not "fixed"
+
+Narrowing the band to each port's measured ratio would fix the arithmetic and
+break the reason the band exists. The point of a finite-difference check is to
+catch a class of failure — a zero gradient, a sign flip, a missing chain — and
+those are not close calls: a discarded gradient measures 0, a sign slip negative,
+the C port's broken backward pass −0.12. A band of 0.5–2.0 fails every one of them
+by a factor of four or more, on every port, and keeps a uniform scale error of
+roughly 2x on the Rust and Go tapes. A band tightened around each port's own number
+would catch more, and would also stop catching the day a port's *baseline* moved,
+which is the failure mode a tripwire must not have.
+
+The real fix is the one issue 5 already names: put `rmsnorm` on the tape, and every
+ratio becomes 1.0 and the band becomes symmetric. The TypeScript probe measured
+this directly — with `rmsnorm` on the tape, its ratio is 1.000024, zero residual.
+Until then, the honest statement is that the probe is a tripwire against a
+collapsed or inverted gradient, not a precision measurement, and the two
+`relu' = 2`-scale bugs above are the price.
+
+The step-size stability check does not close this gap, and is not expected to: a
+uniform scale error is h-independent by construction, so a ratio that is stable
+across step sizes says nothing about whether the constant is the right constant.
+It is there to separate a fixed offset from a difference-operator artifact, which
+it does well.

@@ -23,6 +23,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import {
+  baselineRow,
   bestRow,
   diffCounts,
   experiments,
@@ -40,6 +41,8 @@ import {
   shortDigest,
   speedTicks,
   statusCount,
+  trackRows,
+  tracks,
 } from '../data/research'
 // The three loaders live in `sources` beside the rest of the build-time imports,
 // because they are data loading rather than arithmetic. `research.ts` selects and
@@ -52,7 +55,7 @@ import {
   loadedCandidate,
   research,
 } from '../data/sources'
-import type { ResearchRow } from '../data/types'
+import type { ResearchRow, ResearchTrack } from '../data/types'
 
 const STATUS_LABEL: Record<ResearchRow['status'], string> = {
   baseline: 'baseline',
@@ -74,14 +77,14 @@ function StatusBadge({ status }: { status: ResearchRow['status'] }) {
  * by more than the tolerance", so a scatter is the only honest picture of it: a
  * scalar would have to throw one of the two away.
  */
-function ParetoScatter() {
-  const rows = measuredRows()
+function ParetoScatter({ track }: { track: ResearchTrack }) {
+  const rows = measuredRows(track)
   const loss = useMemo(() => linearScale(rows.map((row) => row.loss)), [rows])
   const speed = useMemo(() => logScale(rows.map((row) => row.steps_per_sec)), [rows])
   const ticks = useMemo(() => lossTicks(loss), [loss])
   const speedMarks = useMemo(() => speedTicks(speed), [speed])
-  const frontier = new Set(frontierIds())
-  const best = bestRow()
+  const frontier = new Set(frontierIds(track))
+  const best = bestRow(track)
 
   if (rows.length === 0) {
     return (
@@ -162,7 +165,7 @@ function ParetoScatter() {
           return (
             <circle
               key={row.run_id}
-              className={`research__point research__point--${row.status}${isFrontier(row.run_id) ? ' is-frontier' : ''}`}
+              className={`research__point research__point--${row.status}${isFrontier(row.run_id, track) ? ' is-frontier' : ''}`}
               cx={loss.at(row.loss)}
               cy={100 - speed.at(row.steps_per_sec)}
               r={isBest ? 1.8 : 1.1}
@@ -211,8 +214,8 @@ function ParetoScatter() {
  * discard, and a reader who cannot see where the band is cannot tell a
  * near-miss from a non-event.
  */
-function GainsChart() {
-  const rows = experiments().filter((row) => row.status !== 'crash')
+function GainsChart({ track }: { track: ResearchTrack }) {
+  const rows = experiments(track).filter((row) => row.status !== 'crash')
   if (rows.length === 0) {
     return (
       <p className="research__empty">
@@ -298,20 +301,20 @@ function GainsChart() {
         <div>
           <dt>kept</dt>
           <dd>
-            {statusCount('keep')} of {experiments().length}
+            {statusCount('keep', track)} of {experiments(track).length}
           </dd>
         </div>
         <div>
           <dt>crashed</dt>
-          <dd>{statusCount('crash')}</dd>
+          <dd>{statusCount('crash', track)}</dd>
         </div>
       </dl>
     </figure>
   )
 }
 
-function Ledger() {
-  const rows = research.runs
+function Ledger({ track }: { track: ResearchTrack }) {
+  const rows = trackRows(track)
   return (
     <div className="table-scroll">
       <table className="research__ledger">
@@ -374,9 +377,9 @@ function Ledger() {
  * costs 5% throughput is not obviously a win. Both facts are in
  * `docs/KNOWN-ISSUES.md` (issues 1 and 5).
  */
-function GradientSection() {
-  const rows = measuredRows()
-  const baseline = research.baseline
+function GradientSection({ track }: { track: ResearchTrack }) {
+  const rows = measuredRows(track)
+  const baseline = baselineRow(track)
   const candidates = rows.filter((row) => row.status !== 'baseline')
   return (
     <>
@@ -418,7 +421,8 @@ function GradientSection() {
 }
 
 /** The frozen track and the current candidate, and the patch between them. */
-function Divergence({ patch }: { patch: string }) {
+function Divergence({ patch, track }: { patch: string; track: ResearchTrack }) {
+  const provenance = research.provenance_of[track]
   const [open, setOpen] = useState(false)
 
   /*
@@ -431,11 +435,11 @@ function Divergence({ patch }: { patch: string }) {
    * `set-state-in-effect` and `react-hooks/immutability` rules are right about
    * both of the other arrangements.
    */
-  const [candidate, setCandidate] = useState<string | null>(() => loadedCandidate() ?? null)
+  const [candidate, setCandidate] = useState<string | null>(() => loadedCandidate(track) ?? null)
   useEffect(() => {
     if (candidate !== null) return
     let cancelled = false
-    void loadCandidate().then((text) => {
+    void loadCandidate(track).then((text) => {
       if (!cancelled) setCandidate(text)
     })
     return () => {
@@ -461,8 +465,8 @@ function Divergence({ patch }: { patch: string }) {
         <strong>
           {counts.added} line{counts.added === 1 ? '' : 's'} added, {counts.removed} removed
         </strong>{' '}
-        against <code>{research.provenance_of.baseline_source}</code>, whose sha256 is{' '}
-        <code>{shortDigest(research.provenance_of.baseline_sha256)}</code>.
+        against <code>{provenance.baseline_source}</code>, whose sha256 is{' '}
+        <code>{shortDigest(provenance.baseline_sha256)}</code>.
       </p>
       <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
         {open ? 'hide the patch' : 'show the patch'}
@@ -475,7 +479,7 @@ function Divergence({ patch }: { patch: string }) {
           <p className="widget__note">
             Current candidate: {candidate ? `${candidate.split('\n').length} lines` : 'loading…'}.
             Full text is on <code>#/compare</code> for the frozen track, and in{' '}
-            <code>{research.provenance_of.candidate_source}</code> for this one.
+            <code>{provenance.candidate_source}</code> for this one.
           </p>
         </>
       ) : null}
@@ -483,8 +487,8 @@ function Divergence({ patch }: { patch: string }) {
   )
 }
 
-function RunPatches() {
-  const rows = experiments().filter((row) => row.status !== 'crash')
+function RunPatches({ track }: { track: ResearchTrack }) {
+  const rows = experiments(track).filter((row) => row.status !== 'crash')
   const [selected, setSelected] = useState<string | null>(null)
   const [patch, setPatch] = useState<string | null>(null)
   const [missing, setMissing] = useState(false)
@@ -532,18 +536,57 @@ function RunPatches() {
 }
 
 export function ResearchPage() {
-  const counts = research.counts
+  const [track, setTrack] = useState<ResearchTrack>('rust')
+  const all = tracks()
+  // A track the loop has never been run on still gets a row here, with zeros, so
+  // that "not measured yet" is a thing the page can say rather than a thing it
+  // hides by omission. The per-track counts are derived from the rows rather than
+  // read from `research.counts`, which is the ledger-wide total and would put a
+  // Rust experiment count next to a Go chart.
+  const rows = trackRows(track)
+  const counts = {
+    experiments: rows.filter((row) => row.status !== 'baseline').length,
+    keep: rows.filter((row) => row.status === 'keep').length,
+    discard: rows.filter((row) => row.status === 'discard').length,
+    crash: rows.filter((row) => row.status === 'crash').length,
+  }
   const noExperiments = counts.experiments === 0
+  const info = research.tracks[track]
 
   return (
     <article className="research">
       <h1>What the loop has tried</h1>
       <p className="lede">
-        A model rewrites the Rust track, the harness measures it, and a rule decides whether the
-        rewrite is kept. Both the kept and the discarded attempts are here, because a search that
-        only shows its hits is not a search. Every number was measured on one machine in one session
-        and is committed to the repository; CI re-measures the loss axis on every push and fails if
-        the code on this page no longer produces the number quoted beside it.
+        A model rewrites one track, the harness measures it against that track&rsquo;s own frozen
+        build, and a rule decides whether the rewrite is kept. The loop runs on Rust, Go and
+        TypeScript; pick one below. Both the kept and the discarded attempts are here, because a
+        search that only shows its hits is not a search. Every number was measured on one machine in
+        one session and is committed to the repository; CI re-measures the loss axis on every push
+        and fails if the code on this page no longer produces the number quoted beside it.
+      </p>
+
+      <fieldset className="research__tracks">
+        <legend>Which implementation</legend>
+        {all.map((name) => (
+          <button
+            key={name}
+            type="button"
+            className="research__track"
+            aria-pressed={name === track}
+            onClick={() => setTrack(name)}
+          >
+            {research.tracks[name].language}
+            <span className="research__track-note">
+              {trackRows(name).filter((row) => row.status === 'keep').length} kept
+            </span>
+          </button>
+        ))}
+      </fieldset>
+      <p className="widget__note">
+        Each track is measured against its own frozen comparator in its own candidate directory
+        &mdash; {info?.candidate_dir}, a <code>{info?.source}</code> built with {info?.build}. A
+        steps-per-second on one track is not a steps-per-second on another, so nothing here is
+        compared across tracks.
       </p>
 
       {noExperiments ? (
@@ -574,7 +617,7 @@ export function ResearchPage() {
           <dd>{counts.crash}</dd>
         </div>
       </dl>
-      <Ledger />
+      <Ledger track={track} />
 
       <h2>The objective</h2>
       <p>
@@ -603,15 +646,15 @@ export function ResearchPage() {
       </p>
 
       <h2>Every run, on both axes</h2>
-      <ParetoScatter />
-      <GainsChart />
+      <ParetoScatter track={track} />
+      <GainsChart track={track} />
 
       <h2>The gate that is not a score</h2>
-      <GradientSection />
+      <GradientSection track={track} />
 
       <h2>The code</h2>
-      <Divergence patch={bestVsBaselinePatch} />
-      <RunPatches />
+      <Divergence patch={bestVsBaselinePatch(track)} track={track} />
+      <RunPatches track={track} />
 
       <h2>How to read these numbers</h2>
       <ul className="caveats">

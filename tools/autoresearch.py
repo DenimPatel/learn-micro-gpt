@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""An autoresearch loop for the Rust micro-gpt track, on a laptop, in this repository.
+"""An autoresearch loop for this repository's micro-gpt tracks, on a laptop.
 
 ## What this is
 
@@ -12,6 +12,25 @@ what was tried.
 
 Three things are different here, all of them forced by having no GPU and by this
 repository already being a thing that asserts its own correctness.
+
+**It runs on three tracks, and a track is a comparator pair.** `--track` picks
+Rust, Go or TypeScript. Each has its own candidate directory, its own frozen
+comparator, its own finite-difference probe, and its own session baseline, and
+the two axes are never compared across them: a Go steps-per-second is a ratio
+against the frozen Go build and says nothing about the Rust one. `results.tsv`
+carries a `track` column and `results.json` keys its bests, baselines, frontiers
+and digests by track, because "the best candidate" without a track is a
+comparison between two numbers about different builds.
+
+Adding a track was four questions, not a configuration change, and the answers
+are the fields of the `Track` dataclass: the comparator, the candidate, the
+gradient probe, and where the loss curve comes from. That last one is the one
+that is easy to get wrong. Rust and Go print every step, but TypeScript prints the
+first five and then every hundredth -- sparse on purpose, so a human watching a
+laptop is not shown 1,000 lines -- so its loss axis is read from the JSONL trace it
+writes with `--trace`, exactly as `tools/parity.py` already does. Reading 15 points
+where the statistic wants a 50-step window would have been a number about the
+wrong steps, and it would have looked like a plausible one.
 
 **The budget is a fixed 1,000 steps, not a wall-clock window.** karpathy's budget
 is 5 minutes of training, which is what makes his runs comparable on his hardware
@@ -64,7 +83,7 @@ Every experiment -- keep, discard or crash -- appends a row to
 `autoresearch/results.json` is regenerated from those and is the only file the
 site reads. A failure that is not published is a failure that gets retried.
 
-Run `make autoresearch-rust`.
+Run `make autoresearch-rust`, optionally with `TRACK=go` or `TRACK=typescript`.
 """
 
 from __future__ import annotations
@@ -168,24 +187,11 @@ VERIFY_LOSS_TOLERANCE = LOSS_TOL
 #: `--verify-only` can say that out loud instead of quietly omitting a check.
 SPEED_AXIS_VERIFIABLE = False
 
-#: The digest of the gradient probe, checked before every experiment. See the
-#: module docstring: a probe the candidate can weaken is not a probe.
-#: `tools/tests/test_autoresearch.py` asserts this constant matches the file, so
-#: the two cannot drift apart quietly.
-PROBE_SHA256 = "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287"
-
-#: The only track. `--track` takes this and rejects anything else loudly, rather
-#: than accepting a name it cannot honour.
-SUPPORTED_TRACKS = ("rust",)
-
 VERDICTS = ("keep", "discard", "crash")
 
 # ─── layout ──────────────────────────────────────────────────────────────────
 
 RESEARCH_DIR = REPO_ROOT / "autoresearch"
-CANDIDATE_DIR = RESEARCH_DIR / "candidate"
-CANDIDATE_LIB = CANDIDATE_DIR / "src" / "lib.rs"
-PROBE_PATH = CANDIDATE_DIR / "tests" / "gradient_check.rs"
 RESULTS_TSV = RESEARCH_DIR / "results.tsv"
 RESULTS_JSON = RESEARCH_DIR / "results.json"
 BASELINE_JSON = RESEARCH_DIR / "baseline.json"
@@ -194,12 +200,229 @@ PROGRAM_MD = RESEARCH_DIR / "program.md"
 RUNS_DIR = RESEARCH_DIR / "runs"
 DIFFS_DIR = RESEARCH_DIR / "diffs"
 LOGS_DIR = RESEARCH_DIR / "logs"
-BEST_DIFF = DIFFS_DIR / "best-vs-baseline.patch"
-
-BASELINE_CRATE = REPO_ROOT / "implementations" / "rust"
-BASELINE_LIB = BASELINE_CRATE / "src" / "lib.rs"
-BASELINE_BIN = BASELINE_CRATE / "target" / "release" / "microgpt-rs"
 DATASET = REPO_ROOT / "data" / "input.txt"
+
+#: The two Rust binary names. Not one constant because they are genuinely two
+#: programs: the frozen track's `Cargo.toml` declares `[[bin]] name = "microgpt-rs"`,
+#: and the candidate crate was renamed `microgpt` with a `microgpt-tuned` bin when
+#: the workspace was seeded. `build_track` picks by which directory it was given.
+CANDIDATE_BIN = "microgpt-tuned"
+FROZEN_BIN = "microgpt-rs"
+
+# ─── tracks ──────────────────────────────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class Track:
+    """Everything that is wired to one language by name.
+
+    The four things `--track` has to answer for, from the module docstring: the
+    comparator, the candidate, the gradient probe, and the stdout contract. They
+    are fields here rather than module constants so that adding a language is a
+    new entry in `TRACKS` and not an edit that reaches through the whole file.
+
+    `run` is a command *list*, not a path, because only Rust produces a binary
+    you can exec directly. Go and TypeScript are `go run` and `tsx` invocations,
+    so their wall clock includes an interpreter start. That is not a problem for
+    the comparison, and the reason is the argument `train_once` already makes: the
+    baseline is measured the same way, in the same session, on the same machine,
+    so the overhead cancels. The absolute number is not a pure training time for
+    any track, and the run record says so rather than implying otherwise.
+    """
+
+    name: str
+    language: str
+    #: Under `autoresearch/`, and what the model is told it may edit.
+    candidate_dir: str
+    candidate_source: str
+    #: The frozen track under `implementations/`, used as the comparator.
+    comparator_dir: str
+    comparator_source: str
+    #: The finite-difference probe, relative to `candidate_dir`, and its digest.
+    probe_path: str
+    probe_sha256: str
+    #: The build tool, and how to find it.
+    tool: str
+    tool_hint: str
+    #: Fenced-block language for the source shown to the model, and the comment
+    #: syntax its diff hunks use, which the model has to copy correctly.
+    fence: str
+    build_hint: str
+    #: Where the loss curve comes from: the track's own stdout, or the JSONL trace
+    #: it writes with `--trace`.
+    #:
+    #: This is not a preference. The loss axis is the mean over the last 50 steps,
+    #: and TypeScript prints only the first 5 steps and then every 100th -- sparse
+    #: on purpose, because a human watching a laptop does not want 1000 lines. So
+    #: for that track the stdout curve has 15 points where the statistic wants 50,
+    #: and a window taken from it would be a number about the wrong steps. The
+    #: trace has all 1000 at full precision, which is why `tools/parity.py` reads
+    #: TypeScript's curve from there too, and why the two must agree: one
+    #: definition of the loss axis, used by both.
+    loss_parse: str
+    #: What `autoresearch/program.md` says about this port's build and its
+    #: dependency rule. Per track because the sentence is not language-neutral: a
+    #: Go module with no `require` block and a Go package.json with no
+    #: dependencies are the same commitment written two ways, and a brief that says
+    #: "no Cargo.toml dependencies" to a model holding Go source is a brief about a
+    #: file that does not exist.
+    dependency_note: str
+    lint_command: str
+
+    @property
+    def candidate(self) -> Path:
+        return RESEARCH_DIR / self.candidate_dir
+
+    @property
+    def candidate_file(self) -> Path:
+        return self.candidate / self.candidate_source
+
+    @property
+    def probe(self) -> Path:
+        return self.candidate / self.probe_path
+
+    @property
+    def comparator(self) -> Path:
+        return REPO_ROOT / "implementations" / self.comparator_dir
+
+    @property
+    def comparator_file(self) -> Path:
+        return self.comparator / self.comparator_source
+
+    @property
+    def source_key(self) -> str:
+        """The key a run record files this track's digest under."""
+        return f"autoresearch/{self.candidate_dir}/{self.candidate_source}"
+
+    @property
+    def best_diff(self) -> Path:
+        """Where the baseline-to-candidate patch for this track is written.
+
+        Rust keeps the name it has always had: the file is committed, the site
+        renders it, and four run records on disk refer to it. The others take a
+        suffix rather than a subdirectory, so all of them sit together in
+        `autoresearch/diffs/` where a reader expects to find them.
+        """
+        if self.name == "rust":
+            return BEST_DIFF
+        return DIFFS_DIR / f"best-vs-baseline-{self.name}.patch"
+
+    @property
+    def baseline_json(self) -> Path:
+        """Where this track's session baseline is recorded.
+
+        One file per track for the same reason `best_diff` is: a baseline is a
+        claim about one comparator measured on one machine, and averaging three
+        of them into one number would be a number about nothing.
+        """
+        if self.name == "rust":
+            return BASELINE_JSON
+        return RESEARCH_DIR / f"baseline-{self.name}.json"
+
+
+#: The Rust track is the original and stays the default. Its candidate directory
+#: keeps the name it has always had rather than moving under a `candidates/`
+#: directory, because four committed run records already file their source
+#: digest under `autoresearch/candidate/src/lib.rs` and `verify` compares against
+#: that key: moving the tree would invalidate every experiment on record to
+#: accommodate a tidier layout.
+TRACKS: dict[str, Track] = {
+    "rust": Track(
+        name="rust",
+        language="Rust",
+        candidate_dir="candidate",
+        candidate_source="src/lib.rs",
+        comparator_dir="rust",
+        comparator_source="src/lib.rs",
+        probe_path="tests/gradient_check.rs",
+        probe_sha256="b5beae0d11579987c954867846127d5119d4cb07ed2ea47078cf1c2e29807c6b",
+        dependency_note=(
+            "`Cargo.toml` has none and must keep none. The reference's whole point "
+            "is that the algorithm fits in one file with nothing but a standard "
+            "library, and a port that reached for a crate would be measuring the crate."
+        ),
+        lint_command="`cargo clippy --release -- -D warnings`",
+        tool="cargo",
+        tool_hint="Install Rust from https://rustup.rs",
+        fence="rust",
+        build_hint="`cargo build --release` and `cargo clippy --release -- -D warnings`",
+        loss_parse="stdout",
+    ),
+    "go": Track(
+        name="go",
+        language="Go",
+        candidate_dir="candidate-go",
+        candidate_source="main.go",
+        comparator_dir="go",
+        comparator_source="main.go",
+        probe_path="probe_test.go",
+        probe_sha256="d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8",
+        dependency_note=(
+            "`go.mod` has no `require` block and must keep none. The reference's "
+            "whole point is that the algorithm fits in one file with nothing but a "
+            "standard library, and a port that reached for a package would be "
+            "measuring the package."
+        ),
+        lint_command="`go vet ./...`",
+        tool="go",
+        tool_hint="Install Go from https://go.dev/dl/",
+        fence="go",
+        build_hint="`go build` and `go vet ./...`",
+        loss_parse="stdout",
+    ),
+    "typescript": Track(
+        name="typescript",
+        language="TypeScript",
+        candidate_dir="candidate-ts",
+        candidate_source="src/index.ts",
+        comparator_dir="typescript",
+        comparator_source="src/index.ts",
+        probe_path="src/probe.ts",
+        probe_sha256="5c16a817ee3e391d29d0aefc1e1f67b008ad028be70a2521db582197e1084441",
+        dependency_note=(
+            "`package.json` has only `typescript`, `tsx` and `@types/node`, all "
+            "`devDependencies`, and the source must not reach for a "
+            "`dependencies` entry. The reference's whole point is that the algorithm "
+            "fits in one file with nothing but a standard library."
+        ),
+        lint_command="`npx tsc --noEmit`",
+        tool="npm",
+        tool_hint="Install Node from https://nodejs.org/",
+        fence="typescript",
+        build_hint="`npx tsc --noEmit`",
+        loss_parse="trace",
+    ),
+}
+
+#: `--track` takes one of these and rejects anything else loudly, rather than
+#: accepting a name it cannot honour.
+SUPPORTED_TRACKS = tuple(TRACKS)
+
+
+def get_track(name: str) -> Track:
+    try:
+        return TRACKS[name]
+    except KeyError:
+        raise ResearchError(
+            f"error: --track {name!r} is not supported. This tool knows about "
+            f"{', '.join(SUPPORTED_TRACKS)}.\n"
+            f"  Adding a track is not a configuration change: the comparator, the "
+            f"candidate, the gradient probe and the stdout contract are each wired "
+            f"to one language, and all four have to be answered for another. See "
+            f"the `Track` dataclass in tools/autoresearch.py."
+        ) from None
+
+
+#: The Rust track's digest, asserted by `tools/tests/test_autoresearch.py` so it
+#: cannot drift from the file quietly. Kept as a module name because the test
+#: refers to it.
+PROBE_SHA256 = TRACKS["rust"].probe_sha256
+CANDIDATE_DIR = TRACKS["rust"].candidate
+CANDIDATE_LIB = TRACKS["rust"].candidate_file
+PROBE_PATH = TRACKS["rust"].probe
+BASELINE_CRATE = TRACKS["rust"].comparator
+BASELINE_LIB = TRACKS["rust"].comparator_file
+BEST_DIFF = DIFFS_DIR / "best-vs-baseline.patch"
 
 #: The ledger, as a TSV. Tab-separated because karpathy's is, and because
 #: commas appear in these descriptions ("beta1 0.85 -> 0.9, no bias correction").
@@ -207,6 +430,7 @@ DATASET = REPO_ROOT / "data" / "input.txt"
 COLUMNS = (
     "run_id",
     "parent",
+    "track",
     "loss",
     "steps_per_sec",
     "loss_gain",
@@ -314,6 +538,7 @@ def run_command(
 class Row:
     run_id: str
     parent: str
+    track: str
     loss: float
     steps_per_sec: float
     loss_gain: float
@@ -330,6 +555,7 @@ class Row:
         return [
             self.run_id,
             self.parent,
+            self.track,
             number(self.loss),
             number(self.steps_per_sec),
             f"{self.loss_gain:+.6f}",
@@ -354,6 +580,10 @@ class Row:
         return cls(
             run_id=str(payload["run_id"]),
             parent=str(payload["parent"]),
+            # Rows written before the loop learned about Go and TypeScript have no
+            # `track` cell, and they are all Rust: `autoresearch/candidate/` was
+            # the only candidate that existed. Defaulting is the migration.
+            track=str(payload.get("track") or "rust"),
             loss=float(payload["loss"]),
             steps_per_sec=float(payload["steps_per_sec"]),
             loss_gain=float(payload["loss_gain"]),
@@ -407,6 +637,7 @@ def read_ledger() -> list[Row]:
                 Row(
                     run_id=record["run_id"],
                     parent=record["parent"],
+                    track=record["track"],
                     loss=float(record["loss"]),
                     steps_per_sec=float(record["steps_per_sec"]),
                     loss_gain=float(record["loss_gain"]),
@@ -483,20 +714,35 @@ def parse_losses(stdout: str, limit: int) -> list[float]:
     return losses
 
 
-def train_once(binary: Path, steps: int, seed: int, cwd: Path) -> tuple[list[float], float, float | None]:
+def train_once(
+    track: Track, command: list[str], steps: int, seed: int, cwd: Path
+) -> tuple[list[float], float, float | None]:
     """One timed training run.
 
-    The wall clock is the whole process, which includes interpreter-free startup
-    and the twenty-sample inference pass at the end. That is deliberate and it is
-    safe: both are small and both are constant, and -- the part that actually
-    matters -- the baseline is measured the same way, in the same session, on the
-    same machine. The comparison is therefore fair even though the absolute
-    number is not a pure training time. It is recorded raw in the run record so a
-    reader can check the overhead rather than take it on trust.
+    `command` is the track's entry point (`Track.run`), not a path: Go and
+    TypeScript are run through their toolchain rather than exec'd from disk. The
+    wall clock is the whole process, which for those two includes an interpreter
+    start. That is deliberate and it is safe: the baseline is measured the same
+    way, in the same session, on the same machine, so the comparison is fair even
+    though the absolute number is not a pure training time. It is recorded raw in
+    the run record so a reader can check the overhead rather than take it on
+    trust.
+
+    The trace file, when a track needs one, is written inside a fresh temporary
+    directory per run rather than a fixed name: the speed axis runs the same
+    binary three times, and a shared path would have the second run measure the
+    first one's file.
     """
+    command = list(command)
+    trace_dir: Path | None = None
+    if track.loss_parse == "trace":
+        trace_dir = Path(tempfile.mkdtemp(prefix="autoresearch-trace-"))
+        _SCRATCH_ROOTS.append(trace_dir)
+        command += ["--trace", str(trace_dir / "track.jsonl")]
+
     started = time.monotonic()
     completed = run_command(
-        [str(binary), "--input", str(DATASET), "--steps", str(steps), "--seed", str(seed)],
+        command + ["--input", str(DATASET), "--steps", str(steps), "--seed", str(seed)],
         cwd=cwd,
         timeout=RUN_TIMEOUT_SECONDS,
     )
@@ -506,64 +752,138 @@ def train_once(binary: Path, steps: int, seed: int, cwd: Path) -> tuple[list[flo
         raise ResearchError(
             f"training run failed (exit {completed.returncode})\n{tail}"
         )
-    losses = parse_losses(completed.stdout, steps)
-    if not losses:
-        raise ResearchError(
-            "training run produced no `step N / M | loss X` lines. The harness "
-            "reads that line, and so does tools/parity.py, which is why all five "
-            "tracks print it. Whatever replaced it, put it back:\n"
-            f"{(completed.stdout or '')[-1500:]}"
-        )
+    if track.loss_parse == "trace":
+        trace_path = trace_dir / "track.jsonl"
+        if not trace_path.is_file():
+            raise ResearchError(
+                f"the {track.name} run wrote no trace at {trace_path}. The loss axis "
+                f"is a mean over the last {TREND_WINDOW} steps and this track's "
+                f"stdout is deliberately sparse -- see `Track.loss_parse` -- so the "
+                f"trace is the only complete record of the curve."
+            )
+        losses = [
+            float(row["loss"])
+            for row in parity.read_trace(trace_path)
+            if row.get("type") == "step" and "loss" in row
+        ]
+        if len(losses) < TREND_WINDOW:
+            raise ResearchError(
+                f"the {track.name} trace has {len(losses)} step records, fewer than "
+                f"the {TREND_WINDOW}-step window the loss axis is defined over. A "
+                f"window taken from fewer points would be a number about the wrong "
+                f"steps."
+            )
+    else:
+        losses = parse_losses(completed.stdout, steps)
+        if not losses:
+            raise ResearchError(
+                "training run produced no `step N / M | loss X` lines. The harness "
+                "reads that line, and so does tools/parity.py, which is why all five "
+                "tracks print it. Whatever replaced it, put it back:\n"
+                f"{(completed.stdout or '')[-1500:]}"
+            )
     reported = REPORTED_SPEED_RE.search(completed.stdout)
     reported_sps = float(reported.group("sps")) if reported else None
     return losses, elapsed, reported_sps
 
 
-def build_crate(cargo: str, crate_dir: Path) -> None:
-    result = run_command(
-        [cargo, "build", "--release", "--quiet", "--manifest-path", str(crate_dir / "Cargo.toml")],
-        cwd=crate_dir,
-    )
+def build_track(tool: str, track: Track, project_dir: Path) -> list[str]:
+    """Compile the candidate or the comparator, and say how to run it.
+
+    Returns the command rather than leaving it to a constant, because the entry
+    point is not a property of the *language*: the frozen Rust track's `[[bin]]`
+    is `microgpt-rs` and the candidate crate's is `microgpt-tuned`, and the
+    comparator is a read-only, pinned directory that a build must not write a
+    binary into.
+    """
+    if track.tool == "cargo":
+        result = run_command(
+            [tool, "build", "--release", "--quiet", "--manifest-path", str(project_dir / "Cargo.toml")],
+            cwd=project_dir,
+        )
+        if result.returncode != 0:
+            raise ResearchError(f"cargo build failed\n{(result.stderr or '')[-3000:]}")
+        name = CANDIDATE_BIN if project_dir == track.candidate else FROZEN_BIN
+        binary = project_dir / "target" / "release" / name
+        if not binary.is_file():
+            raise ResearchError(f"error: {binary} was not produced by the build")
+        return [str(binary)]
+
+    if track.tool == "go":
+        # Into a temporary directory, never into the project. The comparator is
+        # the frozen track: dropping a 2.5 MB binary into a pinned directory is a
+        # change to it, and `go build ./...` in a module whose directory is `go`
+        # writes a file called `go`.
+        out = Path(tempfile.mkdtemp(prefix="autoresearch-go-"))
+        _SCRATCH_ROOTS.append(out)
+        result = run_command(
+            [tool, "build", "-o", str(out / "microgpt-go"), "."], cwd=project_dir
+        )
+        if result.returncode != 0:
+            raise ResearchError(f"go build failed\n{(result.stderr or '')[-3000:]}")
+        return [str(out / "microgpt-go")]
+
+    result = run_command(["npx", "tsc", "--noEmit"], cwd=project_dir)
     if result.returncode != 0:
-        raise ResearchError(f"cargo build failed\n{(result.stderr or '')[-3000:]}")
+        raise ResearchError(f"tsc --noEmit failed\n{(result.stderr or '')[-3000:]}")
+    return ["npx", "tsx", "src/cli.ts"]
 
 
-def lint_crate(cargo: str, crate_dir: Path) -> None:
-    result = run_command(
-        [cargo, "clippy", "--release", "--quiet", "--manifest-path", str(crate_dir / "Cargo.toml"),
-         "--", "-D", "warnings"],
-        cwd=crate_dir,
-    )
+def lint_track(tool: str, track: Track, project_dir: Path) -> None:
+    """The bar a candidate has to clear before it is allowed to compete.
+
+    Deliberately the same bar as the frozen track: a model rewrites this without
+    supervision, so "it compiles and it is lint-clean" is the only thing between
+    a good patch and a published one.
+    """
+    if track.tool == "cargo":
+        result = run_command(
+            [tool, "clippy", "--release", "--quiet", "--manifest-path", str(project_dir / "Cargo.toml"),
+             "--", "-D", "warnings"],
+            cwd=project_dir,
+        )
+        failed = "cargo clippy failed with -D warnings"
+    elif track.tool == "go":
+        result = run_command([tool, "vet", "./..."], cwd=project_dir)
+        failed = "go vet failed"
+    else:
+        result = run_command(["npx", "tsc", "--noEmit"], cwd=project_dir)
+        failed = "tsc --noEmit failed"
     if result.returncode != 0:
         raise ResearchError(
-            f"cargo clippy failed with -D warnings\n{(result.stderr or '')[-3000:]}"
+            f"{failed}\n{(result.stderr or '')[-3000:]}"
         )
 
 
-def run_gradient_probe(cargo: str, crate_dir: Path) -> dict[str, Any]:
+def run_gradient_probe(tool: str, track: Track, project_dir: Path) -> dict[str, Any]:
     """The finite-difference gate. See the module docstring for why it exists and
-    `autoresearch/candidate/tests/gradient_check.rs` for what it measures.
+    `autoresearch/candidate/tests/gradient_check.rs` for what it measures. The
+    Go and TypeScript probes measure the same thing and print the same line.
 
     The digest is checked against the *committed* probe, not the one in
-    `crate_dir`. A candidate could otherwise ship its own weakened probe alongside
-    its own weakened gradient, and the two would agree with each other.
+    `project_dir`. A candidate could otherwise ship its own weakened probe
+    alongside its own weakened gradient, and the two would agree with each other.
     """
-    actual = sha256_file(PROBE_PATH)
-    if actual != PROBE_SHA256:
+    actual = sha256_file(track.probe)
+    if actual != track.probe_sha256:
         raise ResearchError(
             f"error: the gradient probe has been modified.\n"
-            f"  expected sha256 {PROBE_SHA256}\n"
+            f"  expected sha256 {track.probe_sha256}\n"
             f"  found    sha256 {actual}\n"
-            f"  {PROBE_PATH.relative_to(REPO_ROOT)} is written by this repository, not "
+            f"  {track.probe.relative_to(REPO_ROOT)} is written by this repository, not "
             f"by the research loop, and it is the only thing standing between a "
             f"model and a broken gradient that still trains "
             f"(docs/KNOWN-ISSUES.md issue 1). If you changed it on purpose, update "
-            f"PROBE_SHA256 in tools/autoresearch.py and say why in the commit."
+            f"the {track.probe_path} entry in the `Track` table in "
+            f"tools/autoresearch.py and say why in the commit."
         )
-    result = run_command(
-        [cargo, "test", "--release", "--test", "gradient_check", "--", "--nocapture"],
-        cwd=crate_dir,
-    )
+    if track.tool == "cargo":
+        probe_cmd = [tool, "test", "--release", "--test", "gradient_check", "--", "--nocapture"]
+    elif track.tool == "go":
+        probe_cmd = [tool, "test", "-run", "TestGradcheck", "-v", "."]
+    else:
+        probe_cmd = ["npx", "tsx", track.probe_path]
+    result = run_command(probe_cmd, cwd=project_dir)
     output = f"{result.stdout}\n{result.stderr}"
     match = GRADCHECK_RE.search(output)
     if result.returncode != 0 or not match:
@@ -588,8 +908,14 @@ def run_gradient_probe(cargo: str, crate_dir: Path) -> dict[str, Any]:
     }
 
 
-def measure_crate(crate: Path, steps: int = STEPS, seed: int = SEED, repeats: int = REPEATS) -> Measurement:
-    """Build, lint, gradient-check and time one crate. Everything that has to be
+def measure_track(
+    track: Track,
+    project_dir: Path,
+    steps: int = STEPS,
+    seed: int = SEED,
+    repeats: int = REPEATS,
+) -> Measurement:
+    """Build, lint, gradient-check and time one project. Everything that has to be
     true before a loss number is allowed to mean anything.
 
     The same function measures the committed candidate and a scratch copy of it
@@ -598,27 +924,33 @@ def measure_crate(crate: Path, steps: int = STEPS, seed: int = SEED, repeats: in
     for a proposal to be scored on a weaker protocol than the baseline was
     measured on.
     """
-    cargo = require_tool("cargo", "Install Rust from https://rustup.rs")
-    for required in (DATASET, crate / "src" / "lib.rs", PROBE_PATH):
+    tool = require_tool(track.tool, track.tool_hint)
+    is_candidate = project_dir == track.candidate
+    source_name = track.candidate_source if is_candidate else track.comparator_source
+    for required in (DATASET, project_dir / source_name, track.probe):
         if not required.is_file():
             raise ResearchError(
                 f"error: {required} is missing. Run `python3 -m tools.autoresearch "
                 f"--seed` to create the workspace."
             )
-    build_crate(cargo, crate)
-    lint_crate(cargo, crate)
-    grad = run_gradient_probe(cargo, crate)
-
-    binary = crate / "target" / "release" / "microgpt-tuned"
-    if not binary.is_file():
-        raise ResearchError(f"error: {binary} was not produced by the build")
+    command = build_track(tool, track, project_dir)
+    lint_track(tool, track, project_dir)
+    if is_candidate:
+        grad = run_gradient_probe(tool, track, project_dir)
+    else:
+        # The frozen track has no probe -- the probe is part of the candidate, not
+        # the baseline. The seeded candidate is the baseline's source plus at most
+        # the accessors the probe needs, so its ratio is the baseline tape's
+        # ratio, and measuring the candidate supplies it. Until it does, 0.0 means
+        # "not measured" and the page says so.
+        grad = {"ratio": 0.0, "ratios": {}, "analytic": 0.0, "params": 0}
 
     # One run for the loss axis -- it is deterministic at a fixed seed -- and
     # `repeats` for the speed axis, which is not.
-    losses, first_elapsed, reported = train_once(binary, steps, seed, crate)
+    losses, first_elapsed, reported = train_once(track, command, steps, seed, project_dir)
     wall = [first_elapsed]
     for _ in range(max(0, repeats - 1)):
-        _, elapsed, _ = train_once(binary, steps, seed, crate)
+        _, elapsed, _ = train_once(track, command, steps, seed, project_dir)
         wall.append(elapsed)
 
     return Measurement(
@@ -635,11 +967,11 @@ def measure_crate(crate: Path, steps: int = STEPS, seed: int = SEED, repeats: in
     )
 
 
-def measure_candidate(steps: int = STEPS, seed: int = SEED, repeats: int = REPEATS) -> Measurement:
-    return measure_crate(CANDIDATE_DIR, steps, seed, repeats)
+def measure_candidate(track: Track, steps: int = STEPS, seed: int = SEED, repeats: int = REPEATS) -> Measurement:
+    return measure_track(track, track.candidate, steps, seed, repeats)
 
 
-def measure_baseline(steps: int = STEPS, seed: int = SEED, repeats: int = REPEATS) -> Measurement:
+def measure_baseline(track: Track, steps: int = STEPS, seed: int = SEED, repeats: int = REPEATS) -> Measurement:
     """The frozen track, measured the same way, in the same session.
 
     The speed axis of `benchmarks/results.json` is not usable here and the reason
@@ -647,35 +979,7 @@ def measure_baseline(steps: int = STEPS, seed: int = SEED, repeats: int = REPEAT
     number from another machine is a number about that machine. So the comparator
     is rebuilt from source every session and thrown away with it.
     """
-    cargo = require_tool("cargo", "Install Rust from https://rustup.rs")
-    build_crate(cargo, BASELINE_CRATE)
-    lint_crate(cargo, BASELINE_CRATE)
-    if not BASELINE_BIN.is_file():
-        raise ResearchError(f"error: {BASELINE_BIN} was not produced by the build")
-
-    losses, first_elapsed, reported = train_once(BASELINE_BIN, steps, seed, BASELINE_CRATE)
-    wall = [first_elapsed]
-    for _ in range(max(0, repeats - 1)):
-        _, elapsed, _ = train_once(BASELINE_BIN, steps, seed, BASELINE_CRATE)
-        wall.append(elapsed)
-
-    return Measurement(
-        losses=losses,
-        window=windowed(losses),
-        steps_per_sec=steps / statistics.median(wall),
-        wall_seconds=[round(value, 4) for value in wall],
-        reported_steps_per_sec=reported,
-        # The frozen crate has no probe -- the probe is part of the candidate,
-        # not the baseline. The seeded candidate is the baseline's `lib.rs` plus
-        # one method, so its ratio is the baseline tape's ratio, and
-        # `measure_candidate` supplies it. Until it does, 0.0 means "not
-        # measured" and the page says so.
-        grad_ratio=0.0,
-        grad_ratios={},
-        grad_analytic=0.0,
-        grad_params=0,
-        log="",
-    )
+    return measure_track(track, track.comparator, steps, seed, repeats)
 
 
 # ─── the verdict ─────────────────────────────────────────────────────────────
@@ -804,20 +1108,20 @@ def diff_counts(patch: str) -> dict[str, int]:
     return {"added": added, "removed": removed}
 
 
-def regenerate_best_diff() -> dict[str, int]:
+def regenerate_best_diff(track: Track) -> dict[str, int]:
     """The patch from the frozen baseline to whatever the candidate currently is.
     This is the "admire how the code changed" artefact, and it is regenerated on
     every keep so it is always the current best against the original."""
-    if not BASELINE_LIB.is_file() or not CANDIDATE_LIB.is_file():
+    if not track.comparator_file.is_file() or not track.candidate_file.is_file():
         return {"added": 0, "removed": 0}
     patch = unified(
-        BASELINE_LIB.read_text(encoding="utf-8"),
-        CANDIDATE_LIB.read_text(encoding="utf-8"),
-        "a/implementations/rust/src/lib.rs",
-        "b/autoresearch/candidate/src/lib.rs",
+        track.comparator_file.read_text(encoding="utf-8"),
+        track.candidate_file.read_text(encoding="utf-8"),
+        f"a/implementations/{track.comparator_dir}/{track.comparator_source}",
+        f"b/{track.source_key}",
     )
     DIFFS_DIR.mkdir(parents=True, exist_ok=True)
-    BEST_DIFF.write_text(patch, encoding="utf-8")
+    track.best_diff.write_text(patch, encoding="utf-8")
     return diff_counts(patch)
 
 
@@ -874,10 +1178,43 @@ def build_results_document() -> dict[str, Any]:
         record["has_record"] = run_file.is_file()
         runs.append(record)
 
-    kept = [r for r in rows if r.status == "keep"]
-    best = min(kept, key=lambda r: (r.loss, -r.steps_per_sec)) if kept else None
+    # Per track, because "the best" is only meaningful against its own
+    # comparator: the Go candidate's loss is not comparable to the Rust one's
+    # speed, and a single global best would be a number about nothing.
+    baselines: dict[str, Any] = {}
+    bests: dict[str, Any] = {}
+    provenances: dict[str, Any] = {}
+    for track in TRACKS.values():
+        track_rows = [r for r in rows if r.track == track.name]
+        track_kept = [r for r in track_rows if r.status == "keep"]
+        baselines[track.name] = next(
+            (r.to_json() for r in track_rows if r.status == "baseline"), None
+        )
+        bests[track.name] = (
+            min(track_kept, key=lambda r: (r.loss, -r.steps_per_sec)).to_json()
+            if track_kept
+            else None
+        )
+        provenances[track.name] = {
+            "baseline_source": (
+                str(track.comparator_file.relative_to(REPO_ROOT))
+                if track.comparator_file.is_file()
+                else f"implementations/{track.comparator_dir}/{track.comparator_source}"
+            ),
+            "baseline_sha256": (
+                sha256_file(track.comparator_file) if track.comparator_file.is_file() else ""
+            ),
+            "candidate_source": f"autoresearch/{track.candidate_dir}/{track.candidate_source}",
+            "candidate_sha256": (
+                sha256_file(track.candidate_file) if track.candidate_file.is_file() else ""
+            ),
+            "gradient_probe": f"autoresearch/{track.candidate_dir}/{track.probe_path}",
+            "gradient_probe_sha256": (
+                sha256_file(track.probe) if track.probe.is_file() else ""
+            ),
+        }
 
-    baseline_row = next((r for r in rows if r.status == "baseline"), None)
+    kept = [r for r in rows if r.status == "keep"]
     baseline_doc = read_json(BASELINE_JSON) if BASELINE_JSON.is_file() else {}
 
     return {
@@ -888,16 +1225,18 @@ def build_results_document() -> dict[str, Any]:
             "cannot stop matching the run that produced it."
         ),
         "generator": "tools/autoresearch.py --render",
-        "track": "rust",
-        "provenance_of": {
-            "baseline_source": str(BASELINE_LIB.relative_to(REPO_ROOT)),
-            "baseline_sha256": sha256_file(BASELINE_LIB) if BASELINE_LIB.is_file() else "",
-            "candidate_source": str(CANDIDATE_LIB.relative_to(REPO_ROOT)),
-            "candidate_sha256": sha256_file(CANDIDATE_LIB) if CANDIDATE_LIB.is_file() else "",
-            "gradient_probe": str(PROBE_PATH.relative_to(REPO_ROOT)),
-            "gradient_probe_sha256": sha256_file(PROBE_PATH) if PROBE_PATH.is_file() else "",
-            "dataset_sha256": sha256_file(DATASET) if DATASET.is_file() else "",
+        "track": "multi",
+        "tracks": {
+            name: {
+                "language": track.language,
+                "candidate_dir": track.candidate_dir,
+                "source": track.candidate_source,
+                "probe": track.probe_path,
+                "build": track.build_hint,
+            }
+            for name, track in TRACKS.items()
         },
+        "provenance_of": provenances,
         "protocol": {
             "steps": STEPS,
             "seed": SEED,
@@ -936,15 +1275,22 @@ def build_results_document() -> dict[str, Any]:
         },
         "model": model_summary(),
         "runner": baseline_doc.get("runner", {}),
-        "baseline": baseline_row.to_json() if baseline_row else None,
-        "best": best.to_json() if best else None,
+        "dataset_sha256": sha256_file(DATASET) if DATASET.is_file() else "",
+        "baselines": baselines,
+        "bests": bests,
         "counts": {
             "experiments": len([r for r in rows if r.status != "baseline"]),
             "keep": len(kept),
             "discard": len([r for r in rows if r.status == "discard"]),
             "crash": len([r for r in rows if r.status == "crash"]),
         },
-        "pareto": pareto_frontier(rows),
+        # Per track, for the same reason `bests` is: a frontier is a claim about
+        # one comparator, and the Go candidate's steps-per-second says nothing
+        # about the Rust candidate's.
+        "pareto": {
+            name: pareto_frontier([r for r in rows if r.track == name])
+            for name in TRACKS
+        },
         "runs": runs,
         "caveats": CAVEATS,
     }
@@ -1089,7 +1435,7 @@ def ask_model(spec: dict[str, Any], prompt: str, max_tokens: int) -> tuple[str, 
     body: dict[str, Any] = {
         "model": spec["model"],
         "messages": [
-            {"role": "system", "content": read_prompt()},
+            {"role": "system", "content": read_prompt(track)},
             {"role": "user", "content": prompt},
         ],
         "max_tokens": max_tokens,
@@ -1139,13 +1485,46 @@ def ask_model(spec: dict[str, Any], prompt: str, max_tokens: int) -> tuple[str, 
     }
 
 
-def read_prompt() -> str:
+def read_prompt(track: Track) -> str:
+    """The agent brief, with this track's names substituted in.
+
+    `program.md` is a template, and a template rather than three files because it
+    is "the one part of this system a human is meant to edit": three copies of the
+    same argument would drift, and a brief that describes `cargo clippy` to a model
+    holding Go source is worse than no brief at all. Every placeholder is filled
+    from the `Track` table, so a new language gets a correct brief by adding a row
+    rather than by writing prose.
+    """
     if not PROGRAM_MD.is_file():
         raise ResearchError(
             f"error: {PROGRAM_MD.relative_to(REPO_ROOT)} is missing. It is the agent "
             f"brief and the one part of this system a human is meant to edit."
         )
-    return PROGRAM_MD.read_text(encoding="utf-8")
+    values = {
+        "language": track.language,
+        "candidate_dir": f"autoresearch/{track.candidate_dir}",
+        "source_key": track.source_key,
+        "probe_path": track.probe.relative_to(REPO_ROOT).as_posix(),
+        "dependency_note": track.dependency_note,
+        "lint_command": track.lint_command,
+    }
+    # Substituted with a regex rather than `str.format`, because the brief contains
+    # literal braces: the example patch adds a `Tensor { new, forward, params }`
+    # literal, and `format` would read that as a field name and raise.
+    PROGRAM_TEXT = PROGRAM_MD.read_text(encoding="utf-8")
+    filled = re.sub(
+        r"\{\{(\w+)\}\}", lambda m: values.get(m.group(1), m.group(0)), PROGRAM_TEXT
+    )
+    leftover = re.findall(r"\{\{(\w+)\}\}", filled)
+    if leftover:
+        raise ResearchError(
+            f"error: {PROGRAM_MD.relative_to(REPO_ROOT)} still has unfilled "
+            f"placeholders after rendering for the {track.name} track: "
+            f"{', '.join(sorted(set(leftover)))}. Add them to the format call in "
+            f"`read_prompt` and to the `Track` table -- a brief with braces in it is "
+            f"a brief the model will read as instructions."
+        )
+    return filled
 
 
 def parse_proposal(text: str) -> Proposal:
@@ -1180,12 +1559,20 @@ def parse_proposal(text: str) -> Proposal:
 
 
 def build_prompt(
+    track: Track,
     rows: list[Row],
     baseline: dict[str, Any],
     history: int = 15,
 ) -> str:
+    """Everything the model gets, for one track.
+
+    The ledger it is shown is that track's rows only. Showing a Go candidate the
+    Rust track's history would invite it to propose a change already tried, and
+    worse, would imply the two are competing on the same axis.
+    """
     """Everything the model gets. No diff of the previous attempt, no hidden
     state: the ledger is the memory, and it is a committed file."""
+    rows = [r for r in rows if r.track == track.name]
     recent = rows[-history:]
     ledger = "\n".join(
         f"{r.run_id}\t{r.status}\tloss={r.loss:.4f}\tsps={r.steps_per_sec:.1f}\t"
@@ -1193,6 +1580,8 @@ def build_prompt(
         f"grad={r.grad_ratio:.3f}\t{r.description}"
         for r in recent
     )
+    source_text = track.candidate_file.read_text(encoding="utf-8")
+    source_lines = source_text.splitlines()
     thresholds = (
         f"loss_material={LOSS_MATERIAL}  loss_tolerance={LOSS_TOL}  "
         f"speed_material={SPEED_MATERIAL}  speed_tolerance={SPEED_TOL}  "
@@ -1215,20 +1604,20 @@ def build_prompt(
         f"# The ledger, most recent {len(recent)} rows\n\n"
         f"```\nrun_id\tstatus\tloss\tsps\tdloss\tdspeed\tgrad\tdescription\n{ledger}\n```\n\n"
         f"# The file you are editing\n\n"
-        f"`autoresearch/candidate/src/lib.rs`, reproduced here in full. It is "
-        f"{len(CANDIDATE_LIB.read_text(encoding='utf-8').splitlines())} lines, and "
-        f"this is all of it. Read it. Do not invent a signature, a method name or a "
-        f"helper that is not in this text: a patch that references an API you "
-        f"imagined does not apply, and the experiment is wasted.\n\n"
-        f"```rust\n{CANDIDATE_LIB.read_text(encoding='utf-8')}\n```\n\n"
+        f"`{track.source_key}`, reproduced here in full. It is "
+        f"{len(source_lines)} lines, and this is all of it. Read it. Do not invent a "
+        f"signature, a method name or a helper that is not in this text: a patch "
+        f"that references an API you imagined does not apply, and the experiment is "
+        f"wasted.\n\n"
+        f"```{track.fence}\n{source_text}\n```\n\n"
         f"Reply with exactly this shape and nothing else:\n\n"
         f"HYPOTHESIS: one sentence -- why you think this will help, stated so it "
         f"could be wrong\n"
         f"SUMMARY: one line, no commas needed, describing the change for the results "
         f"table\n\n"
         f"```diff\n"
-        f"--- a/autoresearch/candidate/src/lib.rs\n"
-        f"+++ b/autoresearch/candidate/src/lib.rs\n"
+        f"--- a/{track.source_key}\n"
+        f"+++ b/{track.source_key}\n"
         f"@@ -766,7 +766,7 @@\n"
         f" unchanged context line\n"
         f"-a line you are removing\n"
@@ -1405,7 +1794,9 @@ def runner_identity() -> dict[str, Any]:
     }
 
 
-def measure_session_baseline(steps: int, seed: int, repeats: int) -> dict[str, Any]:
+def measure_session_baseline(
+    track: Track, steps: int, seed: int, repeats: int
+) -> dict[str, Any]:
     """The comparator for this session, and its identity.
 
     Re-measured every session on purpose. The obvious optimisation -- reuse the
@@ -1413,14 +1804,16 @@ def measure_session_baseline(steps: int, seed: int, repeats: int) -> dict[str, A
     Apple M1, and a speed ratio against a number from another machine is a number
     about that machine, not about this one.
     """
-    frozen = measure_baseline(steps, seed, repeats)
-    candidate = measure_candidate(steps, seed, repeats)
+    frozen = measure_baseline(track, steps, seed, repeats)
+    candidate = measure_candidate(track, steps, seed, repeats)
     payload = {
         "$comment": (
-            "The session baseline: the frozen track, rebuilt and re-measured on the "
-            "machine running the loop. Regenerated by every session and committed so "
-            "the site can say what the numbers were relative to. See docs/AUTORESEARCH.md."
+            f"The session baseline for the {track.name} track: the frozen "
+            "implementation, rebuilt and re-measured on the machine running the "
+            "loop. Regenerated by every session and committed so the site can say "
+            "what the numbers were relative to. See docs/AUTORESEARCH.md."
         ),
+        "track": track.name,
         "measured": now_iso(),
         "runner": runner_identity(),
         "protocol": {"steps": steps, "seed": seed, "repeats": repeats},
@@ -1431,17 +1824,20 @@ def measure_session_baseline(steps: int, seed: int, repeats: int) -> dict[str, A
         "loss_curve_sha256": sha256_text(",".join(f"{value:.6f}" for value in frozen.losses)),
         "grad_ratio": round(candidate.grad_ratio, 6),
         "grad_note": (
-            "Measured on the seeded candidate, which is the frozen crate's lib.rs "
-            "plus Tensor::set_data. The frozen crate carries no probe of its own; the "
-            "tape is the same, so the ratio is the baseline's. 1.063 is expected and "
-            "is docs/KNOWN-ISSUES.md issue 5, not an error in the measurement."
+            f"Measured on the seeded {track.name} candidate, which is the frozen "
+            "track's source plus whatever accessors its probe needs. The frozen "
+            "track carries no probe of its own, so this is the *frozen* tape's ratio, "
+            f"not the candidate's: {candidate.grad_ratio:.4f} for this port is "
+            "docs/KNOWN-ISSUES.md issue 5 -- an rmsnorm path that sits outside the "
+            "tape -- and not an error in the measurement. The candidate on disk can "
+            "and does differ, because the loop is allowed to fix it: the Rust "
+            "candidate measures 1.0003, having put rmsnorm on the tape."
         ),
         "source_sha256": {
-            "implementations/rust/src/lib.rs": sha256_file(BASELINE_LIB),
-            "implementations/rust/Cargo.toml": sha256_file(BASELINE_CRATE / "Cargo.toml"),
+            str(track.comparator_file.relative_to(REPO_ROOT)): sha256_file(track.comparator_file),
         },
     }
-    write_json(BASELINE_JSON, payload)
+    write_json(track.baseline_json, payload)
     return {
         "loss": payload["loss"],
         "steps_per_sec": payload["steps_per_sec"],
@@ -1454,20 +1850,33 @@ def measure_session_baseline(steps: int, seed: int, repeats: int) -> dict[str, A
 
 
 def cmd_seed(args: argparse.Namespace) -> int:
-    """Create the workspace and record the baseline row. Idempotent."""
-    for path in (CANDIDATE_DIR, RUNS_DIR, DIFFS_DIR):
+    """Create the workspace and record the baseline row. Idempotent per track.
+
+    Idempotent *per track*, which is the change multi-track forces: seeding Go
+    against a ledger that already holds 104 Rust rows has to add the Go baseline
+    rather than decide the ledger is full.
+    """
+    track = get_track(args.track)
+    for path in (track.candidate, RUNS_DIR, DIFFS_DIR):
         path.mkdir(parents=True, exist_ok=True)
     if not RESULTS_TSV.is_file():
         RESULTS_TSV.write_text(HEADER + "\n", encoding="utf-8")
     rows = read_ledger()
-    if rows:
-        print(f"{RESULTS_TSV.relative_to(REPO_ROOT)} already has {len(rows)} row(s); nothing to seed")
-        regenerate_best_diff()
+    mine = [r for r in rows if r.track == track.name]
+    if mine:
+        print(
+            f"{RESULTS_TSV.relative_to(REPO_ROOT)} already has {len(mine)} "
+            f"{track.name} row(s); nothing to seed"
+        )
+        regenerate_best_diff(track)
         render()
         return 0
 
-    print("measuring the session baseline: rebuilding the frozen track and timing it")
-    baseline = measure_session_baseline(args.steps, args.seed, args.repeats)
+    print(
+        f"measuring the session baseline for {track.name}: rebuilding the frozen "
+        f"track and timing it"
+    )
+    baseline = measure_session_baseline(track, args.steps, args.seed, args.repeats)
     print(
         f"  windowed loss {baseline['loss']:.4f}   "
         f"{baseline['steps_per_sec']:.1f} steps/s   "
@@ -1476,20 +1885,24 @@ def cmd_seed(args: argparse.Namespace) -> int:
 
     parent = git("rev-parse", "HEAD").strip()
     row = Row(
-        run_id="0000",
+        run_id=next_run_id(rows),
         parent=parent,
+        track=track.name,
         loss=baseline["loss"],
         steps_per_sec=baseline["steps_per_sec"],
         loss_gain=0.0,
         speed_gain=0.0,
         grad_ratio=baseline["grad_ratio"],
         status="baseline",
-        reason="frozen implementations/rust, re-measured this session",
-        description="the frozen track, unmodified, as this session's comparator",
+        reason=f"frozen implementations/{track.comparator_dir}, re-measured this session",
+        description=(
+            f"the frozen {track.language} track, unmodified, as this session's comparator"
+        ),
     )
     record = {
         "$comment": "One experiment. GENERATED by tools/autoresearch.py -- do not edit.",
         "run_id": row.run_id,
+        "track": row.track,
         "measured": now_iso(),
         "status": row.status,
         "kind": "baseline",
@@ -1501,22 +1914,33 @@ def cmd_seed(args: argparse.Namespace) -> int:
         "window": baseline["window"],
         "speed": {
             "steps_per_sec": row.steps_per_sec,
-            "note": "median of the session repeats; see baseline.json for the raw samples",
+            "note": (
+                "median of the session repeats; see "
+                f"{track.baseline_json.relative_to(REPO_ROOT)} for the raw samples"
+            ),
         },
         "grad": {
             "ratio": row.grad_ratio,
             "note": (
-                "From the seeded candidate, which is this crate's lib.rs plus one "
-                "method. See KNOWN-ISSUES.md issue 5 for why it is 1.063 and not 1.0."
+                f"From the seeded {track.name} candidate, which is the frozen "
+                f"track's source plus whatever its probe needs. See KNOWN-ISSUES.md "
+                f"issue 5 for why it is not 1.0."
             ),
         },
-        "source_sha256": {"implementations/rust/src/lib.rs": sha256_file(BASELINE_LIB)},
+        "source_sha256": {
+            str(track.comparator_file.relative_to(REPO_ROOT)): sha256_file(
+                track.comparator_file
+            ),
+        },
     }
     write_json(RUNS_DIR / f"{row.run_id}.json", record)
     append_ledger(row)
-    regenerate_best_diff()
+    regenerate_best_diff(track)
     render()
-    print(f"seeded {RESULTS_TSV.relative_to(REPO_ROOT)} with the baseline row")
+    print(
+        f"seeded {RESULTS_TSV.relative_to(REPO_ROOT)} with the {track.name} "
+        f"baseline row {row.run_id}"
+    )
     return 0
 
 
@@ -1544,63 +1968,103 @@ def cmd_verify(args: argparse.Namespace) -> int:
     if not rows:
         print("no experiments recorded; nothing to verify", file=sys.stderr)
         return 0
-    kept = [r for r in rows if r.status == "keep"]
-    if not kept:
+
+    # Every track that has a kept run, each against its own comparator. A track
+    # with no kept candidate is reported as unverified rather than skipped in
+    # silence, for the reason the speed axis below is reported rather than skipped.
+    targets: list[tuple[Track, Row]] = []
+    for track in TRACKS.values():
+        kept = [r for r in rows if r.track == track.name and r.status == "keep"]
+        if not kept:
+            if any(r.track == track.name for r in rows):
+                print(f"--  {track.name}: no kept candidate yet; nothing to verify")
+            continue
+        # Two different runs, and conflating them is a bug this file used to have.
+        #
+        # The loop promotes the candidate on *every* keep, so the committed file is
+        # the LAST keep -- a run that traded a little loss for a lot of speed. The
+        # lowest-loss keep is what `results.json` calls the track's best, and the
+        # two are not the same run: after a hundred experiments, 0102 was the
+        # promoted candidate and 0066 was the lowest loss, and comparing the file
+        # against 0066 failed the check with a digest that had never been wrong.
+        #
+        # A digest check has one question to ask -- does the committed code still
+        # produce the number on record -- and the run to ask it of is the run that
+        # produced the committed code.
+        targets.append((track, kept[-1], min(kept, key=lambda r: (r.loss, -r.steps_per_sec))))
+    if not targets:
         print("no kept candidate recorded; nothing to verify")
         return 0
-    best = min(kept, key=lambda r: (r.loss, -r.steps_per_sec))
-    record_path = RUNS_DIR / f"{best.run_id}.json"
-    record = read_json(record_path)
 
-    print(f"verifying the current best candidate: experiment {best.run_id}")
+    for track, promoted, best in targets:
+        record_path = RUNS_DIR / f"{promoted.run_id}.json"
+        record = read_json(record_path)
 
-    # 1. The recorded digest of the candidate must still be the committed file.
-    recorded_digest = (record.get("source_sha256") or {}).get(
-        "autoresearch/candidate/src/lib.rs"
-    )
-    actual_digest = sha256_file(CANDIDATE_LIB)
-    if recorded_digest and recorded_digest != actual_digest:
         print(
-            f"  ! the committed candidate no longer matches experiment {best.run_id}\n"
-            f"    recorded sha256 {recorded_digest}\n"
-            f"    on disk        sha256 {actual_digest}\n"
-            f"    results.json claims a number this source no longer produces.",
-            file=sys.stderr,
+            f"\nverifying the committed {track.name} candidate: promoted by "
+            f"experiment {promoted.run_id}"
+            + (
+                f" (lowest loss on this track is {best.run_id}, a different run)"
+                if best.run_id != promoted.run_id
+                else ""
+            )
         )
-        return 1
-    print(f"  ok  candidate source matches experiment {best.run_id} (sha256 {actual_digest[:12]})")
 
-    # 2. Build, lint, gradient check.
-    measurement = measure_candidate(args.steps, args.seed, args.repeats)
-    print(f"  ok  builds, clippy-clean, gradient ratio {measurement.grad_ratio:.4f}")
-
-    # 3. The loss axis, within the tolerance a candidate is held to.
-    drift = abs(measurement.window["last_window_mean"] - best.loss) / best.loss
-    status = "ok" if drift <= VERIFY_LOSS_TOLERANCE else "FAIL"
-    print(
-        f"  {status}  windowed loss {measurement.window['last_window_mean']:.4f} vs recorded "
-        f"{best.loss:.4f} ({drift * 100:+.2f}%, tolerance "
-        f"{VERIFY_LOSS_TOLERANCE * 100:.0f}%)"
-    )
-    if drift > VERIFY_LOSS_TOLERANCE:
+        # 1. The recorded digest of the candidate must still be the committed file.
+        recorded_digest = (record.get("source_sha256") or {}).get(track.source_key)
+        actual_digest = (
+            sha256_file(track.candidate_file) if track.candidate_file.is_file() else ""
+        )
+        if recorded_digest and recorded_digest != actual_digest:
+            print(
+                f"  ! the committed candidate no longer matches experiment "
+                f"{promoted.run_id}\n"
+                f"    recorded sha256 {recorded_digest}\n"
+                f"    on disk        sha256 {actual_digest}\n"
+                f"    results.json claims a number this source no longer produces.",
+                file=sys.stderr,
+            )
+            return 1
         print(
-            "    This is a different loss curve from the one on record. Either the "
-            "toolchain rounds differently here, which is expected and bounded, or "
-            "the code changed, which the digest above would have caught.",
-            file=sys.stderr,
+            f"  ok  candidate source matches experiment {promoted.run_id} "
+            f"(sha256 {actual_digest[:12]})"
         )
-        return 1
 
-    # 4. The speed axis, explicitly not checked, and said out loud rather than
-    # silently skipped -- a check that is quietly absent is indistinguishable
-    # from one that quietly passed.
-    print(
-        f"  --  speed axis NOT verified. This runner measured "
-        f"{measurement.steps_per_sec:.1f} steps/s against the recorded "
-        f"{best.steps_per_sec:.1f}, and those are different machines: "
-        f"SPEED_AXIS_VERIFIABLE is False for exactly that reason. The recorded "
-        f"figure is the honest one for the session that produced it."
-    )
+        # 2. Build, lint, gradient check.
+        measurement = measure_candidate(track, args.steps, args.seed, args.repeats)
+        print(
+            f"  ok  builds, lint-clean, gradient ratio {measurement.grad_ratio:.4f}"
+        )
+
+        # 3. The loss axis, within the tolerance a candidate is held to.
+        drift = (
+            abs(measurement.window["last_window_mean"] - promoted.loss) / promoted.loss
+        )
+        status = "ok" if drift <= VERIFY_LOSS_TOLERANCE else "FAIL"
+        print(
+            f"  {status}  windowed loss {measurement.window['last_window_mean']:.4f} vs recorded "
+            f"{promoted.loss:.4f} ({drift * 100:+.2f}%, tolerance "
+            f"{VERIFY_LOSS_TOLERANCE * 100:.0f}%)"
+        )
+        if drift > VERIFY_LOSS_TOLERANCE:
+            print(
+                "    This is a different loss curve from the one on record. Either the "
+                "toolchain rounds differently here, which is expected and bounded, or "
+                "the code changed, which the digest above would have caught.",
+                file=sys.stderr,
+            )
+            return 1
+
+        # 4. The speed axis, explicitly not checked, and said out loud rather than
+        # silently skipped -- a check that is quietly absent is indistinguishable
+        # from one that quietly passed.
+        print(
+            f"  --  speed axis NOT verified. This runner measured "
+            f"{measurement.steps_per_sec:.1f} steps/s against the recorded "
+            f"{promoted.steps_per_sec:.1f}, and those are different machines: "
+            f"SPEED_AXIS_VERIFIABLE is False for exactly that reason. The recorded "
+            f"figure is the honest one for the session that produced it."
+        )
 
     # 5. results.json must be current.
     if render():
@@ -1615,33 +2079,12 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
 
 def cmd_loop(args: argparse.Namespace) -> int:
-    if args.track not in SUPPORTED_TRACKS:
-        raise ResearchError(
-            f"error: --track {args.track!r} is not supported. This tool knows "
-            f"about {', '.join(SUPPORTED_TRACKS)}.\n"
-            f"  Adding a track is not a configuration change. Four things are wired to "
-            f"the Rust track by name and each has to be answered for another "
-            f"language:\n"
-            f"    - the comparator, via BASELINE_CRATE / BASELINE_LIB / BASELINE_BIN, "
-            f"and the binary's name;\n"
-            f"    - the candidate, via CANDIDATE_DIR / CANDIDATE_LIB, and the binary "
-            f"measure_crate() looks for;\n"
-            f"    - the gradient probe, which needs a finite-difference entry point the "
-            f"language can express. Several languages cannot check a gradient at all "
-            f"without writing a reference implementation of the model's forward pass, "
-            f"which is a much bigger job than adding a runner -- so \"no probe\" would "
-            f"have to be a supported answer, and then the loss-only objection in the "
-            f"module docstring applies with nothing to catch it;\n"
-            f"    - the stdout contract, `step N / M | loss X`, which the harness parses "
-            f"and which the parity gate already depends on.\n"
-            f"  The parity gate in tools/parity.py would also need the track registered, "
-            f"or the new track is unmeasured by the repository's own definition of "
-            f"measured."
-        )
+    track = get_track(args.track)
     if not RESULTS_TSV.is_file() or not read_ledger():
         raise ResearchError(
-            f"error: no baseline recorded. Run `python3 -m tools.autoresearch --seed` "
-            f"first, or use `make autoresearch-rust` which does both."
+            f"error: no {track.name} baseline recorded. Run `python3 -m tools.autoresearch "
+            f"seed --track {track.name}` first, or use `make autoresearch-rust TRACK="
+            f"{track.name}` which does both."
         )
     dirty = outside_research_dirty()
     if dirty:
@@ -1667,9 +2110,9 @@ def cmd_loop(args: argparse.Namespace) -> int:
     if not args.skip_model_check:
         verify_model_spec(spec)
 
-    baseline = measure_session_baseline(args.steps, args.seed, args.repeats)
+    baseline = measure_session_baseline(track, args.steps, args.seed, args.repeats)
     print(
-        f"session baseline: loss {baseline['loss']:.4f}  "
+        f"[{track.name}] session baseline: loss {baseline['loss']:.4f}  "
         f"{baseline['steps_per_sec']:.1f} steps/s  grad {baseline['grad_ratio']:.4f}"
     )
     if baseline["window"].get("relative_improvement", 0.0) < MIN_RELATIVE_IMPROVEMENT:
@@ -1692,14 +2135,17 @@ def cmd_loop(args: argparse.Namespace) -> int:
             break
         rows = read_ledger()
         run_id = next_run_id(rows)
-        print(f"\n[{run_id}] asking the model for experiment {completed_experiments + 1}")
+        print(
+            f"\n[{run_id}] asking the model for a {track.name} experiment "
+            f"({completed_experiments + 1})"
+        )
 
         failure = ""
         proposal: Proposal | None = None
         usage: dict[str, Any] = {}
         try:
             text, usage = ask_model(
-                spec, build_prompt(rows, baseline), int(spec.get("max_tokens", 32768))
+                spec, build_prompt(track, rows, baseline), int(spec.get("max_tokens", 32768))
             )
             # The raw response is kept, unedited, next to the run record. When a
             # session produces six crashes in a row this is the difference
@@ -1716,14 +2162,14 @@ def cmd_loop(args: argparse.Namespace) -> int:
         judged: dict[str, Any] | None = None
         crate: Path | None = None
         if proposal is not None:
-            applied, crate, error = apply_to_scratch(proposal.patch)
+            applied, crate, error = apply_to_scratch(track, proposal.patch)
             if not applied:
                 failure = "the patch did not apply"
                 detail = error.splitlines()[-1] if error else "no output from git apply"
                 print(f"  crash: {failure}: {detail}")
             else:
                 try:
-                    measurement = measure_crate(crate, args.steps, args.seed, args.repeats)
+                    measurement = measure_track(track, crate, args.steps, args.seed, args.repeats)
                     judged = verdict(
                         baseline["loss"],
                         baseline["steps_per_sec"],
@@ -1747,6 +2193,7 @@ def cmd_loop(args: argparse.Namespace) -> int:
             row = Row(
                 run_id=run_id,
                 parent=git("rev-parse", "HEAD").strip(),
+                track=track.name,
                 loss=0.0,
                 steps_per_sec=0.0,
                 loss_gain=0.0,
@@ -1777,10 +2224,11 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 # A discard leaves the candidate byte-identical, which is what
                 # makes "the next experiment starts from the last thing that
                 # worked" true rather than approximately true.
-                commit_candidate(crate)
+                commit_candidate(track, crate)
             row = Row(
                 run_id=run_id,
                 parent=git("rev-parse", "HEAD").strip(),
+                track=track.name,
                 loss=measurement.window["last_window_mean"],
                 steps_per_sec=measurement.steps_per_sec,
                 loss_gain=judged["loss_gain"],
@@ -1896,38 +2344,55 @@ def cmd_loop(args: argparse.Namespace) -> int:
 _SCRATCH_ROOTS: list[Path] = []
 
 
-def apply_to_scratch(patch: str) -> tuple[bool, Path, str]:
-    """Copy the candidate aside, apply the patch, return the crate to measure.
+def apply_to_scratch(track: Track, patch: str) -> tuple[bool, Path, str]:
+    """Copy the candidate aside, apply the patch, return the project to measure.
 
     The scratch tree *mirrors the repository layout* -- `<work>/repo/autoresearch/
-    candidate/` -- rather than putting the crate at the top. `git apply` resolves
-    the paths in a patch relative to its working directory, and `program.md` asks
-    for the canonical `a/autoresearch/candidate/src/lib.rs` form, so a flat
-    scratch directory would make every patch fail to apply for a reason that has
-    nothing to do with the patch. Mirroring means the usual `-p1` works and the
-    model can write the paths it was asked to write.
+    candidate/` -- rather than putting the project at the top. `git apply` resolves
+    the paths in a patch relative to its working directory, and the prompt asks for
+    the canonical `a/autoresearch/candidate/src/lib.rs` form, so a flat scratch
+    directory would make every patch fail to apply for a reason that has nothing to
+    do with the patch. Mirroring means the usual `-p1` works and the model can write
+    the paths it was asked to write.
+
+    `target` and `node_modules` are excluded: they are build products of the copy,
+    several hundred megabytes for the TypeScript track, and `go run .` /
+    `npx tsx` will rebuild or reuse what it needs.
     """
     work = Path(tempfile.mkdtemp(prefix="autoresearch-"))
     _SCRATCH_ROOTS.append(work)
     repo = work / "repo"
-    crate = repo / "autoresearch" / "candidate"
-    crate.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(CANDIDATE_DIR, crate, ignore=shutil.ignore_patterns("target"))
+    project = repo / "autoresearch" / track.candidate_dir
+    project.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(
+        track.candidate,
+        project,
+        ignore=shutil.ignore_patterns("target", "node_modules", "dist"),
+    )
     applied, error = apply_patch(patch, repo)
-    return applied, crate, error
+    return applied, project, error
 
 
-def commit_candidate(source: Path) -> None:
-    """Promote a measured scratch crate to the committed candidate.
+def commit_candidate(track: Track, source: Path) -> None:
+    """Promote a measured scratch project to the committed candidate.
 
-    Only the three files that make up the crate move. The probe is deliberately
-    not among them: it is ours, and if a proposal somehow changed it, the digest
-    check would already have failed the experiment.
+    Only the files that make up the candidate move. The probe is deliberately not
+    among them: it is ours, and if a proposal somehow changed it, the digest check
+    would already have failed the experiment.
     """
-    for relative in ("Cargo.toml", "src/lib.rs", "src/main.rs"):
-        target = CANDIDATE_DIR / relative
+    if track.tool == "cargo":
+        movable = ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/main.rs")
+    elif track.tool == "go":
+        movable = ("go.mod", "go.sum", track.candidate_source)
+    else:
+        movable = ("package.json", "package-lock.json", "tsconfig.json", track.candidate_source)
+    for relative in movable:
+        origin = source / relative
+        if not origin.is_file():
+            continue
+        target = track.candidate / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source / relative, target)
+        shutil.copy2(origin, target)
 
 
 def cleanup_scratch() -> None:
@@ -1941,7 +2406,7 @@ def cleanup_scratch() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Autoresearch loop for the Rust micro-gpt track.",
+        description="Autoresearch loop for the Rust, Go and TypeScript micro-gpt tracks.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -1952,7 +2417,13 @@ def main(argv: list[str] | None = None) -> int:
         help="loop (default): run experiments; seed: create the workspace and "
         "measure the baseline; render: regenerate results.json; verify: what CI runs",
     )
-    parser.add_argument("--track", default="rust", help="only 'rust' is supported")
+    parser.add_argument(
+        "--track",
+        default="rust",
+        help="which implementation to optimise: "
+        + ", ".join(SUPPORTED_TRACKS)
+        + " (default rust)",
+    )
     parser.add_argument("--experiments", type=int, default=1, help="how many experiments to run")
     parser.add_argument("--steps", type=int, default=STEPS, help=f"training steps (default {STEPS})")
     parser.add_argument("--seed", type=int, default=SEED, help=f"PRNG seed (default {SEED})")

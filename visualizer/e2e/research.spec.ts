@@ -79,7 +79,7 @@ test.describe('the research page', () => {
     const fetched: string[] = []
     page.on('request', (request) => {
       const path = new URL(request.url()).pathname
-      if (/\.(json|patch|rs)$/.test(path) && /autoresearch/.test(path)) {
+      if (/\.(json|patch|rs|go|ts)$/.test(path) && /autoresearch/.test(path)) {
         fetched.push(request.url())
       }
     })
@@ -104,7 +104,50 @@ test.describe('the research page', () => {
     await page.goto('#/research')
     const text = await page.locator('.research').innerText()
     expect(text).toMatch(/[0-9a-f]{12}/) // a shortened digest
-    expect(text).toContain('set_data')
+    // The patch, not the method name: which accessor the probe needed is a
+    // property of the port, and Go and TypeScript expose their parameters already,
+    // so asserting `set_data` here would only ever have described Rust.
+    expect(text).toContain('lines added')
+  })
+
+  test('offers every track the harness knows, and switching changes the page', async ({ page }) => {
+    // The whole point of the multi-track change: a Go number must never be
+    // reachable under a Rust heading, or vice versa. So the switcher has to be
+    // present, it has to mark which track is showing, and pressing a different
+    // one has to actually change what the page says.
+    await page.goto('#/research')
+    const buttons = page.locator('.research__track')
+    await expect(buttons).toHaveCount(3)
+    await expect(buttons.filter({ hasText: 'Rust' })).toHaveAttribute('aria-pressed', 'true')
+
+    // Asserted on the source file and the build command rather than on the
+    // candidate directory: "candidate" is a substring of "candidate-go" and
+    // "candidate-ts", so a directory assertion would pass for all three tracks and
+    // catch nothing.
+    await expect(page.locator('.research')).toContainText('src/lib.rs')
+    await expect(page.locator('.research')).toContainText('cargo build --release')
+
+    await buttons.filter({ hasText: 'Go' }).click()
+    await expect(buttons.filter({ hasText: 'Go' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(buttons.filter({ hasText: 'Rust' })).toHaveAttribute('aria-pressed', 'false')
+    await expect(page.locator('.research')).toContainText('main.go')
+    await expect(page.locator('.research')).not.toContainText('cargo build --release')
+
+    await buttons.filter({ hasText: 'TypeScript' }).click()
+    await expect(page.locator('.research')).toContainText('src/index.ts')
+    await expect(page.locator('.research')).not.toContainText('main.go')
+  })
+
+  test('says so when a track has no experiments, instead of showing a bare zero', async ({
+    page,
+  }) => {
+    // Go and TypeScript have never been run. The page must not render them as a
+    // chart with one point and no caption, which is what a fast model looks like
+    // and is not what an unmeasured track is.
+    await page.goto('#/research')
+    await page.locator('.research__track').filter({ hasText: 'Go' }).click()
+    const text = await page.locator('.research').innerText()
+    expect(text).toMatch(/no experiment|0 kept|experiments\s*0/i)
   })
 
   test('the empty state names the command, rather than showing a bare zero', async ({ page }) => {

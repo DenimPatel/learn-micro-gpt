@@ -37,6 +37,15 @@ implementations/rust/target/
 # The tuned candidate is a second Rust crate and needs its own line here, or
 # `git add` in the research loop sweeps 200 MB of build output into a commit.
 autoresearch/candidate/target/
+# The Go candidate's built binaries. A build product of a directory a model can
+# edit, exactly like the Rust candidate's target/, and for the same reason: it
+# would be 2.5 MB of machine-specific object code in every commit.
+#
+# Two names, because two different invocations produce them: `build_track` writes
+# `microgpt-go` (it names the output), and a bare `go build ./...` in a module
+# whose directory is `go` writes a file called `go`. Both have shown up.
+autoresearch/candidate-go/microgpt-go
+autoresearch/candidate-go/go
 # Go coverage / test binaries
 *.test
 # C

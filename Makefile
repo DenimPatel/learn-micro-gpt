@@ -233,11 +233,17 @@ bench:
 
 ## ---------------------------------------------------------- autoresearch ------
 
-# The research loop. Three knobs, all overridable:
+# The research loop. Four knobs, all overridable:
 #
+#   make autoresearch-rust                          # one Rust experiment, pushed
 #   make autoresearch-rust EXPERIMENTS=5
 #   make autoresearch-rust EXPERIMENTS=1 PUSH=0        # commit locally, do not push
+#   make autoresearch-rust TRACK=go                    # or TRACK=typescript
 #   make autoresearch-rust RESEARCH_BRANCH=my-branch   # the branch it must be on
+#
+# TRACK picks which implementation to optimise. Each is measured against its own
+# frozen comparator in its own candidate directory, so a Go steps-per-second says
+# nothing about the Rust one and the two never compete on the same axis.
 #
 # It commits and pushes one commit per experiment, so the GitHub Page updates
 # without anyone pressing anything. Note the cost of that: CI cancels
@@ -251,9 +257,9 @@ autoresearch-rust:
 	@$(call require,$(PYTHON),Install Python 3.9+.)
 	@$(if $(shell git rev-parse --abbrev-ref HEAD),,\
 		echo "error: this is not a git repository, so there is nowhere to commit to." >&2; exit 1;)
-	$(PYTHON) -m tools.autoresearch seed
+	$(PYTHON) -m tools.autoresearch seed --track $(if $(TRACK),$(TRACK),rust)
 	$(PYTHON) -m tools.autoresearch loop \
-		--track rust \
+		--track $(if $(TRACK),$(TRACK),rust) \
 		--experiments $(if $(EXPERIMENTS),$(EXPERIMENTS),1) \
 		--branch $(if $(RESEARCH_BRANCH),$(RESEARCH_BRANCH),main) \
 		$(if $(PUSH_DELAY),--push-delay $(PUSH_DELAY),) \

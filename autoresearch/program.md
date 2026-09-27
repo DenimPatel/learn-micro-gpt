@@ -1,11 +1,11 @@
 # autoresearch
 
-You are improving a Rust implementation of Karpathy's 199-line `microgpt.py`.
+You are improving a {{language}} implementation of Karpathy's 199-line `microgpt.py`.
 You will be given the file, the numbers the current candidate achieves, and a
 ledger of what has already been tried. You will reply with one patch. Something
 else applies it, measures it, and decides whether to keep it.
 
-You are not being asked to write good Rust. You are being asked to make one
+You are not being asked to write good {{language}}. You are being asked to make one
 number go down without making the other go up. Read
 [`docs/KNOWN-ISSUES.md`](../docs/KNOWN-ISSUES.md) before your first patch: half
 the interesting content of this repository is in what is wrong with it.
@@ -39,7 +39,7 @@ speed axis is not, and is measured three times.
 
 ## What you may change
 
-`autoresearch/candidate/src/lib.rs`, and nothing else. Everything is fair game in
+`{{source_key}}`, and nothing else. Everything is fair game in
 it: the model, the optimiser, the learning rate, the initialisation, the loss,
 the number of layers and heads, the block size, the PRNG, the data order, the
 sampler. It began as a byte-for-byte copy of the frozen reference port, plus one
@@ -47,12 +47,9 @@ method, so almost any change of substance is in scope.
 
 ## What you may not change, and why each one is here
 
-**Do not add a dependency.** `Cargo.toml` has none and must keep none. The
-reference's whole point is that the algorithm fits in one file with nothing but a
-standard library, and a port that reached for a crate would be measuring the
-crate.
+**Do not add a dependency.** {{dependency_note}}
 
-**Do not edit `tests/gradient_check.rs`.** It is not yours. It is a
+**Do not edit `{{probe_path}}`.** It is not yours. It is a
 finite-difference check on the autograd tape, written by the repository, and its
 sha256 is verified before your patch is even applied. This is not bureaucracy:
 the C port in this repository has a hand-written backward pass whose gradient is
@@ -80,16 +77,16 @@ it is the tripwire.
   only thing separating the probe from a private arena, and a rewrite that drops
   it fails the probe.
 
-**Do not make the crate fail `cargo clippy -- -D warnings`.** It is checked, and
+**Do not make the project fail {{lint_command}}.** It is checked, and
 a warning is a failed experiment.
 
-**Do not write outside `autoresearch/candidate/`.** Do not add files. Do not
+**Do not write outside `{{candidate_dir}}/`.** Do not add files. Do not
 read anything else in the repository at runtime — in particular do not try to
 read `autoresearch/results.json` or the ledger from inside the program. The
 ledger is your memory and it is handed to you; reading it from the inside would
 be a way to make the number move without making the model better.
 
-## The gradient ratio, and why it is 1.063 and not 1.0
+## The gradient ratio, and why it is not 1.0
 
 Every run reports a `grad_ratio`: the directional derivative of the loss along
 one fixed direction, over all parameters, against a central difference. For a
@@ -121,8 +118,8 @@ could be wrong. "Adam's second moment is under-corrected at beta2 0.99 over a
 SUMMARY: one line for the results table. No tabs, no newlines.
 
 ```diff
---- a/autoresearch/candidate/src/lib.rs
-+++ b/autoresearch/candidate/src/lib.rs
+--- a/{{source_key}}
++++ b/{{source_key}}
 @@ -766,7 +766,7 @@
      const LEARNING_RATE: f32 = 0.01;
 -    const BETA2: f32 = 0.99;

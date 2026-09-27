@@ -1,105 +1,107 @@
-run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	description
-0000	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	2.433882	95.382084	+0.000000	+0.000000	1.063160	baseline	frozen implementations/rust, re-measured this session	the frozen track, unmodified, as this session's comparator
-0001	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	2.431324	75.475856	+0.001051	-0.047834	0.999933	discard	no axis improved materially: discarded: loss +0.1%, speed -4.8%; failing loss_material, speed_material	Make RMSNorm differentiable through its mean square and inverse square root
-0002	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse each linear layer output into one direct dot-product tape node
-0003	d8e54489b5bf83f2b2ad9e02e86e403059b05430	2.433882	87.007592	+0.000000	+0.340447	1.063160	keep		Avoid cloning parent and local-gradient vectors during every backward pass
-0004	92c0bd290f36012cfda98723f58f9cb8e131b748	2.433882	959.506660	+0.000000	+15.328069	1.063160	keep		Fuse linear dot products into correctly differentiated tape nodes
-0005	aab107aa00ed4ce77f433c363d248dfd196efe40	2.433882	1054.328215	+0.000000	+16.941662	1.063160	keep		Fuse attention score dot products into the existing linear tape node
-0006	6dc7cc7e4177d3c3b3929e16f49fe89cd43f0be3	2.433882	953.153688	+0.000000	+15.219960	1.063160	keep		Reset only graph nodes visited during each backward pass
-0007	2c92dec4f07d7c121c8da0be33feecb383ac5d00	2.604630	1078.780897	-0.070155	+17.357777	1.063160	discard	no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance	Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero
-0008	b3d2cc1eaa546fd978a76148ab6ff330fa8204a6	2.433882	1128.692800	+0.000000	+18.207135	1.063160	keep		Shifted logsumexp cross entropy skips unused vocabulary probabilities
-0009	144818682b63091e1416d1e9ad06005c4491109e	2.433882	1128.988009	+0.000000	+18.212159	1.063160	keep		Fuse constant affine operations into single tape nodes with identical arithmetic
-0010	7087e7bf957a43e5880725527ba2e02b376f6bd3	2.433882	1238.525001	+0.000000	+20.076166	1.063160	keep		Fuse attention value mixtures into one correctly differentiated tape node per output
-0011	90fc57576ad79bb7c599caffc3129091fb4b923b	2.433882	1362.039760	+0.000000	+22.178036	1.063160	keep		Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes
-0012	a7e55e19c3cfa9de8c759135adcd8bd04ce15413	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store tape dependencies in one allocation per node without changing arithmetic
-0013	1ab9710291387e6210cd10c18ff5e7a5b62cf706	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic
-0014	34e09019d5f3e8ac24debd1984e25a79123615e5	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse cross entropy and division and batch Adam arena updates
-0015	6be8dddc1ad632be7254b4f7369e570d8173f83e	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax normalization and cached value mixing into one tape node per head output
-0016	7f4f1602f1198b9661e67a580d511194e2d4e30b	2.436848	798.687065	-0.001219	+12.591378	1.063160	keep		Lower Adam beta2 to 0.98 for faster second-moment adaptation
-0017	5d8ff5508cff4ead7ed5755f274ab94d4cb5d906	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse analytically differentiated RMSNorm into one tape node per output
-0018	f7fad465223dce888728556e56b194d0be45d6f1	2.430954	1234.952807	+0.001203	+20.015378	0.999933	keep		Differentiate RMSNorm through its mean square and inverse scale on the autograd tape
-0019	96f095a89b7a88490f75a63fc70afc17723c855d	2.430954	1288.426791	+0.001203	+20.925353	0.999933	keep		Hoist Adam bias corrections and fuse each parameter update into one arena borrow
-0020	eb0ab5e626ef5e7f054aaf80132e8d3ab7835880	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Share each softmax denominator and fuse its probability divisions into one tape node
-0021	b8ea86cbc5870a86262446f77f612f06483c020e	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes
-0022	8118d7ad573f52176ad64283d2a6d44fc75c4b80	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace the per-step topological DFS with reverse arena-order backpropagation
-0023	0ce16cc22866a35627675eaa2fa2b3041143f927	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce repeated arena borrows in hot tensor primitives with identical arithmetic
-0024	cb5e5e4a3d828c653b35bac90691efc4fe811991	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Share softmax reciprocals and reuse tape reduction scratch to accelerate training without changing model arithmetic
-0025	08616133b1186089f180c09bfab78b018842d344	2.465502	1054.504806	-0.012992	+16.944667	0.999933	keep		Double Adam learning rate to 0.02 and restore beta2 to 0.99
-0026	9580574948059ada3a8a14d0aabc363a44e0f07e	2.431324	934.628319	+0.001051	+14.904711	0.999933	keep		Restore the peak Adam learning rate from 0.02 to 0.01
-0027	8191c25d1f3bd510fe33f6890bea656c82a40333	2.427764	336.327470	+0.002514	+4.723335	0.999933	keep		Double default residual width to 32 and head dimension to 8
-0028	8f78358a1b4bc71be562d1d708f6410b6e16cae9	2.435330	172.242536	-0.000595	+1.931077	0.999933	keep		Double the default model depth from one transformer block to two
-0029	621bec968ef579868b5235d569952c80db8c88f9	2.427764	403.662959	+0.002514	+5.869193	0.999933	keep		Remove the second transformer block to recover its speed cost and loss regression
-0030	eb5b4d002cfea5edf90d2e0f4b976187c2dcd41c	2.427764	586.182148	+0.002514	+8.975150	0.999933	keep		Reset transient autograd nodes after each step to preserve loss and improve allocator locality
-0031	8e3f19f44d1171fd8e08912554ca1c876d73b420	2.292726	150.556781	+0.057996	+1.562047	0.999933	keep		Batch four shuffled documents into each Adam update
-0032	be07cbf19c1f64fe4c008f4437d6a0be846e4b1a	2.194568	71.607793	+0.098326	+0.218561	0.999933	keep		Double the documents per Adam update from four to eight
-0033	ba9d2765e621e6e5ed54f309dc7826916bc00aa5	2.245262	63.647736	+0.077498	+0.083103	0.999933	keep		Batch nine shuffled documents per Adam update
-0034	bfea873aad08e3309cf40720ca2846dd9b9b2bef	2.194568	72.051580	+0.098326	+0.226113	0.999933	keep		Restore the per-update batch size from nine documents to eight
-0035	4f0bb71054d3499bfb66fb20dea04c2835fa7ffa	2.200248	74.668351	+0.095992	+0.270643	1.038945	keep		Fuse RMSNorm square and reduction tape nodes while retaining identical forward arithmetic
-0036	e7e1d0b36b0d5df6acb275c686e2475d8b653540	2.195606	74.998238	+0.097900	+0.276256	0.999933	keep		Correct the fused RMSNorm sum-of-squares derivative
-0037	d1aca4242e15bf1fc436e3f6301c33262acf8c08	2.242406	102.515554	+0.078671	+0.744523	0.999933	keep		Batch six documents per Adam update instead of eight
-0038	ff6ba204e312647e000f086fba71409f5d3b1045	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-token string formatting and parameter lookups with direct deterministic state indexing
-0039	9853944c67c2373ab4f21b8e3ebe59954325d82a	2.226188	86.912025	+0.085334	+0.478995	0.999933	keep		Increase the Adam update batch size from six documents to seven
-0040	bbd00135bd17eb475c2bd31ac532699cf6e4c361	2.242406	101.419918	+0.078671	+0.725878	0.999933	keep		Restore the Adam update batch size from seven documents to six
-0041	16dcdfcf28458183e38e24dba5e5e50c5a532065	2.195606	74.859333	+0.097900	+0.273893	0.999933	keep		Increase Adam update batch size from six documents to eight
-0042	1ff5cee419d0d291d81c841c5cae0aeaeb306742	2.198572	125.471447	+0.096681	+1.135166	0.999933	keep		Batch five shuffled documents per Adam update
-0043	843d867d953cfa3a306ca24ec2d6481c068e3683	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace autograd DFS and visited tracking with reverse arena-order backward propagation
-0044	6f8731841c587dbd0f040e95da0a5cdba3b2bd16	2.190858	125.056591	+0.099850	+1.128107	1.000037	keep		Lower positional embedding initialization standard deviation to 0.02
-0045	5ece3460f5e36bfe277382a98bbf31dd9a551e5a	2.272280	113.181516	+0.066397	+0.926027	1.000037	keep		Replace linear learning-rate decay with cosine decay
-0046	d5be34702cf0bbeca16c577ee923cee32c9efef1	2.190858	124.434951	+0.099850	+1.117528	1.000037	keep		Restore linear learning-rate decay after cosine decay worsened loss
-0047	d383662b7a5e7165efd3c387ee09765b54ca2594	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace runtime parameter-name formatting and hash-map lookup with fixed state indices
-0048	fe8319dece9ed0c5fe290f425d4a06ec46785b21	2.190858	125.657376	+0.099850	+1.138330	1.000037	keep		Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup
-0049	efb3577241d779b53fec4efeabe3333a6c0ba815	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack tape parent indices and local gradients into one allocation per node
-0050	cb920a100ef29690bef861a44b4ec417e4f8f931	2.296160	158.910420	+0.056585	+1.704203	1.000037	keep		Batch four shuffled documents per Adam update instead of five
-0051	4b8062a35ea2ea374ea3f8cbedc0b0d6580dc6b9	2.190858	125.106971	+0.099850	+1.128964	1.000037	keep		Restore five shuffled documents per Adam update
-0052	1609aef0eeed0cd2df7e271e788d25d85f4e60d6	2.336146	124.679964	+0.040156	+1.121698	1.000037	keep		Keep the Adam learning rate constant throughout training
-0053	cd8573311fac2804292d9bbc6ca9076285df92ee	2.190858	122.823316	+0.099850	+1.090103	1.000037	keep		Restore linear learning-rate decay
-0054	b27b782b7f4d4e5022bae1f921b5a1511c7c396a	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Fuse elementwise autograd operations and reduce arena traversals
-0055	ec22a0449664255dbd821f7d79d192e255c8bfdc	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Mark ancestors then backpropagate in reverse arena order
-0056	b070c300065647e3886ef50e0b1fd08bf19f7848	2.191520	62.300513	+0.099578	+0.060177	1.000037	keep		Add a second transformer layer
-0057	9632ca9286e3b1db336691a8fe4a91c30954d806	2.190858	125.501852	+0.099850	+1.135684	1.000037	keep		Remove the second transformer layer
-0058	8313acdd2ecdd5f5dd06d38f0c09a03860d28f9e	2.191254	125.271015	+0.099688	+1.131756	1.000259	keep		Restore fused multiply-add in linear and attention weighted-sum contractions
-0059	2a9948b3c940ae3a5339581b5e43e37e69bae9ab	2.185464	123.936200	+0.102067	+1.109041	1.000259	keep		Lower Adam beta2 from 0.99 to 0.98
-0060	880ba81e7574dd52170140ca22b3c2ecba692d99	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic
-0061	d2c4d3ff9cb254e2b1e1433308c49becf340a025	2.198530	126.028342	+0.096698	+1.144643	1.000259	keep		Raise the peak Adam learning rate from 0.01 to 0.012
-0062	583c640aee071f5240b3506cdad10b878033c7e2	2.196994	75.817800	+0.097329	+0.290203	1.000259	keep		Increase the Adam batch size from five documents to eight
-0063	11e67e06c73738823f10ecf54398f70a7ebe0b40	2.195292	75.685509	+0.098029	+0.287952	1.000259	keep		Restore the peak Adam learning rate to 0.01 with the eight-document batch
-0064	8c70743dbe4efc87ff1c2599e5364a9064fb5859	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore five-document Adam batches and tie the token embedding to the output head
-0065	8309a3487c0ca14979efdb3a55e6430cf063eef8	2.185464	126.002227	+0.102067	+1.144199	1.000259	keep		Restore the five-document batch that reached the best recorded loss
-0066	f52a9e86bf504e764a93e021ebe7aa19acb914cf	2.185464	131.987549	+0.102067	+1.246052	1.000259	keep		Correctly fold ReLU into the FC1 autograd node to cut tape allocations
-0067	cbf7f533110d90c8858e5b0c9c847fb5fbe944a2	2.196144	132.321962	+0.097679	+1.251743	1.000259	keep		Add a 10% learning-rate floor to the linear decay
-0068	ce19ff69adc9cc07ccefde5d2ac8079765f66ee0	2.196448	201.570442	+0.097554	+2.430155	1.000259	keep		Reverse-order training backpropagation using tape allocation order
-0069	211a52b913e60f3c73ffa10b4a98e14fc5e4f951	2.187488	200.703331	+0.101235	+2.415399	1.000259	keep		Remove the learning-rate floor and restore full linear decay
-0070	9c07f5661acd5039625f9939762d13ecc80b6a46	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
-0071	0d92ef7f829118f6775653767525ee9b967f5a89	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reuse autograd node storage and gradient vectors across training steps
-0072	b15cbc9ec8022fcc976f505cb7eff7906e53bcca	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd parents and local gradients into one compact allocation per node
-0073	4913bac1b95d3ae0c08d4b551a7c154797801350	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Omit tape parents and local gradients for inactive fused ReLU outputs
-0074	0424510fdc75f3362b3b6efb66d337bcc2cde7ba	2.292118	255.661591	+0.058246	+3.350632	1.000259	keep		Reduce Adam batch size from five documents to four
-0075	158fe0c4211ecbdc64587b19c172b99c57749803	2.318052	125.547324	+0.047591	+1.136458	1.000259	keep		Widen the model from 32 to 48 embedding dimensions
-0076	19a5243295e64aaba0517985d3ae650fc2a593a5	2.187488	201.562917	+0.101235	+2.430026	1.000259	keep		Restore the 32-dimensional model and five-document Adam batch
-0077	57d66c1211b8e3d770d9310debe0e4b9793f77a9	2.205084	203.393218	+0.094005	+2.461173	0.999802	keep		Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream
-0078	7027be5541e523e737361884f416a497b597db2f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo clippy failed with -D warnings	Fuse residual projections and training cross-entropy to cut tape nodes
-0079	5dfef81e54cea319108ca07d98cef90044d6212a	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore an independently initialized untied language-model head
-0080	28903e5f21dab038549a57876982f555bff7f7eb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
-0081	5ce7ce4613abdb0a77d2578b477383bb608d6a42	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape nodes without changing forward arithmetic
-0082	d42f25e0bc9a6a50360c5e6902c0c3804c66e2fb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic
-0083	938f591dd0516000fd714a73d4f51e2c91fe75e8	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges in shared buffers written in place without changing arithmetic
-0084	ab725cc3bceb1dfb10fed5f9a6c68d4dcdc6e895	2.258830	166.531883	+0.071923	+1.833898	0.999802	keep		Increase the Adam batch size from five documents to six
-0085	7b1e541acb53a835ebed79d30281018a7f8b396d	2.205084	196.236033	+0.094005	+2.339378	0.999802	keep		Restore the faster five-document Adam batch
-0086	65b897c9162df3d4ac9466ec378fcb9c7f550025	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention normalization and aggregation while removing per-edge bounds checks
-0087	ec0e325536fceb8494fc7baaf2b9da751a9c6f81	2.187488	204.562506	+0.101235	+2.481071	1.000259	keep		Restore the independently initialized untied language model head
-0088	4073076efd14015cde4a6dac0e906802e74506c7	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
-0089	27de42fc6a36535e916e31603c2c9d87d49a6be4	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax and training cross entropy into direct tape nodes
-0090	78b6a261eafa9a566e1bf8914114e650703f1d8c	2.292118	258.316372	+0.058246	+3.395809	1.000259	keep		Reduce the Adam batch from five documents to four
-0091	afe9a505de052379dad380fb2314b73c935ddae4	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse scaled attention projections and softmax quotients into single tape nodes
-0092	749da01ac4d11c242ce56eb41fca2ebf39250c13	2.210236	199.788765	+0.091889	+2.399835	1.000213	keep		Restore the terminal RMSNorm on the better five-document batch
-0093	b21226ad64a0c7fa163c1fbfb237b6bed4fad5f1	2.242900	205.513525	+0.078468	+2.497255	1.000213	keep		Cap default training contexts at eight characters to avoid long-name tail work
-0094	8837321b38c95eb653a9fe0d1c8478b6282ed72f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd edges reuse KV cache allocations and index model matrices directly
-0095	07c1cb67d58c5c662bc6724fdf0bcec790d97ad9	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse stable training cross entropy into one correctly differentiated tape node
-0096	162354650ca89b67b2d6008e540e31bc95d79387	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic
-0097	a2062dcb7d34f165952fcd86d67844804b952d7f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse reciprocal divisions and pairwise additions into one-node tape operations
-0098	0236f5d47e7aeca6e8fb6a06b47f9873b9b716ec	2.187488	203.215527	+0.101235	+2.458149	1.000259	keep		Restore 16-token contexts and remove the terminal RMSNorm to recover the best loss-first state
-0099	3758437084dc417f78b941593a5e1850e6464594	2.193898	250.668355	+0.098601	+3.265661	1.000259	keep		Shrink model width from 32 to 28 for a lower-cost speed candidate
-0100	d805e22089167e360c13e7bf6d9b7fce018f052a	2.190140	248.581918	+0.100145	+3.230156	1.000259	keep		Extend causal contexts and positional embeddings from 16 to 24 tokens
-0101	58b3dbe4b5413e022e809cc7b84e8c5c266a3512	2.293352	314.380898	+0.057739	+4.349867	1.000259	keep		Reduce the Adam batch from five documents to four
-0102	388cbe003f35660e91d88eabde1504269952f1d9	2.190140	251.094495	+0.100145	+3.272913	1.000259	keep		Restore the five-document Adam batch
-0103	9ebe918e5c1cee92259bbd675b281249f0592d78	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store tape parent-gradient pairs in one allocation per node to halve allocator traffic
+run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	description
+0000	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	rust	2.433882	95.382084	+0.000000	+0.000000	1.063160	baseline	frozen implementations/rust, re-measured this session	the frozen track, unmodified, as this session's comparator
+0001	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	rust	2.431324	75.475856	+0.001051	-0.047834	0.999933	discard	no axis improved materially: discarded: loss +0.1%, speed -4.8%; failing loss_material, speed_material	Make RMSNorm differentiable through its mean square and inverse square root
+0002	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse each linear layer output into one direct dot-product tape node
+0003	d8e54489b5bf83f2b2ad9e02e86e403059b05430	rust	2.433882	87.007592	+0.000000	+0.340447	1.063160	keep		Avoid cloning parent and local-gradient vectors during every backward pass
+0004	92c0bd290f36012cfda98723f58f9cb8e131b748	rust	2.433882	959.506660	+0.000000	+15.328069	1.063160	keep		Fuse linear dot products into correctly differentiated tape nodes
+0005	aab107aa00ed4ce77f433c363d248dfd196efe40	rust	2.433882	1054.328215	+0.000000	+16.941662	1.063160	keep		Fuse attention score dot products into the existing linear tape node
+0006	6dc7cc7e4177d3c3b3929e16f49fe89cd43f0be3	rust	2.433882	953.153688	+0.000000	+15.219960	1.063160	keep		Reset only graph nodes visited during each backward pass
+0007	2c92dec4f07d7c121c8da0be33feecb383ac5d00	rust	2.604630	1078.780897	-0.070155	+17.357777	1.063160	discard	no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance	Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero
+0008	b3d2cc1eaa546fd978a76148ab6ff330fa8204a6	rust	2.433882	1128.692800	+0.000000	+18.207135	1.063160	keep		Shifted logsumexp cross entropy skips unused vocabulary probabilities
+0009	144818682b63091e1416d1e9ad06005c4491109e	rust	2.433882	1128.988009	+0.000000	+18.212159	1.063160	keep		Fuse constant affine operations into single tape nodes with identical arithmetic
+0010	7087e7bf957a43e5880725527ba2e02b376f6bd3	rust	2.433882	1238.525001	+0.000000	+20.076166	1.063160	keep		Fuse attention value mixtures into one correctly differentiated tape node per output
+0011	90fc57576ad79bb7c599caffc3129091fb4b923b	rust	2.433882	1362.039760	+0.000000	+22.178036	1.063160	keep		Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes
+0012	a7e55e19c3cfa9de8c759135adcd8bd04ce15413	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store tape dependencies in one allocation per node without changing arithmetic
+0013	1ab9710291387e6210cd10c18ff5e7a5b62cf706	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic
+0014	34e09019d5f3e8ac24debd1984e25a79123615e5	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse cross entropy and division and batch Adam arena updates
+0015	6be8dddc1ad632be7254b4f7369e570d8173f83e	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax normalization and cached value mixing into one tape node per head output
+0016	7f4f1602f1198b9661e67a580d511194e2d4e30b	rust	2.436848	798.687065	-0.001219	+12.591378	1.063160	keep		Lower Adam beta2 to 0.98 for faster second-moment adaptation
+0017	5d8ff5508cff4ead7ed5755f274ab94d4cb5d906	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse analytically differentiated RMSNorm into one tape node per output
+0018	f7fad465223dce888728556e56b194d0be45d6f1	rust	2.430954	1234.952807	+0.001203	+20.015378	0.999933	keep		Differentiate RMSNorm through its mean square and inverse scale on the autograd tape
+0019	96f095a89b7a88490f75a63fc70afc17723c855d	rust	2.430954	1288.426791	+0.001203	+20.925353	0.999933	keep		Hoist Adam bias corrections and fuse each parameter update into one arena borrow
+0020	eb0ab5e626ef5e7f054aaf80132e8d3ab7835880	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Share each softmax denominator and fuse its probability divisions into one tape node
+0021	b8ea86cbc5870a86262446f77f612f06483c020e	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes
+0022	8118d7ad573f52176ad64283d2a6d44fc75c4b80	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace the per-step topological DFS with reverse arena-order backpropagation
+0023	0ce16cc22866a35627675eaa2fa2b3041143f927	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce repeated arena borrows in hot tensor primitives with identical arithmetic
+0024	cb5e5e4a3d828c653b35bac90691efc4fe811991	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Share softmax reciprocals and reuse tape reduction scratch to accelerate training without changing model arithmetic
+0025	08616133b1186089f180c09bfab78b018842d344	rust	2.465502	1054.504806	-0.012992	+16.944667	0.999933	keep		Double Adam learning rate to 0.02 and restore beta2 to 0.99
+0026	9580574948059ada3a8a14d0aabc363a44e0f07e	rust	2.431324	934.628319	+0.001051	+14.904711	0.999933	keep		Restore the peak Adam learning rate from 0.02 to 0.01
+0027	8191c25d1f3bd510fe33f6890bea656c82a40333	rust	2.427764	336.327470	+0.002514	+4.723335	0.999933	keep		Double default residual width to 32 and head dimension to 8
+0028	8f78358a1b4bc71be562d1d708f6410b6e16cae9	rust	2.435330	172.242536	-0.000595	+1.931077	0.999933	keep		Double the default model depth from one transformer block to two
+0029	621bec968ef579868b5235d569952c80db8c88f9	rust	2.427764	403.662959	+0.002514	+5.869193	0.999933	keep		Remove the second transformer block to recover its speed cost and loss regression
+0030	eb5b4d002cfea5edf90d2e0f4b976187c2dcd41c	rust	2.427764	586.182148	+0.002514	+8.975150	0.999933	keep		Reset transient autograd nodes after each step to preserve loss and improve allocator locality
+0031	8e3f19f44d1171fd8e08912554ca1c876d73b420	rust	2.292726	150.556781	+0.057996	+1.562047	0.999933	keep		Batch four shuffled documents into each Adam update
+0032	be07cbf19c1f64fe4c008f4437d6a0be846e4b1a	rust	2.194568	71.607793	+0.098326	+0.218561	0.999933	keep		Double the documents per Adam update from four to eight
+0033	ba9d2765e621e6e5ed54f309dc7826916bc00aa5	rust	2.245262	63.647736	+0.077498	+0.083103	0.999933	keep		Batch nine shuffled documents per Adam update
+0034	bfea873aad08e3309cf40720ca2846dd9b9b2bef	rust	2.194568	72.051580	+0.098326	+0.226113	0.999933	keep		Restore the per-update batch size from nine documents to eight
+0035	4f0bb71054d3499bfb66fb20dea04c2835fa7ffa	rust	2.200248	74.668351	+0.095992	+0.270643	1.038945	keep		Fuse RMSNorm square and reduction tape nodes while retaining identical forward arithmetic
+0036	e7e1d0b36b0d5df6acb275c686e2475d8b653540	rust	2.195606	74.998238	+0.097900	+0.276256	0.999933	keep		Correct the fused RMSNorm sum-of-squares derivative
+0037	d1aca4242e15bf1fc436e3f6301c33262acf8c08	rust	2.242406	102.515554	+0.078671	+0.744523	0.999933	keep		Batch six documents per Adam update instead of eight
+0038	ff6ba204e312647e000f086fba71409f5d3b1045	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-token string formatting and parameter lookups with direct deterministic state indexing
+0039	9853944c67c2373ab4f21b8e3ebe59954325d82a	rust	2.226188	86.912025	+0.085334	+0.478995	0.999933	keep		Increase the Adam update batch size from six documents to seven
+0040	bbd00135bd17eb475c2bd31ac532699cf6e4c361	rust	2.242406	101.419918	+0.078671	+0.725878	0.999933	keep		Restore the Adam update batch size from seven documents to six
+0041	16dcdfcf28458183e38e24dba5e5e50c5a532065	rust	2.195606	74.859333	+0.097900	+0.273893	0.999933	keep		Increase Adam update batch size from six documents to eight
+0042	1ff5cee419d0d291d81c841c5cae0aeaeb306742	rust	2.198572	125.471447	+0.096681	+1.135166	0.999933	keep		Batch five shuffled documents per Adam update
+0043	843d867d953cfa3a306ca24ec2d6481c068e3683	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace autograd DFS and visited tracking with reverse arena-order backward propagation
+0044	6f8731841c587dbd0f040e95da0a5cdba3b2bd16	rust	2.190858	125.056591	+0.099850	+1.128107	1.000037	keep		Lower positional embedding initialization standard deviation to 0.02
+0045	5ece3460f5e36bfe277382a98bbf31dd9a551e5a	rust	2.272280	113.181516	+0.066397	+0.926027	1.000037	keep		Replace linear learning-rate decay with cosine decay
+0046	d5be34702cf0bbeca16c577ee923cee32c9efef1	rust	2.190858	124.434951	+0.099850	+1.117528	1.000037	keep		Restore linear learning-rate decay after cosine decay worsened loss
+0047	d383662b7a5e7165efd3c387ee09765b54ca2594	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace runtime parameter-name formatting and hash-map lookup with fixed state indices
+0048	fe8319dece9ed0c5fe290f425d4a06ec46785b21	rust	2.190858	125.657376	+0.099850	+1.138330	1.000037	keep		Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup
+0049	efb3577241d779b53fec4efeabe3333a6c0ba815	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack tape parent indices and local gradients into one allocation per node
+0050	cb920a100ef29690bef861a44b4ec417e4f8f931	rust	2.296160	158.910420	+0.056585	+1.704203	1.000037	keep		Batch four shuffled documents per Adam update instead of five
+0051	4b8062a35ea2ea374ea3f8cbedc0b0d6580dc6b9	rust	2.190858	125.106971	+0.099850	+1.128964	1.000037	keep		Restore five shuffled documents per Adam update
+0052	1609aef0eeed0cd2df7e271e788d25d85f4e60d6	rust	2.336146	124.679964	+0.040156	+1.121698	1.000037	keep		Keep the Adam learning rate constant throughout training
+0053	cd8573311fac2804292d9bbc6ca9076285df92ee	rust	2.190858	122.823316	+0.099850	+1.090103	1.000037	keep		Restore linear learning-rate decay
+0054	b27b782b7f4d4e5022bae1f921b5a1511c7c396a	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Fuse elementwise autograd operations and reduce arena traversals
+0055	ec22a0449664255dbd821f7d79d192e255c8bfdc	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Mark ancestors then backpropagate in reverse arena order
+0056	b070c300065647e3886ef50e0b1fd08bf19f7848	rust	2.191520	62.300513	+0.099578	+0.060177	1.000037	keep		Add a second transformer layer
+0057	9632ca9286e3b1db336691a8fe4a91c30954d806	rust	2.190858	125.501852	+0.099850	+1.135684	1.000037	keep		Remove the second transformer layer
+0058	8313acdd2ecdd5f5dd06d38f0c09a03860d28f9e	rust	2.191254	125.271015	+0.099688	+1.131756	1.000259	keep		Restore fused multiply-add in linear and attention weighted-sum contractions
+0059	2a9948b3c940ae3a5339581b5e43e37e69bae9ab	rust	2.185464	123.936200	+0.102067	+1.109041	1.000259	keep		Lower Adam beta2 from 0.99 to 0.98
+0060	880ba81e7574dd52170140ca22b3c2ecba692d99	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic
+0061	d2c4d3ff9cb254e2b1e1433308c49becf340a025	rust	2.198530	126.028342	+0.096698	+1.144643	1.000259	keep		Raise the peak Adam learning rate from 0.01 to 0.012
+0062	583c640aee071f5240b3506cdad10b878033c7e2	rust	2.196994	75.817800	+0.097329	+0.290203	1.000259	keep		Increase the Adam batch size from five documents to eight
+0063	11e67e06c73738823f10ecf54398f70a7ebe0b40	rust	2.195292	75.685509	+0.098029	+0.287952	1.000259	keep		Restore the peak Adam learning rate to 0.01 with the eight-document batch
+0064	8c70743dbe4efc87ff1c2599e5364a9064fb5859	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore five-document Adam batches and tie the token embedding to the output head
+0065	8309a3487c0ca14979efdb3a55e6430cf063eef8	rust	2.185464	126.002227	+0.102067	+1.144199	1.000259	keep		Restore the five-document batch that reached the best recorded loss
+0066	f52a9e86bf504e764a93e021ebe7aa19acb914cf	rust	2.185464	131.987549	+0.102067	+1.246052	1.000259	keep		Correctly fold ReLU into the FC1 autograd node to cut tape allocations
+0067	cbf7f533110d90c8858e5b0c9c847fb5fbe944a2	rust	2.196144	132.321962	+0.097679	+1.251743	1.000259	keep		Add a 10% learning-rate floor to the linear decay
+0068	ce19ff69adc9cc07ccefde5d2ac8079765f66ee0	rust	2.196448	201.570442	+0.097554	+2.430155	1.000259	keep		Reverse-order training backpropagation using tape allocation order
+0069	211a52b913e60f3c73ffa10b4a98e14fc5e4f951	rust	2.187488	200.703331	+0.101235	+2.415399	1.000259	keep		Remove the learning-rate floor and restore full linear decay
+0070	9c07f5661acd5039625f9939762d13ecc80b6a46	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0071	0d92ef7f829118f6775653767525ee9b967f5a89	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reuse autograd node storage and gradient vectors across training steps
+0072	b15cbc9ec8022fcc976f505cb7eff7906e53bcca	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd parents and local gradients into one compact allocation per node
+0073	4913bac1b95d3ae0c08d4b551a7c154797801350	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Omit tape parents and local gradients for inactive fused ReLU outputs
+0074	0424510fdc75f3362b3b6efb66d337bcc2cde7ba	rust	2.292118	255.661591	+0.058246	+3.350632	1.000259	keep		Reduce Adam batch size from five documents to four
+0075	158fe0c4211ecbdc64587b19c172b99c57749803	rust	2.318052	125.547324	+0.047591	+1.136458	1.000259	keep		Widen the model from 32 to 48 embedding dimensions
+0076	19a5243295e64aaba0517985d3ae650fc2a593a5	rust	2.187488	201.562917	+0.101235	+2.430026	1.000259	keep		Restore the 32-dimensional model and five-document Adam batch
+0077	57d66c1211b8e3d770d9310debe0e4b9793f77a9	rust	2.205084	203.393218	+0.094005	+2.461173	0.999802	keep		Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream
+0078	7027be5541e523e737361884f416a497b597db2f	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo clippy failed with -D warnings	Fuse residual projections and training cross-entropy to cut tape nodes
+0079	5dfef81e54cea319108ca07d98cef90044d6212a	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore an independently initialized untied language-model head
+0080	28903e5f21dab038549a57876982f555bff7f7eb	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0081	5ce7ce4613abdb0a77d2578b477383bb608d6a42	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape nodes without changing forward arithmetic
+0082	d42f25e0bc9a6a50360c5e6902c0c3804c66e2fb	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic
+0083	938f591dd0516000fd714a73d4f51e2c91fe75e8	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges in shared buffers written in place without changing arithmetic
+0084	ab725cc3bceb1dfb10fed5f9a6c68d4dcdc6e895	rust	2.258830	166.531883	+0.071923	+1.833898	0.999802	keep		Increase the Adam batch size from five documents to six
+0085	7b1e541acb53a835ebed79d30281018a7f8b396d	rust	2.205084	196.236033	+0.094005	+2.339378	0.999802	keep		Restore the faster five-document Adam batch
+0086	65b897c9162df3d4ac9466ec378fcb9c7f550025	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention normalization and aggregation while removing per-edge bounds checks
+0087	ec0e325536fceb8494fc7baaf2b9da751a9c6f81	rust	2.187488	204.562506	+0.101235	+2.481071	1.000259	keep		Restore the independently initialized untied language model head
+0088	4073076efd14015cde4a6dac0e906802e74506c7	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0089	27de42fc6a36535e916e31603c2c9d87d49a6be4	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax and training cross entropy into direct tape nodes
+0090	78b6a261eafa9a566e1bf8914114e650703f1d8c	rust	2.292118	258.316372	+0.058246	+3.395809	1.000259	keep		Reduce the Adam batch from five documents to four
+0091	afe9a505de052379dad380fb2314b73c935ddae4	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse scaled attention projections and softmax quotients into single tape nodes
+0092	749da01ac4d11c242ce56eb41fca2ebf39250c13	rust	2.210236	199.788765	+0.091889	+2.399835	1.000213	keep		Restore the terminal RMSNorm on the better five-document batch
+0093	b21226ad64a0c7fa163c1fbfb237b6bed4fad5f1	rust	2.242900	205.513525	+0.078468	+2.497255	1.000213	keep		Cap default training contexts at eight characters to avoid long-name tail work
+0094	8837321b38c95eb653a9fe0d1c8478b6282ed72f	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd edges reuse KV cache allocations and index model matrices directly
+0095	07c1cb67d58c5c662bc6724fdf0bcec790d97ad9	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse stable training cross entropy into one correctly differentiated tape node
+0096	162354650ca89b67b2d6008e540e31bc95d79387	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic
+0097	a2062dcb7d34f165952fcd86d67844804b952d7f	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse reciprocal divisions and pairwise additions into one-node tape operations
+0098	0236f5d47e7aeca6e8fb6a06b47f9873b9b716ec	rust	2.187488	203.215527	+0.101235	+2.458149	1.000259	keep		Restore 16-token contexts and remove the terminal RMSNorm to recover the best loss-first state
+0099	3758437084dc417f78b941593a5e1850e6464594	rust	2.193898	250.668355	+0.098601	+3.265661	1.000259	keep		Shrink model width from 32 to 28 for a lower-cost speed candidate
+0100	d805e22089167e360c13e7bf6d9b7fce018f052a	rust	2.190140	248.581918	+0.100145	+3.230156	1.000259	keep		Extend causal contexts and positional embeddings from 16 to 24 tokens
+0101	58b3dbe4b5413e022e809cc7b84e8c5c266a3512	rust	2.293352	314.380898	+0.057739	+4.349867	1.000259	keep		Reduce the Adam batch from five documents to four
+0102	388cbe003f35660e91d88eabde1504269952f1d9	rust	2.190140	251.094495	+0.100145	+3.272913	1.000259	keep		Restore the five-document Adam batch
+0103	9ebe918e5c1cee92259bbd675b281249f0592d78	rust	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store tape parent-gradient pairs in one allocation per node to halve allocator traffic
+0104	13669cba9285b0d5a40374d3bb72cf71c49dcdee	go	2.401178	92.039399	+0.000000	+0.000000	1.126874	baseline	frozen implementations/go, re-measured this session	the frozen Go track, unmodified, as this session's comparator
+0105	13669cba9285b0d5a40374d3bb72cf71c49dcdee	typescript	2.309063	92.083511	+0.000000	+0.000000	0.722129	baseline	frozen implementations/typescript, re-measured this session	the frozen TypeScript track, unmodified, as this session's comparator

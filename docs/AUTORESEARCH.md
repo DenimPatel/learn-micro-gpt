@@ -1,12 +1,23 @@
 # The autoresearch loop
 
-A model rewrites the Rust track. A harness measures it. A rule decides whether the
-rewrite is kept. Every attempt &mdash; kept, discarded, and crashed &mdash; is
+A model rewrites one of the repository's micro-gpt implementations. A harness
+measures it against that implementation's own frozen build. A rule decides whether
+the rewrite is kept. Every attempt &mdash; kept, discarded, and crashed &mdash; is
 committed, and the GitHub Page draws the result.
 
 ```sh
-make autoresearch-rust EXPERIMENTS=5
+make autoresearch-rust EXPERIMENTS=5            # Rust, the default
+make autoresearch-rust TRACK=go EXPERIMENTS=5
+make autoresearch-rust TRACK=typescript EXPERIMENTS=5
 ```
+
+**A track is a comparator pair, not a label.** Rust, Go and TypeScript each have
+their own candidate directory, their own frozen comparator, their own
+finite-difference gradient probe and their own session baseline, and nothing is
+compared across them: a Go steps-per-second is a ratio against the frozen Go
+build and says nothing about the Rust one. The ledger carries a `track` column;
+`results.json` keys its bests, baselines, Pareto frontiers and digests by track;
+and `#/research` has a switcher rather than one view.
 
 This descends from [`karpathy/autoresearch`](https://github.com/karpathy/autoresearch)
 (MIT, © Karpathy). Everything that differs here is listed under **Divergences**
@@ -16,10 +27,13 @@ below, with the reason.
 
 ## What it does, and what it will not do
 
-**It will not touch the frozen track.** `implementations/rust/src/lib.rs`,
+**It will not touch a frozen track.** `implementations/rust/src/lib.rs`,
 `Cargo.toml` and `src/main.rs` are pinned by sha256 in `tools/provenance.py`, and
 the `provenance` CI job &mdash; which every deploy depends on &mdash; fails if a
-byte moves. The tuned code lives at `autoresearch/candidate/src/lib.rs`. The site
+byte moves. The Go and TypeScript tracks are pinned the same way by the parity
+gate and by the site, which read them as tracks. The tuned code lives in a separate
+directory: `autoresearch/candidate/`, `autoresearch/candidate-go/`,
+`autoresearch/candidate-ts/`. The site
 renders the frozen one, 18 concepts cross-link to it, and its own doc comment
 claims a parameter count; a model rewriting it would make the site teach something
 false with total confidence, which is the failure mode the rest of this repository
@@ -188,7 +202,14 @@ not measure a tree you did not mean.
 
 ## What is deliberately not here
 
-- **Other tracks.** `--track` takes `rust` and rejects anything else loudly.
+- **The Python reference or the C port as a target.** `--track` takes `rust`,
+  `go` and `typescript`, and rejects anything else loudly. The C port is excluded
+  on purpose rather than for convenience: its backward pass is a *known-wrong*
+  gradient (`docs/KNOWN-ISSUES.md` issue 1), so a finite-difference probe would
+  reject nearly every candidate for a reason that has nothing to do with whether
+  the patch was good &mdash; and the probe is the only thing that can tell a
+  correct gradient from a broken one that still trains. The Python reference is
+  excluded because it is the thing every other track is compared against.
 - **A held-out split** or any other change of metric.
 - **Concept anchors into the candidate.** The atlas describes the reference
   algorithm, not the tuned variant, and `anchors.json` must keep describing the
