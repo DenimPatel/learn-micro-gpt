@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 82,
+    "experiments": 83,
     "keep": 52,
     "discard": 2,
-    "crash": 28
+    "crash": 29
   },
   "pareto": [
     "0011",
@@ -1256,6 +1256,20 @@
       "reason": "the patch did not apply",
       "description": "Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic",
       "measured": "2026-09-27T10:30:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0083",
+      "parent": "938f591dd0516000fd714a73d4f51e2c91fe75e8",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Store autograd edges in shared buffers written in place without changing arithmetic",
+      "measured": "2026-09-27T10:34:52Z",
       "has_record": true
     }
   ],

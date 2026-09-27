@@ -82,3 +82,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0080	28903e5f21dab038549a57876982f555bff7f7eb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0081	5ce7ce4613abdb0a77d2578b477383bb608d6a42	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape nodes without changing forward arithmetic
 0082	d42f25e0bc9a6a50360c5e6902c0c3804c66e2fb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic
+0083	938f591dd0516000fd714a73d4f51e2c91fe75e8	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges in shared buffers written in place without changing arithmetic
