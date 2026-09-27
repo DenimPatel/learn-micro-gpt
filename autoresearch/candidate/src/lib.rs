@@ -867,38 +867,44 @@ pub fn run() {
     const BETA1: f32 = 0.85;
     const BETA2: f32 = 0.99;
     const EPS_ADAM: f32 = 1e-8;
+    const BATCH_SIZE: usize = 4;
     let mut moments = vec![0.0f32; params.len()];
     let mut velocities = vec![0.0f32; params.len()];
 
     let started = std::time::Instant::now();
     for step in 0..config.num_steps {
-        let doc = &docs[step % docs.len()];
-        let tokens = tokenize(doc, &char_index, bos);
-        let n = config.block_size.min(tokens.len() - 1);
-
-        model.reset_cache();
-        let mut losses = Vec::with_capacity(n);
-        for pos_id in 0..n {
-            let logits = model.forward(tokens[pos_id], pos_id);
-            let max_logit = logits
-                .iter()
-                .map(|logit| Tensor::data(*logit))
-                .fold(f32::NEG_INFINITY, f32::max);
-            let exps: Vec<TensorHandle> = logits
-                .iter()
-                .map(|logit| Tensor::shifted_exp(*logit, max_logit))
-                .collect();
-            let exp_sum = Tensor::sum(&exps);
-            let shifted_target =
-                Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
-            let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);
-            losses.push(nll);
-        }
         let mut loss = Tensor::leaf(0.0);
-        for l in &losses {
-            loss = Tensor::add(loss, *l);
+        let mut token_count = 0usize;
+        for batch_index in 0..BATCH_SIZE {
+            let doc_index = (step * BATCH_SIZE + batch_index) % docs.len();
+            let doc = &docs[doc_index];
+            let tokens = tokenize(doc, &char_index, bos);
+            let n = config.block_size.min(tokens.len() - 1);
+
+            model.reset_cache();
+            let mut losses = Vec::with_capacity(n);
+            for pos_id in 0..n {
+                let logits = model.forward(tokens[pos_id], pos_id);
+                let max_logit = logits
+                    .iter()
+                    .map(|logit| Tensor::data(*logit))
+                    .fold(f32::NEG_INFINITY, f32::max);
+                let exps: Vec<TensorHandle> = logits
+                    .iter()
+                    .map(|logit| Tensor::shifted_exp(*logit, max_logit))
+                    .collect();
+                let exp_sum = Tensor::sum(&exps);
+                let shifted_target =
+                    Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
+                let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);
+                losses.push(nll);
+            }
+            for l in &losses {
+                loss = Tensor::add(loss, *l);
+            }
+            token_count += n;
         }
-        let loss = Tensor::div_scalar(loss, n as f32);
+        let loss = Tensor::div_scalar(loss, token_count as f32);
 
         Tensor::backward(loss);
 
