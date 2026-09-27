@@ -1,0 +1,45 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -543,10 +543,18 @@
+     pub fn new(config: Config, rng: &mut Rng) -> Model {
+         let mut state: Vec<(String, Matrix)> = Vec::new();
+         let std = 0.08;
+-        state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
+-        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, 0.02)));
+-        state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
++        let wte = new_matrix(rng, config.vocab_size, config.n_embd, std);
++        let wpe = new_matrix(rng, config.block_size, config.n_embd, 0.02);
++
++        // Preserve the old initialization stream while using wte for both ends.
++        for _ in 0..(config.vocab_size * config.n_embd) {
++            rng.gauss();
++        }
++        state.push(("wte".into(), wte.clone()));
++        state.push(("wpe".into(), wpe));
++        state.push(("lm_head".into(), wte));
++
+         for i in 0..config.n_layer {
+             let p = format!("layer{i}.");
+             state.push((format!("{p}attn_wq"), new_matrix(rng, config.n_embd, config.n_embd, std)));
+@@ -572,12 +580,20 @@
+     /// Every parameter, flattened. The optimizer does not care about structure,
+     /// and neither does this.
+     pub fn params(&self) -> Vec<TensorHandle> {
+-        self.state
+-            .iter()
+-            .flat_map(|(_, matrix)| matrix.iter())
+-            .flat_map(|row| row.iter().copied())
+-            .collect()
++        let mut params = Vec::new();
++        let mut seen = std::collections::HashSet::new();
++        for (_, matrix) in &self.state {
++            for row in matrix {
++                for &param in row {
++                    if seen.insert(param) {
++                        params.push(param);
++                    }
++                }
++            }
++        }
++        params
+     }

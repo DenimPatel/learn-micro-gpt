@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "3f6cd1c4b7e7f1b3c120dbc2f2f5145eaf5a141f5356094f10b033d5dc33f8ac",
+    "candidate_sha256": "b628991d9c3a48954250f8393bcb980d314ef1b1710e17a60a7caa3762e98965",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 76,
-    "keep": 51,
+    "experiments": 77,
+    "keep": 52,
     "discard": 2,
     "crash": 23
   },
@@ -92,7 +92,8 @@
     "0066",
     "0068",
     "0074",
-    "0076"
+    "0076",
+    "0077"
   ],
   "runs": [
     {
@@ -1171,6 +1172,20 @@
       "reason": "",
       "description": "Restore the 32-dimensional model and five-document Adam batch",
       "measured": "2026-09-27T10:07:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0077",
+      "parent": "57d66c1211b8e3d770d9310debe0e4b9793f77a9",
+      "loss": 2.205084,
+      "steps_per_sec": 203.393218,
+      "loss_gain": 0.094005,
+      "speed_gain": 2.461173,
+      "grad_ratio": 0.999802,
+      "status": "keep",
+      "reason": "",
+      "description": "Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream",
+      "measured": "2026-09-27T10:09:20Z",
       "has_record": true
     }
   ],
