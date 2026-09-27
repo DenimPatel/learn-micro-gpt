@@ -17,3 +17,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0015	6be8dddc1ad632be7254b4f7369e570d8173f83e	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax normalization and cached value mixing into one tape node per head output
 0016	7f4f1602f1198b9661e67a580d511194e2d4e30b	2.436848	798.687065	-0.001219	+12.591378	1.063160	keep		Lower Adam beta2 to 0.98 for faster second-moment adaptation
 0017	5d8ff5508cff4ead7ed5755f274ab94d4cb5d906	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse analytically differentiated RMSNorm into one tape node per output
+0018	f7fad465223dce888728556e56b194d0be45d6f1	2.430954	1234.952807	+0.001203	+20.015378	0.999933	keep		Differentiate RMSNorm through its mean square and inverse scale on the autograd tape

@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "7ad859942698d64d6717c2ed9294458fb10d26c9684be9b6c3f149e6944b74c7",
+    "candidate_sha256": "1f15bd3d4caf56fc4eb9c961c913f31a3d1bc443072a0aeb33666fb7853b6caa",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,25 +68,26 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0011",
-    "parent": "90fc57576ad79bb7c599caffc3129091fb4b923b",
-    "loss": 2.433882,
-    "steps_per_sec": 1362.03976,
-    "loss_gain": 0.0,
-    "speed_gain": 22.178036,
-    "grad_ratio": 1.06316,
+    "run_id": "0018",
+    "parent": "f7fad465223dce888728556e56b194d0be45d6f1",
+    "loss": 2.430954,
+    "steps_per_sec": 1234.952807,
+    "loss_gain": 0.001203,
+    "speed_gain": 20.015378,
+    "grad_ratio": 0.999933,
     "status": "keep",
     "reason": "",
-    "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes"
+    "description": "Differentiate RMSNorm through its mean square and inverse scale on the autograd tape"
   },
   "counts": {
-    "experiments": 17,
-    "keep": 9,
+    "experiments": 18,
+    "keep": 10,
     "discard": 2,
     "crash": 6
   },
   "pareto": [
-    "0011"
+    "0011",
+    "0018"
   ],
   "runs": [
     {
@@ -339,6 +340,20 @@
       "reason": "cargo build failed",
       "description": "Fuse analytically differentiated RMSNorm into one tape node per output",
       "measured": "2026-09-27T07:08:48Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0018",
+      "parent": "f7fad465223dce888728556e56b194d0be45d6f1",
+      "loss": 2.430954,
+      "steps_per_sec": 1234.952807,
+      "loss_gain": 0.001203,
+      "speed_gain": 20.015378,
+      "grad_ratio": 0.999933,
+      "status": "keep",
+      "reason": "",
+      "description": "Differentiate RMSNorm through its mean square and inverse scale on the autograd tape",
+      "measured": "2026-09-27T07:09:26Z",
       "has_record": true
     }
   ],

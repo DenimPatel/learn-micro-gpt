@@ -578,14 +578,11 @@ impl Model {
     /// `rmsnorm(x)` — rescale by the reciprocal of the root-mean-square, with eps
     /// inside the square root to bound the division.
     fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle> {
-        let mut ms = 0.0f32;
-        for v in x {
-            let d = Tensor::data(*v);
-            ms += d * d;
-        }
-        ms /= x.len() as f32;
-        let scale = (ms + 1e-5).powf(-0.5);
-        x.iter().map(|v| Tensor::mul_scalar(*v, scale)).collect()
+        let squares: Vec<TensorHandle> =
+            x.iter().map(|v| Tensor::mul(*v, *v)).collect();
+        let ms = Tensor::div_scalar(Tensor::sum(&squares), x.len() as f32);
+        let scale = Tensor::pow(Tensor::add_scalar(ms, 1e-5), -0.5);
+        x.iter().map(|v| Tensor::mul(*v, scale)).collect()
     }
 
     /// `gpt(token_id, pos_id, keys, values)` — a stateless function from one
