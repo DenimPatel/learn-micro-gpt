@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 93,
+    "experiments": 94,
     "keep": 58,
     "discard": 2,
-    "crash": 33
+    "crash": 34
   },
   "pareto": [
     "0011",
@@ -1409,6 +1409,20 @@
       "reason": "",
       "description": "Cap default training contexts at eight characters to avoid long-name tail work",
       "measured": "2026-09-27T11:05:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0094",
+      "parent": "8837321b38c95eb653a9fe0d1c8478b6282ed72f",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Pack autograd edges reuse KV cache allocations and index model matrices directly",
+      "measured": "2026-09-27T11:10:02Z",
       "has_record": true
     }
   ],
