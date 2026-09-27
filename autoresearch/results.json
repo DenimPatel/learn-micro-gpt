@@ -80,10 +80,10 @@
     "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
   },
   "counts": {
-    "experiments": 53,
+    "experiments": 54,
     "keep": 36,
     "discard": 2,
-    "crash": 15
+    "crash": 16
   },
   "pareto": [
     "0011",
@@ -848,6 +848,20 @@
       "reason": "",
       "description": "Restore linear learning-rate decay",
       "measured": "2026-09-27T08:42:48Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0054",
+      "parent": "b27b782b7f4d4e5022bae1f921b5a1511c7c396a",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Fuse elementwise autograd operations and reduce arena traversals",
+      "measured": "2026-09-27T08:46:17Z",
       "has_record": true
     }
   ],
