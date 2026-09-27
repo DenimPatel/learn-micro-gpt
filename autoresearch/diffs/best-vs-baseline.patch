@@ -333,9 +333,12 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -765,48 +883,65 @@
+@@ -763,50 +881,67 @@
+ 
+     // Adam, with the reference's betas. The bias correction is what makes the
      // first step the same size as every other one.
-     const LEARNING_RATE: f32 = 0.01;
+-    const LEARNING_RATE: f32 = 0.01;
++    const LEARNING_RATE: f32 = 0.012;
      const BETA1: f32 = 0.85;
 -    const BETA2: f32 = 0.99;
 +    const BETA2: f32 = 0.98;

@@ -60,3 +60,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0058	8313acdd2ecdd5f5dd06d38f0c09a03860d28f9e	2.191254	125.271015	+0.099688	+1.131756	1.000259	keep		Restore fused multiply-add in linear and attention weighted-sum contractions
 0059	2a9948b3c940ae3a5339581b5e43e37e69bae9ab	2.185464	123.936200	+0.102067	+1.109041	1.000259	keep		Lower Adam beta2 from 0.99 to 0.98
 0060	880ba81e7574dd52170140ca22b3c2ecba692d99	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic
+0061	d2c4d3ff9cb254e2b1e1433308c49becf340a025	2.198530	126.028342	+0.096698	+1.144643	1.000259	keep		Raise the peak Adam learning rate from 0.01 to 0.012
