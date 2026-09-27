@@ -439,14 +439,22 @@
              x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
              x = x
                  .iter()
-@@ -765,48 +959,65 @@
+@@ -563,6 +757,7 @@
+                 .collect();
+         }
+ 
++        x = Self::rmsnorm(&x);
+         Self::linear(&x, self.get("lm_head"))
+     }
+ }
+@@ -765,48 +960,65 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
 -    const BETA2: f32 = 0.99;
 +    const BETA2: f32 = 0.98;
      const EPS_ADAM: f32 = 1e-8;
-+    const BATCH_SIZE: usize = 4;
++    const BATCH_SIZE: usize = 5;
      let mut moments = vec![0.0f32; params.len()];
      let mut velocities = vec![0.0f32; params.len()];
  
@@ -538,7 +546,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +1025,14 @@
+@@ -814,6 +1026,14 @@
              config.num_steps,
              Tensor::data(loss)
          );

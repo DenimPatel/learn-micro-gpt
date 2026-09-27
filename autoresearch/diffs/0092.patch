@@ -1,0 +1,18 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -633,6 +633,7 @@ impl Model {
+                 .collect();
+         }
+ 
++        x = Self::rmsnorm(&x);
+         Self::linear(&x, self.get("lm_head"))
+     }
+ }
+@@ -968,7 +969,7 @@ pub fn run() {
+     const BETA1: f32 = 0.85;
+     const BETA2: f32 = 0.98;
+     const EPS_ADAM: f32 = 1e-8;
+-    const BATCH_SIZE: usize = 4;
++    const BATCH_SIZE: usize = 5;
+     let mut moments = vec![0.0f32; params.len()];
+     let mut velocities = vec![0.0f32; params.len()];

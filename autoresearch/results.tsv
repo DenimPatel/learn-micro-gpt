@@ -91,3 +91,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0089	27de42fc6a36535e916e31603c2c9d87d49a6be4	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax and training cross entropy into direct tape nodes
 0090	78b6a261eafa9a566e1bf8914114e650703f1d8c	2.292118	258.316372	+0.058246	+3.395809	1.000259	keep		Reduce the Adam batch from five documents to four
 0091	afe9a505de052379dad380fb2314b73c935ddae4	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse scaled attention projections and softmax quotients into single tape nodes
+0092	749da01ac4d11c242ce56eb41fca2ebf39250c13	2.210236	199.788765	+0.091889	+2.399835	1.000213	keep		Restore the terminal RMSNorm on the better five-document batch
