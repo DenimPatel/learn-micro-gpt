@@ -86,3 +86,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0084	ab725cc3bceb1dfb10fed5f9a6c68d4dcdc6e895	2.258830	166.531883	+0.071923	+1.833898	0.999802	keep		Increase the Adam batch size from five documents to six
 0085	7b1e541acb53a835ebed79d30281018a7f8b396d	2.205084	196.236033	+0.094005	+2.339378	0.999802	keep		Restore the faster five-document Adam batch
 0086	65b897c9162df3d4ac9466ec378fcb9c7f550025	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention normalization and aggregation while removing per-edge bounds checks
+0087	ec0e325536fceb8494fc7baaf2b9da751a9c6f81	2.187488	204.562506	+0.101235	+2.481071	1.000259	keep		Restore the independently initialized untied language model head

@@ -582,13 +582,9 @@ impl Model {
         let wte = new_matrix(rng, config.vocab_size, config.n_embd, std);
         let wpe = new_matrix(rng, config.block_size, config.n_embd, 0.02);
 
-        // Preserve the old initialization stream while using wte for both ends.
-        for _ in 0..(config.vocab_size * config.n_embd) {
-            rng.gauss();
-        }
-        state.push(("wte".into(), wte.clone()));
+        state.push(("wte".into(), wte));
         state.push(("wpe".into(), wpe));
-        state.push(("lm_head".into(), wte));
+        state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
 
         for i in 0..config.n_layer {
             let p = format!("layer{i}.");

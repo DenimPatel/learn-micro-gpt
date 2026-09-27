@@ -307,28 +307,23 @@
                  }
              }
          });
-@@ -378,9 +579,17 @@
+@@ -378,9 +579,13 @@
      pub fn new(config: Config, rng: &mut Rng) -> Model {
          let mut state: Vec<(String, Matrix)> = Vec::new();
          let std = 0.08;
 -        state.push(("wte".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
 -        state.push(("wpe".into(), new_matrix(rng, config.block_size, config.n_embd, std)));
--        state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
 +        let wte = new_matrix(rng, config.vocab_size, config.n_embd, std);
 +        let wpe = new_matrix(rng, config.block_size, config.n_embd, 0.02);
 +
-+        // Preserve the old initialization stream while using wte for both ends.
-+        for _ in 0..(config.vocab_size * config.n_embd) {
-+            rng.gauss();
-+        }
-+        state.push(("wte".into(), wte.clone()));
++        state.push(("wte".into(), wte));
 +        state.push(("wpe".into(), wpe));
-+        state.push(("lm_head".into(), wte));
+         state.push(("lm_head".into(), new_matrix(rng, config.vocab_size, config.n_embd, std)));
 +
          for i in 0..config.n_layer {
              let p = format!("layer{i}.");
              state.push((format!("{p}attn_wq"), new_matrix(rng, config.n_embd, config.n_embd, std)));
-@@ -418,11 +627,18 @@
+@@ -418,11 +623,18 @@
      /// Every parameter, flattened. The optimizer does not care about structure,
      /// and neither does this.
      pub fn params(&self) -> Vec<TensorHandle> {
@@ -352,7 +347,7 @@
      }
  
      /// `linear(x, w)` — the only place a weight matrix is used, and most of the
-@@ -436,13 +652,14 @@
+@@ -436,13 +648,14 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -374,7 +369,7 @@
              .collect()
      }
  
-@@ -453,26 +670,18 @@
+@@ -453,26 +666,18 @@
          let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
          let exps: Vec<TensorHandle> = logits
              .iter()
@@ -406,7 +401,7 @@
      }
  
      /// `gpt(token_id, pos_id, keys, values)` — a stateless function from one
-@@ -521,11 +730,7 @@
+@@ -521,11 +726,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -419,7 +414,7 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -533,13 +738,7 @@
+@@ -533,13 +734,7 @@
                  // A convex combination of the values, so the output magnitude
                  // does not grow with sequence length.
                  let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
@@ -434,7 +429,7 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -553,8 +752,7 @@
+@@ -553,8 +748,7 @@
              // 2) MLP block. The same four steps: save, normalise, transform, add.
              let x_residual = x.clone();
              x = Self::rmsnorm(&x);
@@ -444,7 +439,7 @@
              x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
              x = x
                  .iter()
-@@ -765,48 +963,65 @@
+@@ -765,48 +959,65 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
@@ -543,7 +538,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +1029,14 @@
+@@ -814,6 +1025,14 @@
              config.num_steps,
              Tensor::data(loss)
          );
