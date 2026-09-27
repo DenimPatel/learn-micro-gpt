@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 90,
+    "experiments": 91,
     "keep": 56,
     "discard": 2,
-    "crash": 32
+    "crash": 33
   },
   "pareto": [
     "0011",
@@ -1366,6 +1366,20 @@
       "reason": "",
       "description": "Reduce the Adam batch from five documents to four",
       "measured": "2026-09-27T10:56:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0091",
+      "parent": "afe9a505de052379dad380fb2314b73c935ddae4",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse scaled attention projections and softmax quotients into single tape nodes",
+      "measured": "2026-09-27T10:59:08Z",
       "has_record": true
     }
   ],
