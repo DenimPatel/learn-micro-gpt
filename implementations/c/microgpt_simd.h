@@ -109,7 +109,35 @@ static void cblas_sgemv(int order, int trans, int m, int n, float alpha,
     } else {
       for (int j = 0; j < m; j++) acc += a[(size_t)j * (size_t)lda + (size_t)i] * x[j];
     }
-    y[i] = alpha * acc + beta * y[i];
+    /*
+     * `beta == 0` must not read `y`, and this line used to.
+     *
+     * CBLAS says that with beta zero the output is *overwritten* rather than
+     * accumulated into, so a caller is entitled to hand in a buffer it has
+     * never initialised. microgpt.c does exactly that: `linear_fwd` forwards
+     * beta=0 to here, and its destinations include plain stack arrays --
+     * `mlp_out` in the training path, and `q`/`k`/`v`/`attn_out`/`mlp_h`/
+     * `logits` in the inference path. The natural spelling above reads them
+     * anyway, and `0.0f * NaN` is NaN and `0.0f * Inf` is NaN, so a stack slot
+     * holding a non-finite bit pattern -- ordinary leftover from whatever the
+     * process last put there, and which ASLR moves around from run to run --
+     * turned the very first training step into a NaN loss in a small fraction
+     * of runs. Finite garbage is harmless, because `0.0f * finite` is exactly
+     * zero, which is why this sat here looking correct for a long time.
+     *
+     * The fix is not a special case bolted on for the symptom: Accelerate's own
+     * `cblas_sgemv` does not read `y` when beta is zero either, so branching
+     * here is what makes the fallback compute the same thing as the fast path
+     * instead of something that merely usually agrees. That is the entire job
+     * of this file, and `test_equivalence.sh` is the check that it succeeded --
+     * the fast path passed while the fallback failed, which is exactly the
+     * divergence the script exists to catch.
+     */
+    if (beta == 0.0f) {
+      y[i] = alpha * acc;
+    } else {
+      y[i] = alpha * acc + beta * y[i];
+    }
   }
 }
 

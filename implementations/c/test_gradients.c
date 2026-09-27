@@ -35,7 +35,10 @@
  *    microgpt_simd.h reimplements cblas_sgemv and cblas_sger; if it disagreed
  *    with a straightforward reference loop, the parity gate would see a
  *    different model. (It did once: the transposed case wrote past the end of
- *    the output buffer.)
+ *    the output buffer.) It is also held to CBLAS's *contract* rather than only
+ *    to its arithmetic -- `beta = 0` overwrites the output, so a caller may pass
+ *    an uninitialised buffer, and the fallback used to read it and turned a NaN
+ *    loss into an intermittent CI failure on step 1.
  *
  * 4. **Adam matches a reference implementation.** A deliberately different
  *    transcription of the same formulas, compared element by element.
@@ -446,6 +449,41 @@ static void test_linear(void) {
     if (d < 0 ? -d > 1e-4f : d > 1e-4f) agree = 0;
   }
   ok(agree, "the transposed sgemv matches dx += W^T * dout, with no overrun");
+
+  /* The beta == 0 contract, which is a different kind of wrong from a wrong
+   * number. CBLAS says the output is *overwritten* rather than accumulated into,
+   * so a caller may hand in a buffer it has never initialised -- and microgpt.c
+   * passes plain stack arrays to `linear_fwd`, which forwards beta=0 here. The
+   * fallback used to spell this `alpha * acc + beta * y[i]`, which reads y[i]
+   * regardless, and `0.0f * NaN` is NaN. It shipped for a long time because a
+   * *finite* stale value multiplies out to exactly zero, so the read was
+   * invisible right up until a stack slot happened to hold a non-finite bit
+   * pattern; then step 1 of training reported a NaN loss, intermittently, and
+   * only on the configurations that use this fallback. Accelerate's own sgemv
+   * has never had the problem, which is why `accel+neon` passed while
+   * `scalar+neon` failed -- the exact divergence the fallback exists to avoid.
+   *
+   * Asserted as the contract itself rather than as a tolerance: pre-fill y with
+   * a non-finite value and require the answer to come back finite and correct.
+   * If y were being read, the result would be NaN and `!(d < 1e-4f)` is true. */
+  {
+    const unsigned poison_bits[3] = {0x7FC00001u, 0x7F800000u, 0xFF800000u};
+    agree = 1;
+    for (int p = 0; p < 3; p++) {
+      for (int i = 0; i < nout; i++)
+        memcpy(&got[i], &poison_bits[p], sizeof(float));
+      cblas_sgemv(CblasRowMajor, CblasNoTrans, nout, nin, 1.0f, w, nin, x, 1,
+                  0.0f, got, 1);
+      for (int i = 0; i < nout; i++) {
+        float acc = 0.0f;
+        for (int j = 0; j < nin; j++) acc += w[i * nin + j] * x[j];
+        float d = got[i] - acc;
+        if (d < 0.0f) d = -d;
+        if (!(d < 1e-4f)) agree = 0;
+      }
+    }
+    ok(agree, "sgemv with beta=0 overwrites y, so NaN or Inf in y cannot reach it");
+  }
 }
 
 /* ------------------------------------------------------------------------ */
