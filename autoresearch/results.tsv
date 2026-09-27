@@ -42,3 +42,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0040	bbd00135bd17eb475c2bd31ac532699cf6e4c361	2.242406	101.419918	+0.078671	+0.725878	0.999933	keep		Restore the Adam update batch size from seven documents to six
 0041	16dcdfcf28458183e38e24dba5e5e50c5a532065	2.195606	74.859333	+0.097900	+0.273893	0.999933	keep		Increase Adam update batch size from six documents to eight
 0042	1ff5cee419d0d291d81c841c5cae0aeaeb306742	2.198572	125.471447	+0.096681	+1.135166	0.999933	keep		Batch five shuffled documents per Adam update
+0043	843d867d953cfa3a306ca24ec2d6481c068e3683	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace autograd DFS and visited tracking with reverse arena-order backward propagation

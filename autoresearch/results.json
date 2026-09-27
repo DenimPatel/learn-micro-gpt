@@ -80,10 +80,10 @@
     "description": "Restore the per-update batch size from nine documents to eight"
   },
   "counts": {
-    "experiments": 42,
+    "experiments": 43,
     "keep": 28,
     "discard": 2,
-    "crash": 12
+    "crash": 13
   },
   "pareto": [
     "0011",
@@ -695,6 +695,20 @@
       "reason": "",
       "description": "Batch five shuffled documents per Adam update",
       "measured": "2026-09-27T08:15:14Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0043",
+      "parent": "843d867d953cfa3a306ca24ec2d6481c068e3683",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace autograd DFS and visited tracking with reverse arena-order backward propagation",
+      "measured": "2026-09-27T08:19:27Z",
       "has_record": true
     }
   ],
