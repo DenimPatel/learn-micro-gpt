@@ -1,0 +1,54 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -205,6 +205,34 @@ impl Tensor {
+     pub fn div_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+         Self::mul(a, Self::leaf(1.0 / n))
+     }
++
++    fn linear(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
++        debug_assert_eq!(w.len(), x.len());
++        let (data, parents, local_grads) = ARENA.with(|a| {
++            let arena = a.borrow();
++            let mut data = 0.0f32;
++            let mut local_grads = Vec::with_capacity(w.len() + x.len());
++
++            // Weight parents come first and receive x as their local gradient.
++            for (weight, input) in w.iter().zip(x.iter()) {
++                let weight_data = arena.nodes[weight.0].data;
++                let input_data = arena.nodes[input.0].data;
++                data += weight_data * input_data;
++                local_grads.push(input_data);
++            }
++
++            // Input parents come second and receive w as their local gradient.
++            for weight in w {
++                local_grads.push(arena.nodes[weight.0].data);
++            }
++
++            let parents = w
++                .iter()
++                .chain(x.iter())
++                .copied()
++                .map(|handle| handle.0)
++                .collect();
++            (data, parents, local_grads)
++        });
++        Self::spawn(data, parents, local_grads)
++    }
+ 
+     /// `__pow__` for a constant exponent.
+     pub fn pow(a: TensorHandle, exponent: f32) -> TensorHandle {
+@@ -366,16 +394,7 @@ impl Model {
+     /// `docs/BENCHMARKS.md`.
+     fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
+         w.iter()
+-            .map(|row| {
+-                let mut acc = Tensor::leaf(0.0);
+-                for (wi, xi) in row.iter().zip(x.iter()) {
+-                    acc = Tensor::add(acc, Tensor::mul(*wi, *xi));
+-                }
+-                acc
+-            })
++            .map(|row| Tensor::linear(row, x))
+             .collect()
+     }
