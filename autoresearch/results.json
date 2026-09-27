@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 85,
+    "experiments": 86,
     "keep": 54,
     "discard": 2,
-    "crash": 29
+    "crash": 30
   },
   "pareto": [
     "0011",
@@ -1298,6 +1298,20 @@
       "reason": "",
       "description": "Restore the faster five-document Adam batch",
       "measured": "2026-09-27T10:36:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0086",
+      "parent": "65b897c9162df3d4ac9466ec378fcb9c7f550025",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse attention normalization and aggregation while removing per-edge bounds checks",
+      "measured": "2026-09-27T10:39:57Z",
       "has_record": true
     }
   ],
