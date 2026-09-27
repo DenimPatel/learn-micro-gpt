@@ -51,3 +51,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0049	efb3577241d779b53fec4efeabe3333a6c0ba815	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack tape parent indices and local gradients into one allocation per node
 0050	cb920a100ef29690bef861a44b4ec417e4f8f931	2.296160	158.910420	+0.056585	+1.704203	1.000037	keep		Batch four shuffled documents per Adam update instead of five
 0051	4b8062a35ea2ea374ea3f8cbedc0b0d6580dc6b9	2.190858	125.106971	+0.099850	+1.128964	1.000037	keep		Restore five shuffled documents per Adam update
+0052	1609aef0eeed0cd2df7e271e788d25d85f4e60d6	2.336146	124.679964	+0.040156	+1.121698	1.000037	keep		Keep the Adam learning rate constant throughout training

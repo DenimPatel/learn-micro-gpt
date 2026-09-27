@@ -333,7 +333,7 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -767,46 +885,64 @@
+@@ -767,46 +885,63 @@
      const BETA1: f32 = 0.85;
      const BETA2: f32 = 0.99;
      const EPS_ADAM: f32 = 1e-8;
@@ -409,8 +409,7 @@
 -                arena.nodes[p.0].grad = 0.0;
 -            });
 -        }
-+        let lr_t = LEARNING_RATE
-+            * (1.0 - step as f32 / config.num_steps as f32);
++        let lr_t = LEARNING_RATE;
 +        let beta1_power = BETA1.powi(step as i32 + 1);
 +        let beta2_power = BETA2.powi(step as i32 + 1);
 +        ARENA.with(|a| {
@@ -429,7 +428,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +950,14 @@
+@@ -814,6 +949,14 @@
              config.num_steps,
              Tensor::data(loss)
          );
