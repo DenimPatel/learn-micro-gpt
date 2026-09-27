@@ -47,10 +47,34 @@
      fn spawn(data: f32, parents: Vec<usize>, local_grads: Vec<f32>) -> TensorHandle {
          debug_assert_eq!(
              parents.len(),
-@@ -235,6 +264,37 @@
-         Self::mul(a, Self::leaf(1.0 / n))
+@@ -215,24 +244,55 @@
+ 
+     /// `self + n` for a plain float.
+     pub fn add_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+-        Self::add(a, Self::leaf(n))
++        Self::spawn(Self::data(a) + n, vec![a.0], vec![1.0])
      }
  
+     /// `self - n` for a plain float.
+     pub fn sub_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+-        Self::add(a, Self::leaf(-n))
++        Self::spawn(Self::data(a) - n, vec![a.0], vec![1.0])
+     }
+ 
+     /// `self * n` for a plain float.
+     pub fn mul_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+-        Self::mul(a, Self::leaf(n))
++        Self::spawn(Self::data(a) * n, vec![a.0], vec![n])
+     }
+ 
+     /// `self / n` for a plain float, as a multiplication so the graph records
+     /// only the numerator's gradient — which is what makes the loss a mean whose
+     /// gradient is scaled by `1/n` without a constant entering the tape.
+     pub fn div_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+-        Self::mul(a, Self::leaf(1.0 / n))
++        Self::spawn(Self::data(a) * (1.0 / n), vec![a.0], vec![1.0 / n])
++    }
++
 +    fn linear(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
 +        debug_assert_eq!(w.len(), x.len());
 +        let (data, parents, local_grads) = ARENA.with(|a| {
@@ -80,11 +104,9 @@
 +            (data, parents, local_grads)
 +        });
 +        Self::spawn(data, parents, local_grads)
-+    }
-+
+     }
+ 
      /// `__pow__` for a constant exponent.
-     pub fn pow(a: TensorHandle, exponent: f32) -> TensorHandle {
-         let data = Self::data(a).powf(exponent);
 @@ -294,9 +354,6 @@
              let node_count = arena.nodes.len();
              if arena.visited.len() < node_count {

@@ -8,3 +8,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0006	6dc7cc7e4177d3c3b3929e16f49fe89cd43f0be3	2.433882	953.153688	+0.000000	+15.219960	1.063160	keep		Reset only graph nodes visited during each backward pass
 0007	2c92dec4f07d7c121c8da0be33feecb383ac5d00	2.604630	1078.780897	-0.070155	+17.357777	1.063160	discard	no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance	Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero
 0008	b3d2cc1eaa546fd978a76148ab6ff330fa8204a6	2.433882	1128.692800	+0.000000	+18.207135	1.063160	keep		Shifted logsumexp cross entropy skips unused vocabulary probabilities
+0009	144818682b63091e1416d1e9ad06005c4491109e	2.433882	1128.988009	+0.000000	+18.212159	1.063160	keep		Fuse constant affine operations into single tape nodes with identical arithmetic

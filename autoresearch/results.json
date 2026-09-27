@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "a0fbc1cf55be3e0d3e9b82e27aaf4b2f1202e83aa0f3b36db3e49d5086d51625",
+    "candidate_sha256": "eb9f27e3aeaded1ac691ed547280291bbff9eb2eceebe6d8b3e1b9ae5d96e25a",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,25 +68,25 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0008",
-    "parent": "b3d2cc1eaa546fd978a76148ab6ff330fa8204a6",
+    "run_id": "0009",
+    "parent": "144818682b63091e1416d1e9ad06005c4491109e",
     "loss": 2.433882,
-    "steps_per_sec": 1128.6928,
+    "steps_per_sec": 1128.988009,
     "loss_gain": 0.0,
-    "speed_gain": 18.207135,
+    "speed_gain": 18.212159,
     "grad_ratio": 1.06316,
     "status": "keep",
     "reason": "",
-    "description": "Shifted logsumexp cross entropy skips unused vocabulary probabilities"
+    "description": "Fuse constant affine operations into single tape nodes with identical arithmetic"
   },
   "counts": {
-    "experiments": 8,
-    "keep": 5,
+    "experiments": 9,
+    "keep": 6,
     "discard": 2,
     "crash": 1
   },
   "pareto": [
-    "0008"
+    "0009"
   ],
   "runs": [
     {
@@ -213,6 +213,20 @@
       "reason": "",
       "description": "Shifted logsumexp cross entropy skips unused vocabulary probabilities",
       "measured": "2026-09-27T06:47:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0009",
+      "parent": "144818682b63091e1416d1e9ad06005c4491109e",
+      "loss": 2.433882,
+      "steps_per_sec": 1128.988009,
+      "loss_gain": 0.0,
+      "speed_gain": 18.212159,
+      "grad_ratio": 1.06316,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse constant affine operations into single tape nodes with identical arithmetic",
+      "measured": "2026-09-27T06:47:55Z",
       "has_record": true
     }
   ],

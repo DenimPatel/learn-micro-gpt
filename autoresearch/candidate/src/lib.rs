@@ -244,24 +244,24 @@ impl Tensor {
 
     /// `self + n` for a plain float.
     pub fn add_scalar(a: TensorHandle, n: f32) -> TensorHandle {
-        Self::add(a, Self::leaf(n))
+        Self::spawn(Self::data(a) + n, vec![a.0], vec![1.0])
     }
 
     /// `self - n` for a plain float.
     pub fn sub_scalar(a: TensorHandle, n: f32) -> TensorHandle {
-        Self::add(a, Self::leaf(-n))
+        Self::spawn(Self::data(a) - n, vec![a.0], vec![1.0])
     }
 
     /// `self * n` for a plain float.
     pub fn mul_scalar(a: TensorHandle, n: f32) -> TensorHandle {
-        Self::mul(a, Self::leaf(n))
+        Self::spawn(Self::data(a) * n, vec![a.0], vec![n])
     }
 
     /// `self / n` for a plain float, as a multiplication so the graph records
     /// only the numerator's gradient — which is what makes the loss a mean whose
     /// gradient is scaled by `1/n` without a constant entering the tape.
     pub fn div_scalar(a: TensorHandle, n: f32) -> TensorHandle {
-        Self::mul(a, Self::leaf(1.0 / n))
+        Self::spawn(Self::data(a) * (1.0 / n), vec![a.0], vec![1.0 / n])
     }
 
     fn linear(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
