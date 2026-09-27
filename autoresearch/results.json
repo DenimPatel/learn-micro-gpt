@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "98f978d4daebad186451ec539dc82b140d28b5a813af7e76b6de44c9a937f44f",
+    "candidate_sha256": "c82058d8993cb0d14b561e2966aaa6776d827dbfa278df5e138d77cc666fb080",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,20 +68,20 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0059",
-    "parent": "2a9948b3c940ae3a5339581b5e43e37e69bae9ab",
+    "run_id": "0065",
+    "parent": "8309a3487c0ca14979efdb3a55e6430cf063eef8",
     "loss": 2.185464,
-    "steps_per_sec": 123.9362,
+    "steps_per_sec": 126.002227,
     "loss_gain": 0.102067,
-    "speed_gain": 1.109041,
+    "speed_gain": 1.144199,
     "grad_ratio": 1.000259,
     "status": "keep",
     "reason": "",
-    "description": "Lower Adam beta2 from 0.99 to 0.98"
+    "description": "Restore the five-document batch that reached the best recorded loss"
   },
   "counts": {
-    "experiments": 64,
-    "keep": 43,
+    "experiments": 65,
+    "keep": 44,
     "discard": 2,
     "crash": 19
   },
@@ -90,10 +90,9 @@
     "0019",
     "0030",
     "0031",
-    "0048",
     "0050",
-    "0059",
-    "0061"
+    "0061",
+    "0065"
   ],
   "runs": [
     {
@@ -1004,6 +1003,20 @@
       "reason": "the patch did not apply",
       "description": "Restore five-document Adam batches and tie the token embedding to the output head",
       "measured": "2026-09-27T09:24:44Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0065",
+      "parent": "8309a3487c0ca14979efdb3a55e6430cf063eef8",
+      "loss": 2.185464,
+      "steps_per_sec": 126.002227,
+      "loss_gain": 0.102067,
+      "speed_gain": 1.144199,
+      "grad_ratio": 1.000259,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore the five-document batch that reached the best recorded loss",
+      "measured": "2026-09-27T09:28:49Z",
       "has_record": true
     }
   ],
