@@ -885,7 +885,7 @@ pub fn run() {
     const BETA1: f32 = 0.85;
     const BETA2: f32 = 0.99;
     const EPS_ADAM: f32 = 1e-8;
-    const BATCH_SIZE: usize = 5;
+    const BATCH_SIZE: usize = 4;
     let mut moments = vec![0.0f32; params.len()];
     let mut velocities = vec![0.0f32; params.len()];
 
