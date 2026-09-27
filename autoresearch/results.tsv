@@ -75,3 +75,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0073	4913bac1b95d3ae0c08d4b551a7c154797801350	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Omit tape parents and local gradients for inactive fused ReLU outputs
 0074	0424510fdc75f3362b3b6efb66d337bcc2cde7ba	2.292118	255.661591	+0.058246	+3.350632	1.000259	keep		Reduce Adam batch size from five documents to four
 0075	158fe0c4211ecbdc64587b19c172b99c57749803	2.318052	125.547324	+0.047591	+1.136458	1.000259	keep		Widen the model from 32 to 48 embedding dimensions
+0076	19a5243295e64aaba0517985d3ae650fc2a593a5	2.187488	201.562917	+0.101235	+2.430026	1.000259	keep		Restore the 32-dimensional model and five-document Adam batch

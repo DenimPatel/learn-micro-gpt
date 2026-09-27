@@ -68,7 +68,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            n_embd: 48,
+            n_embd: 32,
             n_head: 4,
             n_layer: 1,
             block_size: 16,
@@ -950,7 +950,7 @@ pub fn run() {
     const BETA1: f32 = 0.85;
     const BETA2: f32 = 0.98;
     const EPS_ADAM: f32 = 1e-8;
-    const BATCH_SIZE: usize = 4;
+    const BATCH_SIZE: usize = 5;
     let mut moments = vec![0.0f32; params.len()];
     let mut velocities = vec![0.0f32; params.len()];
 
