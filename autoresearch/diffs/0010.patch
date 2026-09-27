@@ -1,0 +1,59 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -522,6 +522,42 @@ impl Tensor {
+         Self::spawn(data, parents, local_grads)
+     }
+ 
++    /// One weighted sum over the cached values, recorded as a single tape
++    /// node rather than a multiply and add for every cached position.
++    fn weighted_sum(
++        weights: &[TensorHandle],
++        values: &[&[TensorHandle]],
++        dimension: usize,
++    ) -> TensorHandle {
++        debug_assert_eq!(weights.len(), values.len());
++        let (data, parents, local_grads) = ARENA.with(|a| {
++            let arena = a.borrow();
++            let mut data = 0.0f32;
++            let mut parents = Vec::with_capacity(weights.len() * 2);
++            let mut local_grads = Vec::with_capacity(weights.len() * 2);
++
++            // Weight parents receive the corresponding value as their local
++            // gradient.
++            for (weight, value) in weights.iter().zip(values) {
++                let weight_data = arena.nodes[weight.0].data;
++                let value_data = arena.nodes[value[dimension].0].data;
++                data += weight_data * value_data;
++                parents.push(weight.0);
++                local_grads.push(value_data);
++            }
++
++            // Value parents come second and receive their weight.
++            for (weight, value) in weights.iter().zip(values) {
++                parents.push(value[dimension].0);
++                local_grads.push(arena.nodes[weight.0].data);
++            }
++
++            (data, parents, local_grads)
++        });
++        Self::spawn(data, parents, local_grads)
++    }
++
+     /// `__pow__` for a constant exponent.
+     pub fn pow(a: TensorHandle, exponent: f32) -> TensorHandle {
+         let data = Self::data(a).powf(exponent);
+@@ -691,13 +727,7 @@ impl Model {
+                 // A convex combination of the values, so the output magnitude
+                 // does not grow with sequence length.
+                 let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
+-                    .map(|j| {
+-                        let mut acc = Tensor::leaf(0.0);
+-                        for (t, weights) in attn_weights.iter().enumerate() {
+-                            acc = Tensor::add(acc, Tensor::mul(*weights, v_h[t][j]));
+-                        }
+-                        acc
+-                    })
++                    .map(|j| Tensor::weighted_sum(&attn_weights, &v_h, j))
+                     .collect();
+                 x_attn.extend(head_out);
+             }

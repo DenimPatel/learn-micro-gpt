@@ -47,7 +47,7 @@
      fn spawn(data: f32, parents: Vec<usize>, local_grads: Vec<f32>) -> TensorHandle {
          debug_assert_eq!(
              parents.len(),
-@@ -215,24 +244,55 @@
+@@ -215,24 +244,90 @@
  
      /// `self + n` for a plain float.
      pub fn add_scalar(a: TensorHandle, n: f32) -> TensorHandle {
@@ -104,10 +104,45 @@
 +            (data, parents, local_grads)
 +        });
 +        Self::spawn(data, parents, local_grads)
++    }
++
++    /// One weighted sum over the cached values, recorded as a single tape
++    /// node rather than a multiply and add for every cached position.
++    fn weighted_sum(
++        weights: &[TensorHandle],
++        values: &[&[TensorHandle]],
++        dimension: usize,
++    ) -> TensorHandle {
++        debug_assert_eq!(weights.len(), values.len());
++        let (data, parents, local_grads) = ARENA.with(|a| {
++            let arena = a.borrow();
++            let mut data = 0.0f32;
++            let mut parents = Vec::with_capacity(weights.len() * 2);
++            let mut local_grads = Vec::with_capacity(weights.len() * 2);
++
++            // Weight parents receive the corresponding value as their local
++            // gradient.
++            for (weight, value) in weights.iter().zip(values) {
++                let weight_data = arena.nodes[weight.0].data;
++                let value_data = arena.nodes[value[dimension].0].data;
++                data += weight_data * value_data;
++                parents.push(weight.0);
++                local_grads.push(value_data);
++            }
++
++            // Value parents come second and receive their weight.
++            for (weight, value) in weights.iter().zip(values) {
++                parents.push(value[dimension].0);
++                local_grads.push(arena.nodes[weight.0].data);
++            }
++
++            (data, parents, local_grads)
++        });
++        Self::spawn(data, parents, local_grads)
      }
  
      /// `__pow__` for a constant exponent.
-@@ -294,9 +354,6 @@
+@@ -294,9 +389,6 @@
              let node_count = arena.nodes.len();
              if arena.visited.len() < node_count {
                  arena.visited.resize(node_count, false);
@@ -117,7 +152,7 @@
              }
  
              // Iterative depth-first walk, parents-first.
-@@ -333,16 +390,14 @@
+@@ -333,16 +425,14 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -141,7 +176,7 @@
              }
          });
      }
-@@ -436,13 +491,7 @@
+@@ -436,13 +526,7 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -156,7 +191,7 @@
              .collect()
      }
  
-@@ -521,11 +570,7 @@
+@@ -521,11 +605,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -169,7 +204,22 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -780,10 +825,21 @@
+@@ -533,13 +613,7 @@
+                 // A convex combination of the values, so the output magnitude
+                 // does not grow with sequence length.
+                 let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
+-                    .map(|j| {
+-                        let mut acc = Tensor::leaf(0.0);
+-                        for (t, weights) in attn_weights.iter().enumerate() {
+-                            acc = Tensor::add(acc, Tensor::mul(*weights, v_h[t][j]));
+-                        }
+-                        acc
+-                    })
++                    .map(|j| Tensor::weighted_sum(&attn_weights, &v_h, j))
+                     .collect();
+                 x_attn.extend(head_out);
+             }
+@@ -780,10 +854,21 @@
          let mut losses = Vec::with_capacity(n);
          for pos_id in 0..n {
              let logits = model.forward(tokens[pos_id], pos_id);
