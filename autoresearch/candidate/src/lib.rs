@@ -825,10 +825,21 @@ pub fn run() {
         let mut losses = Vec::with_capacity(n);
         for pos_id in 0..n {
             let logits = model.forward(tokens[pos_id], pos_id);
-            let probs = Model::softmax(&logits);
-            // Log first, then negate: `-probs[target].log()`. The order matters,
-            // and backwards gives `log(-p)` and therefore NaN immediately.
-            losses.push(Tensor::neg(Tensor::log(probs[tokens[pos_id + 1]])));
+            let max_logit = logits
+                .iter()
+                .map(|logit| Tensor::data(*logit))
+                .fold(f32::NEG_INFINITY, f32::max);
+            let mut exp_sum = Tensor::leaf(0.0);
+            for logit in &logits {
+                exp_sum = Tensor::add(
+                    exp_sum,
+                    Tensor::exp(Tensor::sub_scalar(*logit, max_logit)),
+                );
+            }
+            let shifted_target =
+                Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
+            let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);
+            losses.push(nll);
         }
         let mut loss = Tensor::leaf(0.0);
         for l in &losses {
