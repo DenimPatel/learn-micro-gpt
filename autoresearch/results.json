@@ -80,10 +80,10 @@
     "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
   },
   "counts": {
-    "experiments": 54,
+    "experiments": 55,
     "keep": 36,
     "discard": 2,
-    "crash": 16
+    "crash": 17
   },
   "pareto": [
     "0011",
@@ -862,6 +862,20 @@
       "reason": "the gradient check did not pass",
       "description": "Fuse elementwise autograd operations and reduce arena traversals",
       "measured": "2026-09-27T08:46:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0055",
+      "parent": "ec22a0449664255dbd821f7d79d192e255c8bfdc",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Mark ancestors then backpropagate in reverse arena order",
+      "measured": "2026-09-27T08:48:28Z",
       "has_record": true
     }
   ],
