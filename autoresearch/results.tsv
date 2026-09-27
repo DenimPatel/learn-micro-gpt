@@ -84,3 +84,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0082	d42f25e0bc9a6a50360c5e6902c0c3804c66e2fb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic
 0083	938f591dd0516000fd714a73d4f51e2c91fe75e8	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges in shared buffers written in place without changing arithmetic
 0084	ab725cc3bceb1dfb10fed5f9a6c68d4dcdc6e895	2.258830	166.531883	+0.071923	+1.833898	0.999802	keep		Increase the Adam batch size from five documents to six
+0085	7b1e541acb53a835ebed79d30281018a7f8b396d	2.205084	196.236033	+0.094005	+2.339378	0.999802	keep		Restore the faster five-document Adam batch
