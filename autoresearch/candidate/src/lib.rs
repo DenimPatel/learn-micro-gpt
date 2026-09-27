@@ -362,15 +362,12 @@ impl Tensor {
             // so its gradient has many contributions to sum.
             arena.nodes[root.0].grad = 1.0;
             for index in topo.iter().rev() {
-                // Copy the two fields the inner loop needs, so the borrow of
-                // `arena.nodes[index]` ends before the loop starts accumulating
-                // into other nodes' gradients.
-                let (grad, parents, local_grads) = {
-                    let node = &arena.nodes[*index];
-                    (node.grad, node.parents.clone(), node.local_grads.clone())
-                };
-                for (slot, child) in parents.iter().enumerate() {
-                    arena.nodes[*child].grad += local_grads[slot] * grad;
+                let grad = arena.nodes[*index].grad;
+                let parent_count = arena.nodes[*index].parents.len();
+                for slot in 0..parent_count {
+                    let child = arena.nodes[*index].parents[slot];
+                    let local_grad = arena.nodes[*index].local_grads[slot];
+                    arena.nodes[child].grad += local_grad * grad;
                 }
             }
         });

@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "a699385a5e2f74810b5d356f1b28237a0da8c9568c64ca086133caa10be8ab3d",
+    "candidate_sha256": "ebafb754b9abf51d7fe9ad49153f4346c99a0aced166b330ad8085a7133cf11c",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -50,9 +50,9 @@
     "os": "Darwin 25.1.0",
     "machine": "arm64",
     "processor": "arm",
-    "python": "3.14.3",
+    "python": "3.11.8",
     "rustc": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
-    "measured": "2026-09-26T22:52:25Z",
+    "measured": "2026-09-27T06:32:07Z",
     "note": "The speed axis is only comparable within a session. The baseline is rebuilt from source and re-measured every session for this reason; benchmarks/results.json was taken on a different machine and is not used."
   },
   "baseline": {
@@ -67,10 +67,21 @@
     "reason": "frozen implementations/rust, re-measured this session",
     "description": "the frozen track, unmodified, as this session's comparator"
   },
-  "best": null,
+  "best": {
+    "run_id": "0003",
+    "parent": "d8e54489b5bf83f2b2ad9e02e86e403059b05430",
+    "loss": 2.433882,
+    "steps_per_sec": 87.007592,
+    "loss_gain": 0.0,
+    "speed_gain": 0.340447,
+    "grad_ratio": 1.06316,
+    "status": "keep",
+    "reason": "",
+    "description": "Avoid cloning parent and local-gradient vectors during every backward pass"
+  },
   "counts": {
-    "experiments": 2,
-    "keep": 0,
+    "experiments": 3,
+    "keep": 1,
     "discard": 1,
     "crash": 1
   },
@@ -118,6 +129,20 @@
       "reason": "the patch did not apply",
       "description": "Collapse each linear layer output into one direct dot-product tape node",
       "measured": "2026-09-26T22:55:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0003",
+      "parent": "d8e54489b5bf83f2b2ad9e02e86e403059b05430",
+      "loss": 2.433882,
+      "steps_per_sec": 87.007592,
+      "loss_gain": 0.0,
+      "speed_gain": 0.340447,
+      "grad_ratio": 1.06316,
+      "status": "keep",
+      "reason": "",
+      "description": "Avoid cloning parent and local-gradient vectors during every backward pass",
+      "measured": "2026-09-27T06:33:42Z",
       "has_record": true
     }
   ],

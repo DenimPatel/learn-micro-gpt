@@ -2,3 +2,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0000	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	2.433882	95.382084	+0.000000	+0.000000	1.063160	baseline	frozen implementations/rust, re-measured this session	the frozen track, unmodified, as this session's comparator
 0001	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	2.431324	75.475856	+0.001051	-0.047834	0.999933	discard	no axis improved materially: discarded: loss +0.1%, speed -4.8%; failing loss_material, speed_material	Make RMSNorm differentiable through its mean square and inverse square root
 0002	f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse each linear layer output into one direct dot-product tape node
+0003	d8e54489b5bf83f2b2ad9e02e86e403059b05430	2.433882	87.007592	+0.000000	+0.340447	1.063160	keep		Avoid cloning parent and local-gradient vectors during every backward pass
