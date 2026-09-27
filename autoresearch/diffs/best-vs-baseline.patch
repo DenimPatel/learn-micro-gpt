@@ -47,12 +47,10 @@
      fn spawn(data: f32, parents: Vec<usize>, local_grads: Vec<f32>) -> TensorHandle {
          debug_assert_eq!(
              parents.len(),
-@@ -233,6 +262,37 @@
-     /// gradient is scaled by `1/n` without a constant entering the tape.
-     pub fn div_scalar(a: TensorHandle, n: f32) -> TensorHandle {
+@@ -235,6 +264,37 @@
          Self::mul(a, Self::leaf(1.0 / n))
-+    }
-+
+     }
+ 
 +    fn linear(w: &[TensorHandle], x: &[TensorHandle]) -> TensorHandle {
 +        debug_assert_eq!(w.len(), x.len());
 +        let (data, parents, local_grads) = ARENA.with(|a| {
@@ -82,10 +80,22 @@
 +            (data, parents, local_grads)
 +        });
 +        Self::spawn(data, parents, local_grads)
-     }
- 
++    }
++
      /// `__pow__` for a constant exponent.
-@@ -333,15 +393,12 @@
+     pub fn pow(a: TensorHandle, exponent: f32) -> TensorHandle {
+         let data = Self::data(a).powf(exponent);
+@@ -294,9 +354,6 @@
+             let node_count = arena.nodes.len();
+             if arena.visited.len() < node_count {
+                 arena.visited.resize(node_count, false);
+-            }
+-            for flag in arena.visited.iter_mut() {
+-                *flag = false;
+             }
+ 
+             // Iterative depth-first walk, parents-first.
+@@ -333,16 +390,14 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -105,9 +115,11 @@
 +                    let local_grad = arena.nodes[*index].local_grads[slot];
 +                    arena.nodes[child].grad += local_grad * grad;
                  }
++                arena.visited[*index] = false;
              }
          });
-@@ -436,13 +493,7 @@
+     }
+@@ -436,13 +491,7 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -122,7 +134,7 @@
              .collect()
      }
  
-@@ -521,11 +572,7 @@
+@@ -521,11 +570,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {

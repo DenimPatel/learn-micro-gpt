@@ -1,0 +1,56 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -319,33 +319,31 @@ impl Tensor {
+             let node_count = arena.nodes.len();
+             if arena.visited.len() < node_count {
+                 arena.visited.resize(node_count, false);
+             }
+-            for flag in arena.visited.iter_mut() {
+-                *flag = false;
+-            }
+ 
+             // Iterative depth-first walk, parents-first.
+             //
+             // The visited check has to happen when a child is *pushed*, not when
+             // it is popped. Checking on pop re-walks the children of an
+             // already-visited node, and since a weight is used by every position
+             // and every head, the number of distinct paths through the graph is
+             // exponential in the depth. The first version of this function did it
+             // the other way round and took over ten minutes for twenty steps.
+             let mut stack: Vec<(usize, usize)> = vec![(root.0, 0)];
+             while let Some((node_index, cursor)) = stack.pop() {
+                 if cursor == 0 {
+                     if arena.visited[node_index] {
+                         continue;
+                     }
+                     arena.visited[node_index] = true;
+                 }
+                 match arena.nodes[node_index].parents.get(cursor).copied() {
+                     Some(child_index) => {
+                         stack.push((node_index, cursor + 1));
+                         if !arena.visited[child_index] {
+                             stack.push((child_index, 0));
+                         }
+                     }
+                     // No parent at this cursor means every parent is done, so this
+                     // node is a leaf of the remaining work and can be emitted.
+                     None => topo.push(node_index),
+                 }
+             }
+ 
+             // Phase 2: the chain rule, as a loop. `+=` is load-bearing -- a
+             // tensor is reused by every document, every position and every head,
+             // so its gradient has many contributions to sum.
+             arena.nodes[root.0].grad = 1.0;
+             for index in topo.iter().rev() {
+                 let grad = arena.nodes[*index].grad;
+                 let parent_count = arena.nodes[*index].parents.len();
+                 for slot in 0..parent_count {
+                     let child = arena.nodes[*index].parents[slot];
+                     let local_grad = arena.nodes[*index].local_grads[slot];
+                     arena.nodes[child].grad += local_grad * grad;
+                 }
++                arena.visited[*index] = false;
+             }
+         });
+     }

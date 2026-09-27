@@ -5,3 +5,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0003	d8e54489b5bf83f2b2ad9e02e86e403059b05430	2.433882	87.007592	+0.000000	+0.340447	1.063160	keep		Avoid cloning parent and local-gradient vectors during every backward pass
 0004	92c0bd290f36012cfda98723f58f9cb8e131b748	2.433882	959.506660	+0.000000	+15.328069	1.063160	keep		Fuse linear dot products into correctly differentiated tape nodes
 0005	aab107aa00ed4ce77f433c363d248dfd196efe40	2.433882	1054.328215	+0.000000	+16.941662	1.063160	keep		Fuse attention score dot products into the existing linear tape node
+0006	6dc7cc7e4177d3c3b3929e16f49fe89cd43f0be3	2.433882	953.153688	+0.000000	+15.219960	1.063160	keep		Reset only graph nodes visited during each backward pass

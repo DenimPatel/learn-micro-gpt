@@ -355,9 +355,6 @@ impl Tensor {
             if arena.visited.len() < node_count {
                 arena.visited.resize(node_count, false);
             }
-            for flag in arena.visited.iter_mut() {
-                *flag = false;
-            }
 
             // Iterative depth-first walk, parents-first.
             //
@@ -400,6 +397,7 @@ impl Tensor {
                     let local_grad = arena.nodes[*index].local_grads[slot];
                     arena.nodes[child].grad += local_grad * grad;
                 }
+                arena.visited[*index] = false;
             }
         });
     }
