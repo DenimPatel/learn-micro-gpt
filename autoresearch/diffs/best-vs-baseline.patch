@@ -100,7 +100,7 @@
 +            for (weight, input) in w.iter().zip(x.iter()) {
 +                let weight_data = arena.nodes[weight.0].data;
 +                let input_data = arena.nodes[input.0].data;
-+                data += weight_data * input_data;
++                data = weight_data.mul_add(input_data, data);
 +                local_grads.push(input_data);
 +            }
 +
@@ -139,7 +139,7 @@
 +            for (weight, value) in weights.iter().zip(values) {
 +                let weight_data = arena.nodes[weight.0].data;
 +                let value_data = arena.nodes[value[dimension].0].data;
-+                data += weight_data * value_data;
++                data = weight_data.mul_add(value_data, data);
 +                parents.push(weight.0);
 +                local_grads.push(value_data);
 +            }

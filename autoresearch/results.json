@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "be4afd8779e5ad64245855ecc866569e0a9b6e53fde41c5d37c00703f68ea478",
+    "candidate_sha256": "3138aabacb43e54e518a3c141638b54614b7206fba24679e82eb9294aa28f6df",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
   },
   "counts": {
-    "experiments": 57,
-    "keep": 38,
+    "experiments": 58,
+    "keep": 39,
     "discard": 2,
     "crash": 17
   },
@@ -904,6 +904,20 @@
       "reason": "",
       "description": "Remove the second transformer layer",
       "measured": "2026-09-27T08:51:53Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0058",
+      "parent": "8313acdd2ecdd5f5dd06d38f0c09a03860d28f9e",
+      "loss": 2.191254,
+      "steps_per_sec": 125.271015,
+      "loss_gain": 0.099688,
+      "speed_gain": 1.131756,
+      "grad_ratio": 1.000259,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore fused multiply-add in linear and attention weighted-sum contractions",
+      "measured": "2026-09-27T08:56:12Z",
       "has_record": true
     }
   ],
