@@ -30,16 +30,15 @@ on:
         description: 'Training steps for the parity check'
         default: 1000
         type: number
-
-# The scheduled benchmark run: regenerates benchmarks/results.json on a known
-# runner and opens a PR if the numbers moved. On a schedule rather than on push,
-# so a timing change never blocks a content PR -- timings are not something a
-# reviewer can act on in the same way a broken selector is.
-on:
+  # The scheduled benchmark run: regenerates benchmarks/results.json on a known
+  # runner and opens a PR if the numbers moved. On a schedule rather than on push,
+  # so a timing change never blocks a content PR -- timings are not something a
+  # reviewer can act on in the same way a broken selector is.
+  #
+  # 04:17 UTC on Mondays. Not on the hour: scheduled workflows on the hour are
+  # the most contended slot on GitHub's fleet, and this one measures wall-clock
+  # time, so it should not queue behind a hundred other jobs.
   schedule:
-    # 04:17 UTC on Mondays. Not on the hour: scheduled workflows on the hour are
-    # the most contended slot on GitHub's fleet, and this one measures wall-clock
-    # time, so it should not queue behind a hundred other jobs.
     - cron: '17 4 * * 1'
 
 permissions:

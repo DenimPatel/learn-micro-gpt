@@ -72,7 +72,27 @@ build_and_run() {
 }
 
 echo "testing build equivalence (${CC})"
-build_and_run accel+neon   -DMICROGPT_USE_ACCELERATE -framework Accelerate || exit 1
+
+# Accelerate is macOS-only, and on a platform without it this script still has
+# something to prove: the two portable configurations must agree with each other.
+# So its absence is a skip, not a failure.
+#
+# The distinction that matters is *why* the Accelerate build did not happen. This
+# probes whether the compiler accepts the framework flag at all, by compiling an
+# empty translation unit, rather than by trying to build microgpt.c and reading
+# the result. A probe that built the real source would swallow a genuine compile
+# error in that configuration behind a skip, and a check that skips over its own
+# subject is not a check.
+have_accelerate() {
+  printf '' | $CC -x c -framework Accelerate -c - -o "$WORK/accel-probe.o" >/dev/null 2>&1
+}
+
+if have_accelerate; then
+  build_and_run accel+neon   -DMICROGPT_USE_ACCELERATE -framework Accelerate || exit 1
+else
+  printf '  %-26s ' accel+neon
+  echo 'skipped (Accelerate is not available on this platform)'
+fi
 build_and_run scalar+neon  || exit 1
 build_and_run scalar+scalar -DMICROGPT_NO_NEON || exit 1
 
