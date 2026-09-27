@@ -80,10 +80,10 @@
     "description": "Hoist Adam bias corrections and fuse each parameter update into one arena borrow"
   },
   "counts": {
-    "experiments": 21,
+    "experiments": 22,
     "keep": 11,
     "discard": 2,
-    "crash": 8
+    "crash": 9
   },
   "pareto": [
     "0011",
@@ -396,6 +396,20 @@
       "reason": "cargo build failed",
       "description": "Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes",
       "measured": "2026-09-27T07:19:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0022",
+      "parent": "8118d7ad573f52176ad64283d2a6d44fc75c4b80",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace the per-step topological DFS with reverse arena-order backpropagation",
+      "measured": "2026-09-27T07:22:30Z",
       "has_record": true
     }
   ],
