@@ -68,3 +68,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0066	f52a9e86bf504e764a93e021ebe7aa19acb914cf	2.185464	131.987549	+0.102067	+1.246052	1.000259	keep		Correctly fold ReLU into the FC1 autograd node to cut tape allocations
 0067	cbf7f533110d90c8858e5b0c9c847fb5fbe944a2	2.196144	132.321962	+0.097679	+1.251743	1.000259	keep		Add a 10% learning-rate floor to the linear decay
 0068	ce19ff69adc9cc07ccefde5d2ac8079765f66ee0	2.196448	201.570442	+0.097554	+2.430155	1.000259	keep		Reverse-order training backpropagation using tape allocation order
+0069	211a52b913e60f3c73ffa10b4a98e14fc5e4f951	2.187488	200.703331	+0.101235	+2.415399	1.000259	keep		Remove the learning-rate floor and restore full linear decay
