@@ -12,3 +12,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0010	7087e7bf957a43e5880725527ba2e02b376f6bd3	2.433882	1238.525001	+0.000000	+20.076166	1.063160	keep		Fuse attention value mixtures into one correctly differentiated tape node per output
 0011	90fc57576ad79bb7c599caffc3129091fb4b923b	2.433882	1362.039760	+0.000000	+22.178036	1.063160	keep		Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes
 0012	a7e55e19c3cfa9de8c759135adcd8bd04ce15413	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store tape dependencies in one allocation per node without changing arithmetic
+0013	1ab9710291387e6210cd10c18ff5e7a5b62cf706	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic

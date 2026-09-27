@@ -80,10 +80,10 @@
     "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes"
   },
   "counts": {
-    "experiments": 12,
+    "experiments": 13,
     "keep": 8,
     "discard": 2,
-    "crash": 2
+    "crash": 3
   },
   "pareto": [
     "0011"
@@ -269,6 +269,20 @@
       "reason": "the patch did not apply",
       "description": "Store tape dependencies in one allocation per node without changing arithmetic",
       "measured": "2026-09-27T06:53:47Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0013",
+      "parent": "1ab9710291387e6210cd10c18ff5e7a5b62cf706",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic",
+      "measured": "2026-09-27T06:58:40Z",
       "has_record": true
     }
   ],
