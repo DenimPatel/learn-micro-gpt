@@ -80,10 +80,10 @@
     "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
   },
   "counts": {
-    "experiments": 48,
+    "experiments": 49,
     "keep": 32,
     "discard": 2,
-    "crash": 14
+    "crash": 15
   },
   "pareto": [
     "0011",
@@ -777,6 +777,20 @@
       "reason": "",
       "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup",
       "measured": "2026-09-27T08:32:41Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0049",
+      "parent": "efb3577241d779b53fec4efeabe3333a6c0ba815",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Pack tape parent indices and local gradients into one allocation per node",
+      "measured": "2026-09-27T08:36:18Z",
       "has_record": true
     }
   ],

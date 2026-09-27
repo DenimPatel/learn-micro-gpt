@@ -48,3 +48,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0046	d5be34702cf0bbeca16c577ee923cee32c9efef1	2.190858	124.434951	+0.099850	+1.117528	1.000037	keep		Restore linear learning-rate decay after cosine decay worsened loss
 0047	d383662b7a5e7165efd3c387ee09765b54ca2594	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace runtime parameter-name formatting and hash-map lookup with fixed state indices
 0048	fe8319dece9ed0c5fe290f425d4a06ec46785b21	2.190858	125.657376	+0.099850	+1.138330	1.000037	keep		Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup
+0049	efb3577241d779b53fec4efeabe3333a6c0ba815	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack tape parent indices and local gradients into one allocation per node
