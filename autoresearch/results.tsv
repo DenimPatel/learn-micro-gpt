@@ -89,3 +89,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0087	ec0e325536fceb8494fc7baaf2b9da751a9c6f81	2.187488	204.562506	+0.101235	+2.481071	1.000259	keep		Restore the independently initialized untied language model head
 0088	4073076efd14015cde4a6dac0e906802e74506c7	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0089	27de42fc6a36535e916e31603c2c9d87d49a6be4	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse attention softmax and training cross entropy into direct tape nodes
+0090	78b6a261eafa9a566e1bf8914114e650703f1d8c	2.292118	258.316372	+0.058246	+3.395809	1.000259	keep		Reduce the Adam batch from five documents to four
