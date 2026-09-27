@@ -71,3 +71,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0069	211a52b913e60f3c73ffa10b4a98e14fc5e4f951	2.187488	200.703331	+0.101235	+2.415399	1.000259	keep		Remove the learning-rate floor and restore full linear decay
 0070	9c07f5661acd5039625f9939762d13ecc80b6a46	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0071	0d92ef7f829118f6775653767525ee9b967f5a89	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reuse autograd node storage and gradient vectors across training steps
+0072	b15cbc9ec8022fcc976f505cb7eff7906e53bcca	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Pack autograd parents and local gradients into one compact allocation per node
