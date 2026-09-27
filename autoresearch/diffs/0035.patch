@@ -1,0 +1,40 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -299,6 +299,30 @@ impl Tensor {
+         })
+     }
+ 
++    /// Sum squared values in one correctly differentiated tape node.
++    fn sum_squares(values: &[TensorHandle]) -> TensorHandle {
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            let mut data = 0.0f32;
++            let mut local_grads = Vec::with_capacity(values.len());
++            for value in values {
++                let value_data = arena.nodes[value.0].data;
++                data += value_data * value_data;
++                local_grads.push(value_data * value_data);
++            }
++            TensorHandle(arena.push(Node {
++                data,
++                grad: 0.0,
++                parents: values.iter().map(|value| value.0).collect(),
++                local_grads,
++            }))
++        })
++    }
++
+     /// `relu()`. The derivative is 1 above zero and 0 below, and ambiguous
+     /// exactly at zero, where this picks 0 — the same choice the reference makes.
+     pub fn relu(a: TensorHandle) -> TensorHandle {
+@@ -510,9 +534,8 @@ impl Model {
+     /// `rmsnorm(x)` — rescale by the reciprocal of the root-mean-square, with eps
+     /// inside the square root to bound the division.
+     fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle> {
+-        let squares: Vec<TensorHandle> =
+-            x.iter().map(|v| Tensor::mul(*v, *v)).collect();
+-        let ms = Tensor::div_scalar(Tensor::sum(&squares), x.len() as f32);
++        let ms = Tensor::div_scalar(Tensor::sum_squares(x), x.len() as f32);
+         let scale = Tensor::pow(Tensor::add_scalar(ms, 1e-5), -0.5);
+         x.iter().map(|v| Tensor::mul(*v, scale)).collect()
+     }

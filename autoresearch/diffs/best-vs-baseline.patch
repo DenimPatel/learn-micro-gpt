@@ -156,7 +156,7 @@
      }
  
      /// `__pow__` for a constant exponent.
-@@ -256,6 +351,38 @@
+@@ -256,6 +351,58 @@
      pub fn exp(a: TensorHandle) -> TensorHandle {
          let data = Self::data(a).exp();
          Self::spawn(data, vec![a.0], vec![data])
@@ -192,10 +192,30 @@
 +                local_grads: vec![1.0; values.len()],
 +            }))
 +        })
++    }
++
++    /// Sum squared values in one correctly differentiated tape node.
++    fn sum_squares(values: &[TensorHandle]) -> TensorHandle {
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            let mut data = 0.0f32;
++            let mut local_grads = Vec::with_capacity(values.len());
++            for value in values {
++                let value_data = arena.nodes[value.0].data;
++                data += value_data * value_data;
++                local_grads.push(value_data * value_data);
++            }
++            TensorHandle(arena.push(Node {
++                data,
++                grad: 0.0,
++                parents: values.iter().map(|value| value.0).collect(),
++                local_grads,
++            }))
++        })
      }
  
      /// `relu()`. The derivative is 1 above zero and 0 below, and ambiguous
-@@ -294,9 +421,6 @@
+@@ -294,9 +441,6 @@
              let node_count = arena.nodes.len();
              if arena.visited.len() < node_count {
                  arena.visited.resize(node_count, false);
@@ -205,7 +225,7 @@
              }
  
              // Iterative depth-first walk, parents-first.
-@@ -333,16 +457,14 @@
+@@ -333,16 +477,14 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -229,7 +249,7 @@
              }
          });
      }
-@@ -436,13 +558,7 @@
+@@ -436,13 +578,7 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -244,7 +264,7 @@
              .collect()
      }
  
-@@ -453,26 +569,20 @@
+@@ -453,26 +589,18 @@
          let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
          let exps: Vec<TensorHandle> = logits
              .iter()
@@ -270,15 +290,13 @@
 -        ms /= x.len() as f32;
 -        let scale = (ms + 1e-5).powf(-0.5);
 -        x.iter().map(|v| Tensor::mul_scalar(*v, scale)).collect()
-+        let squares: Vec<TensorHandle> =
-+            x.iter().map(|v| Tensor::mul(*v, *v)).collect();
-+        let ms = Tensor::div_scalar(Tensor::sum(&squares), x.len() as f32);
++        let ms = Tensor::div_scalar(Tensor::sum_squares(x), x.len() as f32);
 +        let scale = Tensor::pow(Tensor::add_scalar(ms, 1e-5), -0.5);
 +        x.iter().map(|v| Tensor::mul(*v, scale)).collect()
      }
  
      /// `gpt(token_id, pos_id, keys, values)` — a stateless function from one
-@@ -521,11 +631,7 @@
+@@ -521,11 +649,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -291,7 +309,7 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -533,13 +639,7 @@
+@@ -533,13 +657,7 @@
                  // A convex combination of the values, so the output magnitude
                  // does not grow with sequence length.
                  let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
@@ -306,7 +324,7 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -767,44 +867,61 @@
+@@ -767,44 +885,61 @@
      const BETA1: f32 = 0.85;
      const BETA2: f32 = 0.99;
      const EPS_ADAM: f32 = 1e-8;
@@ -394,7 +412,7 @@
              });
          }
  
-@@ -814,6 +931,14 @@
+@@ -814,6 +949,14 @@
              config.num_steps,
              Tensor::data(loss)
          );
