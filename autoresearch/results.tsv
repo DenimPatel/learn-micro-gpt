@@ -59,3 +59,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0057	9632ca9286e3b1db336691a8fe4a91c30954d806	2.190858	125.501852	+0.099850	+1.135684	1.000037	keep		Remove the second transformer layer
 0058	8313acdd2ecdd5f5dd06d38f0c09a03860d28f9e	2.191254	125.271015	+0.099688	+1.131756	1.000259	keep		Restore fused multiply-add in linear and attention weighted-sum contractions
 0059	2a9948b3c940ae3a5339581b5e43e37e69bae9ab	2.185464	123.936200	+0.102067	+1.109041	1.000259	keep		Lower Adam beta2 from 0.99 to 0.98
+0060	880ba81e7574dd52170140ca22b3c2ecba692d99	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic

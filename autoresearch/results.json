@@ -80,10 +80,10 @@
     "description": "Lower Adam beta2 from 0.99 to 0.98"
   },
   "counts": {
-    "experiments": 59,
+    "experiments": 60,
     "keep": 40,
     "discard": 2,
-    "crash": 17
+    "crash": 18
   },
   "pareto": [
     "0011",
@@ -933,6 +933,20 @@
       "reason": "",
       "description": "Lower Adam beta2 from 0.99 to 0.98",
       "measured": "2026-09-27T08:59:06Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0060",
+      "parent": "880ba81e7574dd52170140ca22b3c2ecba692d99",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic",
+      "measured": "2026-09-27T09:04:55Z",
       "has_record": true
     }
   ],
