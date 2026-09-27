@@ -353,6 +353,38 @@ impl Tensor {
         Self::spawn(data, vec![a.0], vec![data])
     }
 
+    /// `exp(value - shift)` as one correctly differentiated tape node.
+    fn shifted_exp(value: TensorHandle, shift: f32) -> TensorHandle {
+        ARENA.with(|a| {
+            let mut arena = a.borrow_mut();
+            let shifted = arena.nodes[value.0].data - shift;
+            let data = shifted.exp();
+            TensorHandle(arena.push(Node {
+                data,
+                grad: 0.0,
+                parents: vec![value.0],
+                local_grads: vec![data],
+            }))
+        })
+    }
+
+    /// Sum cached values in one correctly differentiated tape node.
+    fn sum(values: &[TensorHandle]) -> TensorHandle {
+        ARENA.with(|a| {
+            let mut arena = a.borrow_mut();
+            let mut data = 0.0f32;
+            for value in values {
+                data += arena.nodes[value.0].data;
+            }
+            TensorHandle(arena.push(Node {
+                data,
+                grad: 0.0,
+                parents: values.iter().map(|value| value.0).collect(),
+                local_grads: vec![1.0; values.len()],
+            }))
+        })
+    }
+
     /// `relu()`. The derivative is 1 above zero and 0 below, and ambiguous
     /// exactly at zero, where this picks 0 — the same choice the reference makes.
     pub fn relu(a: TensorHandle) -> TensorHandle {
@@ -537,12 +569,9 @@ impl Model {
         let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
         let exps: Vec<TensorHandle> = logits
             .iter()
-            .map(|l| Tensor::exp(Tensor::sub_scalar(*l, max_val)))
+            .map(|l| Tensor::shifted_exp(*l, max_val))
             .collect();
-        let mut total = Tensor::leaf(0.0);
-        for e in &exps {
-            total = Tensor::add(total, *e);
-        }
+        let total = Tensor::sum(&exps);
         exps.iter().map(|e| Tensor::div(*e, total)).collect()
     }
 
@@ -858,13 +887,11 @@ pub fn run() {
                 .iter()
                 .map(|logit| Tensor::data(*logit))
                 .fold(f32::NEG_INFINITY, f32::max);
-            let mut exp_sum = Tensor::leaf(0.0);
-            for logit in &logits {
-                exp_sum = Tensor::add(
-                    exp_sum,
-                    Tensor::exp(Tensor::sub_scalar(*logit, max_logit)),
-                );
-            }
+            let exps: Vec<TensorHandle> = logits
+                .iter()
+                .map(|logit| Tensor::shifted_exp(*logit, max_logit))
+                .collect();
+            let exp_sum = Tensor::sum(&exps);
             let shifted_target =
                 Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
             let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);

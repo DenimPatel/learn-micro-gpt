@@ -142,7 +142,46 @@
      }
  
      /// `__pow__` for a constant exponent.
-@@ -294,9 +389,6 @@
+@@ -256,6 +351,38 @@
+     pub fn exp(a: TensorHandle) -> TensorHandle {
+         let data = Self::data(a).exp();
+         Self::spawn(data, vec![a.0], vec![data])
++    }
++
++    /// `exp(value - shift)` as one correctly differentiated tape node.
++    fn shifted_exp(value: TensorHandle, shift: f32) -> TensorHandle {
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            let shifted = arena.nodes[value.0].data - shift;
++            let data = shifted.exp();
++            TensorHandle(arena.push(Node {
++                data,
++                grad: 0.0,
++                parents: vec![value.0],
++                local_grads: vec![data],
++            }))
++        })
++    }
++
++    /// Sum cached values in one correctly differentiated tape node.
++    fn sum(values: &[TensorHandle]) -> TensorHandle {
++        ARENA.with(|a| {
++            let mut arena = a.borrow_mut();
++            let mut data = 0.0f32;
++            for value in values {
++                data += arena.nodes[value.0].data;
++            }
++            TensorHandle(arena.push(Node {
++                data,
++                grad: 0.0,
++                parents: values.iter().map(|value| value.0).collect(),
++                local_grads: vec![1.0; values.len()],
++            }))
++        })
+     }
+ 
+     /// `relu()`. The derivative is 1 above zero and 0 below, and ambiguous
+@@ -294,9 +421,6 @@
              let node_count = arena.nodes.len();
              if arena.visited.len() < node_count {
                  arena.visited.resize(node_count, false);
@@ -152,7 +191,7 @@
              }
  
              // Iterative depth-first walk, parents-first.
-@@ -333,16 +425,14 @@
+@@ -333,16 +457,14 @@
              // so its gradient has many contributions to sum.
              arena.nodes[root.0].grad = 1.0;
              for index in topo.iter().rev() {
@@ -176,7 +215,7 @@
              }
          });
      }
-@@ -436,13 +526,7 @@
+@@ -436,13 +558,7 @@
      /// `docs/BENCHMARKS.md`.
      fn linear(x: &[TensorHandle], w: &Matrix) -> Vec<TensorHandle> {
          w.iter()
@@ -191,7 +230,22 @@
              .collect()
      }
  
-@@ -521,11 +605,7 @@
+@@ -453,12 +569,9 @@
+         let max_val = logits.iter().map(|l| Tensor::data(*l)).fold(f32::NEG_INFINITY, f32::max);
+         let exps: Vec<TensorHandle> = logits
+             .iter()
+-            .map(|l| Tensor::exp(Tensor::sub_scalar(*l, max_val)))
++            .map(|l| Tensor::shifted_exp(*l, max_val))
+             .collect();
+-        let mut total = Tensor::leaf(0.0);
+-        for e in &exps {
+-            total = Tensor::add(total, *e);
+-        }
++        let total = Tensor::sum(&exps);
+         exps.iter().map(|e| Tensor::div(*e, total)).collect()
+     }
+ 
+@@ -521,11 +634,7 @@
                  let attn_logits: Vec<TensorHandle> = k_h
                      .iter()
                      .map(|kt| {
@@ -204,7 +258,7 @@
                      })
                      .collect();
                  let attn_weights = Self::softmax(&attn_logits);
-@@ -533,13 +613,7 @@
+@@ -533,13 +642,7 @@
                  // A convex combination of the values, so the output magnitude
                  // does not grow with sequence length.
                  let head_out: Vec<TensorHandle> = (0..self.config.head_dim)
@@ -219,7 +273,7 @@
                      .collect();
                  x_attn.extend(head_out);
              }
-@@ -780,10 +854,21 @@
+@@ -780,10 +883,19 @@
          let mut losses = Vec::with_capacity(n);
          for pos_id in 0..n {
              let logits = model.forward(tokens[pos_id], pos_id);
@@ -231,13 +285,11 @@
 +                .iter()
 +                .map(|logit| Tensor::data(*logit))
 +                .fold(f32::NEG_INFINITY, f32::max);
-+            let mut exp_sum = Tensor::leaf(0.0);
-+            for logit in &logits {
-+                exp_sum = Tensor::add(
-+                    exp_sum,
-+                    Tensor::exp(Tensor::sub_scalar(*logit, max_logit)),
-+                );
-+            }
++            let exps: Vec<TensorHandle> = logits
++                .iter()
++                .map(|logit| Tensor::shifted_exp(*logit, max_logit))
++                .collect();
++            let exp_sum = Tensor::sum(&exps);
 +            let shifted_target =
 +                Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
 +            let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);

@@ -10,3 +10,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0008	b3d2cc1eaa546fd978a76148ab6ff330fa8204a6	2.433882	1128.692800	+0.000000	+18.207135	1.063160	keep		Shifted logsumexp cross entropy skips unused vocabulary probabilities
 0009	144818682b63091e1416d1e9ad06005c4491109e	2.433882	1128.988009	+0.000000	+18.212159	1.063160	keep		Fuse constant affine operations into single tape nodes with identical arithmetic
 0010	7087e7bf957a43e5880725527ba2e02b376f6bd3	2.433882	1238.525001	+0.000000	+20.076166	1.063160	keep		Fuse attention value mixtures into one correctly differentiated tape node per output
+0011	90fc57576ad79bb7c599caffc3129091fb4b923b	2.433882	1362.039760	+0.000000	+22.178036	1.063160	keep		Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes
