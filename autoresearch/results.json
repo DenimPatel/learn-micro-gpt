@@ -80,10 +80,10 @@
     "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes"
   },
   "counts": {
-    "experiments": 13,
+    "experiments": 14,
     "keep": 8,
     "discard": 2,
-    "crash": 3
+    "crash": 4
   },
   "pareto": [
     "0011"
@@ -283,6 +283,20 @@
       "reason": "the patch did not apply",
       "description": "Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic",
       "measured": "2026-09-27T06:58:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0014",
+      "parent": "34e09019d5f3e8ac24debd1984e25a79123615e5",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse cross entropy and division and batch Adam arena updates",
+      "measured": "2026-09-27T07:02:02Z",
       "has_record": true
     }
   ],
