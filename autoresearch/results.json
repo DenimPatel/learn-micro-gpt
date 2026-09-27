@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "73f63d9468a7538c8c7464c8c2cc86d30016ec6fda0f2ac42cdfc379418377fb",
+    "candidate_sha256": "721baafc7518928befc54cfaf601c7801adc03706e03700a6b57dae2a078c7fb",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,20 +68,20 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0032",
-    "parent": "be07cbf19c1f64fe4c008f4437d6a0be846e4b1a",
+    "run_id": "0034",
+    "parent": "bfea873aad08e3309cf40720ca2846dd9b9b2bef",
     "loss": 2.194568,
-    "steps_per_sec": 71.607793,
+    "steps_per_sec": 72.05158,
     "loss_gain": 0.098326,
-    "speed_gain": 0.218561,
+    "speed_gain": 0.226113,
     "grad_ratio": 0.999933,
     "status": "keep",
     "reason": "",
-    "description": "Double the documents per Adam update from four to eight"
+    "description": "Restore the per-update batch size from nine documents to eight"
   },
   "counts": {
-    "experiments": 33,
-    "keep": 20,
+    "experiments": 34,
+    "keep": 21,
     "discard": 2,
     "crash": 11
   },
@@ -90,7 +90,7 @@
     "0019",
     "0030",
     "0031",
-    "0032"
+    "0034"
   ],
   "runs": [
     {
@@ -567,6 +567,20 @@
       "reason": "",
       "description": "Batch nine shuffled documents per Adam update",
       "measured": "2026-09-27T07:50:33Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0034",
+      "parent": "bfea873aad08e3309cf40720ca2846dd9b9b2bef",
+      "loss": 2.194568,
+      "steps_per_sec": 72.05158,
+      "loss_gain": 0.098326,
+      "speed_gain": 0.226113,
+      "grad_ratio": 0.999933,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore the per-update batch size from nine documents to eight",
+      "measured": "2026-09-27T07:52:03Z",
       "has_record": true
     }
   ],

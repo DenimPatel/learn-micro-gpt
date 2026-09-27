@@ -33,3 +33,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0031	8e3f19f44d1171fd8e08912554ca1c876d73b420	2.292726	150.556781	+0.057996	+1.562047	0.999933	keep		Batch four shuffled documents into each Adam update
 0032	be07cbf19c1f64fe4c008f4437d6a0be846e4b1a	2.194568	71.607793	+0.098326	+0.218561	0.999933	keep		Double the documents per Adam update from four to eight
 0033	ba9d2765e621e6e5ed54f309dc7826916bc00aa5	2.245262	63.647736	+0.077498	+0.083103	0.999933	keep		Batch nine shuffled documents per Adam update
+0034	bfea873aad08e3309cf40720ca2846dd9b9b2bef	2.194568	72.051580	+0.098326	+0.226113	0.999933	keep		Restore the per-update batch size from nine documents to eight
