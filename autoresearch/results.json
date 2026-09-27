@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "43380cd0715f0987a5121e308eb20f4ad01b7db8f7555b022fb7b50ea8501b79",
+    "candidate_sha256": "7ad859942698d64d6717c2ed9294458fb10d26c9684be9b6c3f149e6944b74c7",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -80,8 +80,8 @@
     "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes"
   },
   "counts": {
-    "experiments": 15,
-    "keep": 8,
+    "experiments": 16,
+    "keep": 9,
     "discard": 2,
     "crash": 5
   },
@@ -311,6 +311,20 @@
       "reason": "cargo build failed",
       "description": "Fuse attention softmax normalization and cached value mixing into one tape node per head output",
       "measured": "2026-09-27T07:05:57Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0016",
+      "parent": "7f4f1602f1198b9661e67a580d511194e2d4e30b",
+      "loss": 2.436848,
+      "steps_per_sec": 798.687065,
+      "loss_gain": -0.001219,
+      "speed_gain": 12.591378,
+      "grad_ratio": 1.06316,
+      "status": "keep",
+      "reason": "",
+      "description": "Lower Adam beta2 to 0.98 for faster second-moment adaptation",
+      "measured": "2026-09-27T07:08:16Z",
       "has_record": true
     }
   ],
