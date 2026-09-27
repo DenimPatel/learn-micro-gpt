@@ -150,6 +150,42 @@ repository can have: the prose is right, the highlight is wrong, and both render
 with total confidence. The convention makes it answerable by looking at the
 fence.
 
+## How the site looks
+
+The design is one stylesheet, `visualizer/src/styles/index.css`, and it starts
+from a token block. Three of its rules are load-bearing, and they are rules
+rather than preferences, so a change that breaks one is a regression.
+
+**No left-hand rules anywhere.** A 3px coloured stripe down the side of a
+paragraph is the single most recognisable "generated documentation" tell there
+is, and the previous design had four of them. Every callout, note, pull quote and
+shape block is instead a tinted wash with a small glyph and a letter-spaced
+label. If you add a block, it gets a tint, not a stripe.
+
+**No boxes inside boxes.** One level of card per region, separated by a hairline,
+a change of tint, or whitespace. A surface behind a row of code panels is a box
+inside a box, because the panels already carry the region's boundary.
+
+**Three type voices, one job each.** A serif (`--font-prose`) for the argument, a
+sans (`--font-ui`) for the interface, and a monospace (`--font-mono`) for every
+measured number — line numbers, losses, shapes, rates, ratios. The point is that
+a reader can tell prose from apparatus from data without reading any of it, and
+that a loss value looks like an instrument rather than a word. All three are
+system font stacks: nothing is fetched, which is what keeps a Pages subpath
+deployment a single bundle with no extra round trip.
+
+The accent is a single violet, `#6d3bf5` in light and `#a98cff` in dark, and it
+means interaction and nothing else. Each supporting hue — amber, moss, rose — is
+used once, where it means something: a warning, a passing check, a failure. The
+heatmap ramp carries its own ink per step, because a single-ink ramp is only
+readable at one end of it.
+
+Syntax highlighting is Vitesse rather than GitHub's themes, and the `<pre>` is
+given no background at all: Shiki writes one inline, Shiki 4 ignores both its own
+`bg` option and a patched `editor.background`, and an inline style beats any
+stylesheet — so it is stripped by a transformer in `content/highlight.ts`, and
+an e2e test asserts the panel's background comes from the tokens.
+
 ## How the site is put together
 
 ```
@@ -160,7 +196,9 @@ src/
   content/highlight.ts Shiki, loaded lazily, five grammars
   app/router.ts        40-line hash router
   app/state.ts         theme and reading progress
-  components/          CodePanel, widgets, ConceptPage, AtlasGraph, RunPlayground
+  components/          CodePanel, widgets, ConceptPage, AtlasGraph, RunPlayground,
+                       Icon, Glossary
+  styles/index.css     the whole design system, in one file
   worker/              Pyodide, in a Web Worker, from a pinned CDN
 ```
 

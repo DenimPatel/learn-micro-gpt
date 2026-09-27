@@ -38,7 +38,42 @@ import { useEffect, useRef, useState } from 'react'
  * means the initial bundle does not reference it at all.
  */
 interface Highlighter {
-  codeToHtml: (code: string, options: { lang: string; theme: string }) => string
+  codeToHtml: (
+    code: string,
+    options: { lang: string; theme: string; transformers: Transformer[] },
+  ) => string
+}
+
+/** The slice of a Shiki transformer this module uses; Shiki is not imported. */
+interface Transformer {
+  name: string
+  pre: (node: { properties?: Record<string, unknown> }) => void
+}
+
+/**
+ * Hand the `<pre>` no background of its own.
+ *
+ * Shiki writes the theme's background onto the `<pre>` as an inline style, and an
+ * inline style beats any stylesheet. Shiki 4 also ignores its own `bg` option and
+ * a patched `editor.background`, both of which are the obvious fixes and both of
+ * which leave `background-color:#fff` in the output -- so a code panel is a white
+ * box inside a tinted one, with a visible seam, and the panel's own `--surface-1`
+ * never applies.
+ *
+ * A transformer is the structural way to do this: it rewrites the hast node Shiki
+ * built, rather than string-editing its HTML afterwards, which is the one thing
+ * this module exists to avoid (see the note at the top about splitting output on
+ * newlines). The e2e suite asserts the result.
+ */
+const OWN_BACKGROUND: Transformer = {
+  name: 'atlas-panel-background',
+  pre(node) {
+    const style = String(node.properties?.style ?? '')
+    node.properties = {
+      ...node.properties,
+      style: style.replace(/background(?:-color)?:[^;]*(?:;|$)/g, '').trim(),
+    }
+  },
 }
 
 let highlighterPromise: Promise<Highlighter> | null = null
@@ -69,8 +104,19 @@ function loadHighlighter(): Promise<Highlighter> {
           import('@shikijs/langs/go'),
           import('@shikijs/langs/rust'),
           import('@shikijs/langs/typescript'),
-          import('@shikijs/themes/github-light'),
-          import('@shikijs/themes/github-dark'),
+          /*
+           * Vitesse, not GitHub. Two reasons, and the second is the testable one.
+           *
+           * The obvious choice was github-light/github-dark, and it is what this
+           * used: the syntax colours read well, but the *page* around them was
+           * also GitHub's greys and its blue, so the code blocks were the only
+           * part of the site with any character. Vitesse is muted and warm, its
+           * dark background is #121212 -- within a hair of this site's dark
+           * surface -- and its comments and punctuation recede the way they should
+           * in a block a reader is reading rather than scanning.
+           */
+          import('@shikijs/themes/vitesse-light'),
+          import('@shikijs/themes/vitesse-dark'),
         ])
 
       /*
@@ -143,10 +189,11 @@ export function useHighlight(
     if (cache.has(key)) return
     let cancelled = false
     void loadHighlighter().then((highlighter) => {
-      const themeName = theme === 'dark' ? 'github-dark' : 'github-light'
+      const themeName = theme === 'dark' ? 'vitesse-dark' : 'vitesse-light'
       const html = highlighter.codeToHtml(code, {
         lang: language,
         theme: themeName,
+        transformers: [OWN_BACKGROUND],
       })
       cache.set(key, html)
       if (!cancelled && mounted.current) setState({ html, ready: true })

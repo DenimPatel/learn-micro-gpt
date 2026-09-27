@@ -6,13 +6,27 @@
  * lives in the Python tool and validation lives in `tools/validate_concepts.py`,
  * which means a malformed directive fails the build rather than rendering as
  * nothing.
+ *
+ * ## The contents rail
+ *
+ * The reading column is 68 characters wide because that is about as long as a
+ * line can be before the eye loses the return sweep to the next one. On a wide
+ * screen that leaves a few hundred pixels beside it, and a contents rail is what
+ * belongs there: the page's own headings, with the current one tracked as the
+ * reader scrolls.
+ *
+ * It scrolls to a heading rather than linking to one. The site routes on the URL
+ * *hash* (`#/learn/softmax`, see `app/router.ts`), so an in-page anchor in that
+ * same hash is indistinguishable from a route -- and the one that loses is the
+ * deep link, which has to keep working on GitHub Pages.
  */
 
-import { useEffect } from 'react'
-import { Math, Markdown } from '../content/markdown'
+import { useEffect, useMemo, useState } from 'react'
+import { Math, Markdown, headings } from '../content/markdown'
 import { anchors, conceptsById, index, languagesFor } from '../data/sources'
 import type { Block, Concept, Language } from '../data/types'
 import { CodePanel } from './CodePanel'
+import { Icon } from './Icon'
 import { AttentionHeatmap, LossChart, SamplesList, ShapeTable, SoftmaxBars } from './widgets'
 import { GlossaryLink } from './Glossary'
 
@@ -29,73 +43,95 @@ export function ConceptPage({
     markSeen(concept.id)
   }, [concept.id, markSeen])
 
-  useEffect(() => {
-    document.title = `${concept.title} — learn microgpt`
-  }, [concept.title])
-
   const languages = languagesFor(concept.id)
   const [primary, ...rest] = languages
   const chapter = index.chapters.find((c) => c.id === concept.chapter)
-  const position = chapter
-    ? `${chapter.title} · ${concept.order} of ${chapter.concepts.length}`
-    : ''
+  const difficulty = concept.difficulty ?? 1
 
   return (
-    <article className="concept" aria-labelledby="concept-title">
-      <nav className="concept__breadcrumb" aria-label="Breadcrumb">
-        <a href="#/learn">All concepts</a>
-        {chapter ? <span aria-hidden="true"> / </span> : null}
-        {chapter ? <span>{chapter.title}</span> : null}
-      </nav>
+    <div className="concept-page">
+      <article className="concept" aria-labelledby="concept-title">
+        <nav className="concept__breadcrumb" aria-label="Breadcrumb">
+          <a href="#/learn">All concepts</a>
+          {chapter ? (
+            <>
+              <Icon name="arrow" size={12} />
+              <span>{chapter.title}</span>
+            </>
+          ) : null}
+        </nav>
 
-      <header className="concept__header">
-        <h1 id="concept-title">{concept.title}</h1>
-        <p className="concept__meta">
-          {position}
-          {concept.difficulty ? <> · difficulty {concept.difficulty}/3</> : null}
-        </p>
-        <p className="concept__summary">{concept.summary}</p>
-      </header>
+        <header className="concept__header">
+          <h1 id="concept-title">{concept.title}</h1>
+          <div className="concept__meta">
+            {chapter ? <span className="chapter-badge">{chapter.title}</span> : null}
+            {chapter ? (
+              <span className="meta-pair">
+                <span>in chapter</span>
+                <b>
+                  {concept.order} of {chapter.concepts.length}
+                </b>
+              </span>
+            ) : null}
+            <span className="meta-pair">
+              <span>difficulty</span>
+              <span className="difficulty" role="img" aria-label={`difficulty ${difficulty} of 3`}>
+                {[1, 2, 3].map((step) => (
+                  <i key={step} className={step <= difficulty ? 'is-on' : undefined} />
+                ))}
+              </span>
+            </span>
+          </div>
+          <p className="concept__summary">{concept.summary}</p>
+        </header>
 
-      {concept.math ? (
-        <div className="concept__math">
-          <Math value={concept.math} display label="The formula for this concept" />
-        </div>
-      ) : null}
+        {concept.math ? (
+          <div className="concept__math">
+            <Math value={concept.math} display label="The formula for this concept" />
+          </div>
+        ) : null}
 
-      {primary ? <CodePanel language={primary as Language} conceptId={concept.id} /> : null}
+        {/*
+          The reference range, first and always. Every other track is a comparison
+          to this one rather than a peer of it, so it gets the open panel and the
+          others get closed ones.
+        */}
+        {primary ? <CodePanel language={primary as Language} conceptId={concept.id} /> : null}
 
-      {rest.length > 0 ? (
-        <section className="concept__ports" aria-label="The same code in other languages">
-          <h2>The same algorithm, in {rest.length + 1} languages</h2>
-          <p>
-            The range below is the same concept in the other tracks. These are separate programs,
-            not translations of one another, so the line numbers do not line up &mdash; and that is
-            the interesting part.
-          </p>
-          {rest.map((language) => (
-            <CodePanel
-              key={language}
-              language={language}
-              conceptId={concept.id}
-              defaultOpen={false}
-            />
+        {rest.length > 0 ? (
+          <section className="concept__ports" aria-label="The same code in other languages">
+            <h2>The same algorithm, in {rest.length + 1} languages</h2>
+            <p>
+              The range below is the same concept in the other tracks. These are separate programs,
+              not translations of one another, so the line numbers do not line up &mdash; and that
+              is the interesting part.
+            </p>
+            {rest.map((language) => (
+              <CodePanel
+                key={language}
+                language={language}
+                conceptId={concept.id}
+                defaultOpen={false}
+              />
+            ))}
+          </section>
+        ) : null}
+
+        {concept.shapes?.length ? <ShapeTable shapes={concept.shapes} /> : null}
+
+        <div className="prose">
+          {concept.blocks.map((block, blockIndex) => (
+            <BlockView key={blockIndex} block={block} />
           ))}
-        </section>
-      ) : null}
+        </div>
 
-      {concept.shapes?.length ? <ShapeTable names={concept.shapes.map((s) => s.name)} /> : null}
+        <nav className="concept__nav" aria-label="Concept navigation">
+          <PrevNext concept={concept} onNavigate={onNavigate} />
+        </nav>
+      </article>
 
-      <div className="prose">
-        {concept.blocks.map((block, index) => (
-          <BlockView key={index} block={block} />
-        ))}
-      </div>
-
-      <nav className="concept__nav" aria-label="Concept navigation">
-        <PrevNext concept={concept} onNavigate={onNavigate} />
-      </nav>
-    </article>
+      <Contents concept={concept} />
+    </div>
   )
 }
 
@@ -108,7 +144,12 @@ function BlockView({ block }: { block: Block }) {
     case 'note':
       return (
         <aside className={block.kind === 'note' ? 'callout callout--note' : 'callout'}>
-          {block.title ? <p className="callout__title">{block.title}</p> : null}
+          {block.title ? (
+            <p className="callout__title">
+              <Icon name={block.kind === 'note' ? 'measure' : 'note'} size={13} />
+              {block.title}
+            </p>
+          ) : null}
           <Markdown>{block.markdown ?? ''}</Markdown>
         </aside>
       )
@@ -167,6 +208,84 @@ function TraceTokens({ step }: { step: number }) {
   )
 }
 
+/**
+ * The contents rail, and the scroll spy that keeps it honest.
+ *
+ * The observer's `rootMargin` puts the "current" band just below the sticky
+ * header, so the entry that lights up is the one whose heading the reader has
+ * most recently passed. It is the only reason a table of contents earns the
+ * width it takes, and it is why the headings need ids.
+ */
+function Contents({ concept }: { concept: Concept }) {
+  const items = useMemo(
+    () => concept.blocks.flatMap((block) => headings(block.markdown ?? '')),
+    [concept],
+  )
+  const [active, setActive] = useState<string | undefined>(items[0]?.id)
+
+  useEffect(() => {
+    const targets = items
+      .map((item) => document.getElementById(item.id))
+      .filter((node): node is HTMLElement => node !== null)
+    if (targets.length === 0) return
+
+    const shown = new Set<string>()
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) shown.add(entry.target.id)
+          else shown.delete(entry.target.id)
+        }
+        // Document order, not intersection order: two headings can sit inside the
+        // band at once on a short section, and the earlier one is the one being
+        // read.
+        setActive((items.find((item) => shown.has(item.id)) ?? items[0])?.id)
+      },
+      { rootMargin: '-96px 0px -68% 0px' },
+    )
+    for (const target of targets) observer.observe(target)
+    return () => observer.disconnect()
+  }, [items])
+
+  // Fewer than two headings is not a contents rail, it is a label.
+  if (items.length < 2) return null
+
+  return (
+    <nav className="toc" aria-label="On this page">
+      <span className="toc__label">On this page</span>
+      <ol>
+        {items.map((item) => (
+          <li key={item.id}>
+            <a
+              href={`#${item.id}`}
+              className={item.id === active ? 'is-active' : undefined}
+              aria-current={item.id === active ? 'true' : undefined}
+              onClick={(event) => {
+                event.preventDefault()
+                const target = document.getElementById(item.id)
+                if (!target) return
+                setActive(item.id)
+                target.scrollIntoView({
+                  behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'auto'
+                    : 'smooth',
+                  block: 'start',
+                })
+              }}
+            >
+              {item.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+      <p className="toc__foot">
+        <b>{concept.blocks.length}</b> sections,{' '}
+        {concept.blocks.filter((b) => b.kind === 'trace').length} of them measured
+      </p>
+    </nav>
+  )
+}
+
 function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: string) => void }) {
   const chapter = index.chapters.find((c) => c.id === concept.chapter)
   if (!chapter) return null
@@ -182,7 +301,9 @@ function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: 
           href={`#/learn/${previous.id}`}
           onClick={() => onNavigate(previous.id)}
         >
-          <span className="prevnext__label">previous</span>
+          <span className="prevnext__label">
+            <Icon name="back" size={12} /> previous
+          </span>
           {previous.title}
         </a>
       ) : (
@@ -194,7 +315,9 @@ function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: 
           href={`#/learn/${next.id}`}
           onClick={() => onNavigate(next.id)}
         >
-          <span className="prevnext__label">next</span>
+          <span className="prevnext__label">
+            next <Icon name="arrow" size={12} />
+          </span>
           {next.title}
         </a>
       ) : (
@@ -208,7 +331,7 @@ export function ConceptNotFound({ id }: { id: string }) {
   return (
     <article className="concept">
       <h1>No such concept</h1>
-      <p>
+      <p className="lede">
         There is no concept called <code>{id}</code>. It may have been renamed.{' '}
         <a href="#/learn">Back to all concepts</a>.
       </p>

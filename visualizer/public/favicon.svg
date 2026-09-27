@@ -1,14 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="learn microgpt">
-  <title>learn microgpt</title>
-  <rect width="32" height="32" rx="7" fill="#0969da" />
-  <!-- A tiny attention triangle: the diagonal is the self-match, and the
-       lower-left is the context the model attends back to. The one detail in
-       this whole file that is worth having on a favicon. -->
+  <!--
+    The site mark: four cells, which is the shape of one attention head's output
+    and the shape of the favicon's own 2x2 grid. Opacity steps up across the cells
+    so it stays legible at 16px, where four identical squares would read as one
+    grey blob.
+  -->
+  <rect width="32" height="32" rx="8" fill="#6d3bf5" />
   <g fill="#ffffff">
-    <rect x="7"  y="7"  width="5" height="5" rx="1" opacity="0.35" />
-    <rect x="14" y="7"  width="5" height="5" rx="1" opacity="0.55" />
-    <rect x="7"  y="14" width="5" height="5" rx="1" opacity="0.75" />
-    <rect x="14" y="14" width="5" height="5" rx="1" opacity="1" />
+    <rect x="7" y="7" width="8" height="8" rx="2" opacity="0.38" />
+    <rect x="17" y="7" width="8" height="8" rx="2" opacity="0.58" />
+    <rect x="7" y="17" width="8" height="8" rx="2" opacity="0.78" />
+    <rect x="17" y="17" width="8" height="8" rx="2" />
   </g>
-  <rect x="21" y="21" width="4" height="4" rx="1" fill="#ffffff" opacity="0.9" />
 </svg>

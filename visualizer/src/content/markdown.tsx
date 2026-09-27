@@ -106,6 +106,78 @@ function renderInlineMath(input: string): ReactNode {
 }
 
 /**
+ * Split a document at its first heading of a given depth.
+ *
+ * Used by the home page to lift the introduction out of the prose so it can be a
+ * hero, and by the concept page to build a table of contents from the headings
+ * it already has. The split happens on the *token* stream and each half is
+ * re-assembled from the tokens' own `raw` source, so no text is re-serialised and
+ * no heading has to be matched by its wording: an author who renames "The
+ * recorded run" cannot break the layout.
+ */
+export function splitAtHeading(markdown: string, depth: number): [string, string] {
+  const tokens = marked.lexer(markdown)
+  const at = tokens.findIndex(
+    (token) =>
+      (token as { type?: string }).type === 'heading' &&
+      (token as { depth?: number }).depth === depth,
+  )
+  if (at < 0) return [markdown, '']
+  const raw = (from: number, to: number) =>
+    tokens
+      .slice(from, to)
+      .map((token) => (token as { raw?: string }).raw ?? '')
+      .join('')
+  return [raw(0, at), raw(at, tokens.length)]
+}
+
+/**
+ * The headings in a document, in order, for a table of contents.
+ *
+ * Depth 2 and 3 only: a concept page's `##` sections and their `###`
+ * subsections, and nothing deeper. A document with no headings yields an empty
+ * list, which the caller renders as nothing at all.
+ *
+ * The ids are derived exactly as `Markdown` derives them -- same slug, same
+ * counter, over *every* heading including the ones not listed -- so a toc entry
+ * and the heading it scrolls to cannot disagree.
+ */
+export function headings(markdown: string): { depth: number; text: string; id: string }[] {
+  const tokens = marked.lexer(markdown)
+  const out: { depth: number; text: string; id: string }[] = []
+  headingIds(tokens).forEach((id, index) => {
+    const node = tokens[index] as { depth?: number; text?: string }
+    const depth = node.depth ?? 0
+    if (depth < 2 || depth > 3) return
+    const text = (node.text ?? '').replace(/\s+/g, ' ').trim()
+    if (text) out.push({ depth, text, id })
+  })
+  return out
+}
+
+function slug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** Token index to heading id, for one document. Counters make them unique. */
+function headingIds(tokens: unknown[]): Map<number, string> {
+  const ids = new Map<number, string>()
+  const used = new Map<string, number>()
+  tokens.forEach((token, index) => {
+    const node = token as { type?: string; text?: string }
+    if (node.type !== 'heading') return
+    const base = slug((node.text ?? '').replace(/\s+/g, ' ').trim()) || 'section'
+    const count = used.get(base) ?? 0
+    used.set(base, count + 1)
+    ids.set(index, count === 0 ? base : `${base}-${count + 1}`)
+  })
+  return ids
+}
+
+/**
  * Markdown to React elements.
  *
  * `marked.lexer` is used rather than `marked.parse` so the output is a token tree
@@ -115,10 +187,11 @@ function renderInlineMath(input: string): ReactNode {
  */
 export function Markdown({ children }: { children: string }) {
   const tokens = marked.lexer(children)
-  return <>{tokens.map((token, index) => renderToken(token, index))}</>
+  const ids = headingIds(tokens)
+  return <>{tokens.map((token, index) => renderToken(token, index, ids.get(index)))}</>
 }
 
-function renderToken(token: unknown, key: number): ReactNode {
+function renderToken(token: unknown, key: number, id?: string): ReactNode {
   const node = token as {
     type?: string
     text?: string
@@ -141,7 +214,11 @@ function renderToken(token: unknown, key: number): ReactNode {
       const depth = node.depth ?? 2
       // Not `Math.min`: the exported `Math` component above shadows the global.
       const Tag = `h${clamp(depth, 2, 6)}` as 'h2'
-      return <Tag key={key}>{renderInlineChildren(node.tokens ?? [])}</Tag>
+      return (
+        <Tag key={key} id={id}>
+          {renderInlineChildren(node.tokens ?? [])}
+        </Tag>
+      )
     }
 
     case 'code':
@@ -217,6 +294,15 @@ function renderInlineChildren(tokens: unknown[]): ReactNode {
     }
     switch (node.type) {
       case 'text':
+        /*
+         * A `text` token that carries children is a *block* of inline content
+         * handed over whole -- which is what `marked` does for a list item -- and
+         * its children still have to be walked. Rendering `node.text` directly
+         * showed the reader the literal `**bold**` and `` `code` `` markers
+         * instead of the emphasis and the code span.
+         */
+        if (node.tokens?.length)
+          return <Fragment key={index}>{renderInlineChildren(node.tokens)}</Fragment>
         return <Fragment key={index}>{renderInlineMath(node.text ?? '')}</Fragment>
       case 'strong':
         return <strong key={index}>{renderInlineChildren(node.tokens ?? [])}</strong>
@@ -226,6 +312,8 @@ function renderInlineChildren(tokens: unknown[]): ReactNode {
         return <code key={index}>{node.text}</code>
       case 'br':
         return <br key={index} />
+      case 'paragraph':
+        return <Fragment key={index}>{renderInlineChildren(node.tokens ?? [])}</Fragment>
       case 'link':
         return (
           <a

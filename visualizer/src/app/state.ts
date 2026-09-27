@@ -13,6 +13,9 @@ import { useCallback, useEffect, useState } from 'react'
 const THEME_KEY = 'atlas:theme'
 const PROGRESS_KEY = 'atlas:progress'
 
+/** Matches the paper colour of each theme; see the token block in index.css. */
+const THEME_COLORS: Record<Theme, string> = { light: '#fcfcfa', dark: '#0b0b0f' }
+
 export type Theme = 'light' | 'dark'
 
 function readTheme(): Theme {
@@ -27,6 +30,11 @@ export function useTheme(): [Theme, () => void] {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
+    // Keep the browser chrome (the address bar on mobile, the title bar in some
+    // desktop windows) in step with the page. The inline script in index.html
+    // does the same thing before first paint; without it there, the first paint
+    // would be right and every later change wrong.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLORS[theme])
     try {
       localStorage.setItem(THEME_KEY, theme)
     } catch {
