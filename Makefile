@@ -202,6 +202,16 @@ verify-provenance:
 provenance:
 	$(PYTHON) -m tools.gen_provenance_doc
 
+# Re-hash every derived entry and write the digests back to tools/provenance.py.
+# Separate from `provenance` on purpose: that one is safe to run any time (it only
+# re-renders a document from values already in the source), while this one edits
+# the source. A derived file that changed legitimately has its digest refreshed
+# here, in the same commit as the change, rather than by hand.
+verify-provenance-refresh:
+	$(PYTHON) -m tools.provenance --refresh-derived
+	$(MAKE) provenance
+	$(PYTHON) -m tools.check_provenance
+
 trace:
 	$(PYTHON) -m tools.trace --all
 

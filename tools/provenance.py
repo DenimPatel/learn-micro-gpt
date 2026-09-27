@@ -37,8 +37,12 @@ class ProvenanceEntry:
     note: str
     #: Literal digest. For pinned entries this is the upstream byte sequence and
     #: the check compares against it, so editing the file fails the build. For
-    #: derived entries it is the digest of our current revision, refreshed with
-    #: `make provenance`; it is recorded, not enforced.
+    #: derived entries it is the digest of our current revision -- *recorded*,
+    #: not enforced -- and it is refreshed by
+    #: `python3 -m tools.provenance --refresh-derived`, which re-hashes derived
+    #: entries and rewrites this file. Pinned entries are never rewritten by
+    #: that command; a pinned file that moved has to be a deliberate,
+    #: reviewable edit here.
     sha256: str
     derived: bool = False
     license_file: str | None = None
@@ -145,7 +149,7 @@ PROVENANCE: tuple[ProvenanceEntry, ...] = (
     ),
     ProvenanceEntry(
         path="implementations/c/microgpt.c",
-        sha256="c3a94f65840d8343dd693196d1fc6c45e2a3d694d3f14b58ed89f3d570406f61",
+        sha256="385bea2610d24f41b7ef903b5d2a39a889432b82cd8548bbc30ee8eb8ceb3b57",
         origin="C port in the microgpt-c lineage (micro config, parity track)",
         url="https://github.com/vixhal-baraiya/microgpt-c",
         license="MIT",
@@ -162,7 +166,7 @@ PROVENANCE: tuple[ProvenanceEntry, ...] = (
     ),
     ProvenanceEntry(
         path="implementations/c/microgpt-scaled.c",
-        sha256="40944162388b6d4a62aa5675737e7ba16f124f9cf17cf7c4cff73487c2264d16",
+        sha256="9e39a1811f8a54b86002821a88e11cf5bbb314b6b94a6b6aa7587670c23d2e71",
         origin="C port in the microgpt-c lineage (scaled config, benchmark track)",
         url="https://github.com/vixhal-baraiya/microgpt-c",
         license="MIT",
@@ -209,6 +213,85 @@ def all_entries() -> tuple[ProvenanceEntry, ...]:
     return PROVENANCE
 
 
+def _rewrite_derived_digests() -> int:
+    """Re-hash every `derived=True` entry and write the new digests back to this file.
+
+    The docstring above claims derived digests are "refreshed with `make
+    provenance`", and until now there was no code that did it: `make provenance`
+    only regenerates `docs/PROVENANCE.md` from the *literal* values declared here,
+    so a derived file that changed left the manifest stale and `--check` failing
+    until somebody hand-edited a hash. That is how the two C ports ended up
+    failing `--check` on a clean checkout of `main`.
+
+    This is a source rewrite rather than a generated sidecar on purpose. The
+    manifest is hand-authored -- the notes and the URLs are prose -- so a
+    separate digest file would be one more thing to keep in sync with no gain.
+
+    Two deliberate limits:
+
+    * Only `derived` entries move. A pinned entry's digest is the *upstream* byte
+      sequence; rewriting it from the local file would turn a tamper alarm into a
+      rubber stamp, which is the opposite of what `pinned` is for. If a pinned
+      file legitimately needs to change, that is a reviewable edit to this file
+      with a reason, done by a person.
+    * Pinned entries are re-checked and reported, never rewritten, so a run of
+      this on a tree where something vendored was edited says so loudly.
+    """
+    import re
+
+    source = Path(__file__).read_text(encoding="utf-8")
+    changed: list[tuple[str, str, str]] = []
+    untouched: list[str] = []
+    pinned_moved: list[str] = []
+
+    for entry in all_entries():
+        target = REPO_ROOT / entry.path
+        if not target.is_file():
+            raise SystemExit(f"error: {entry.path} is missing; cannot refresh its digest")
+        actual = entry.actual_sha256()
+        if actual is None:
+            raise SystemExit(f"error: {entry.path} is missing; cannot refresh its digest")
+        if actual == entry.sha256:
+            continue
+        if not entry.derived:
+            pinned_moved.append(f"  ! {entry.path}: PINNED and moved")
+            continue
+        pattern = re.compile(
+            r'(path="' + re.escape(entry.path) + r'",\n'
+            r'\s*sha256=")[0-9a-f]{64}(")'
+        )
+        if not pattern.search(source):
+            raise SystemExit(
+                f"error: could not find the sha256 line for {entry.path} in "
+                f"{Path(__file__).name}. The declaration order or formatting "
+                f"changed; fix the pattern in _rewrite_derived_digests rather "
+                f"than editing the hash by hand."
+            )
+        source = pattern.sub(rf"\g<1>{actual}\g<2>", source, count=1)
+        changed.append((entry.path, entry.sha256, actual))
+
+    for path, old, new in changed:
+        print(f"  refreshed {path}\n    {old}\n -> {new}")
+    for path in pinned_moved:
+        print(path)
+    if not changed and not pinned_moved:
+        print("  every derived digest already current")
+
+    if changed:
+        Path(__file__).write_text(source, encoding="utf-8")
+        print(f"\n  updated {Path(__file__).name}; now run `make provenance` to "
+              f"regenerate docs/PROVENANCE.md from it")
+
+    if pinned_moved:
+        print(
+            "\nerror: a PINNED file changed. Pinned digests are the upstream bytes "
+            "and are never rewritten by this command -- if the change is "
+            "intentional, update that entry's sha256 and note by hand why."
+        )
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
 
@@ -218,7 +301,16 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="verify that every pinned (non-derived) file still matches its sha256",
     )
+    parser.add_argument(
+        "--refresh-derived",
+        action="store_true",
+        help="re-hash every derived=True entry and write the digests back to this "
+        "file, then report (but never rewrite) any pinned entry that moved",
+    )
     args = parser.parse_args(argv)
+
+    if args.refresh_derived:
+        return _rewrite_derived_digests()
 
     if args.check:
         from tools import check_provenance  # noqa: PLC0415
