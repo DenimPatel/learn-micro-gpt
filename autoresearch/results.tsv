@@ -39,3 +39,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0037	d1aca4242e15bf1fc436e3f6301c33262acf8c08	2.242406	102.515554	+0.078671	+0.744523	0.999933	keep		Batch six documents per Adam update instead of eight
 0038	ff6ba204e312647e000f086fba71409f5d3b1045	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-token string formatting and parameter lookups with direct deterministic state indexing
 0039	9853944c67c2373ab4f21b8e3ebe59954325d82a	2.226188	86.912025	+0.085334	+0.478995	0.999933	keep		Increase the Adam update batch size from six documents to seven
+0040	bbd00135bd17eb475c2bd31ac532699cf6e4c361	2.242406	101.419918	+0.078671	+0.725878	0.999933	keep		Restore the Adam update batch size from seven documents to six
