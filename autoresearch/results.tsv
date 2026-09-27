@@ -79,3 +79,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0077	57d66c1211b8e3d770d9310debe0e4b9793f77a9	2.205084	203.393218	+0.094005	+2.461173	0.999802	keep		Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream
 0078	7027be5541e523e737361884f416a497b597db2f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo clippy failed with -D warnings	Fuse residual projections and training cross-entropy to cut tape nodes
 0079	5dfef81e54cea319108ca07d98cef90044d6212a	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore an independently initialized untied language-model head
+0080	28903e5f21dab038549a57876982f555bff7f7eb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
