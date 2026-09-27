@@ -56,3 +56,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0054	b27b782b7f4d4e5022bae1f921b5a1511c7c396a	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Fuse elementwise autograd operations and reduce arena traversals
 0055	ec22a0449664255dbd821f7d79d192e255c8bfdc	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Mark ancestors then backpropagate in reverse arena order
 0056	b070c300065647e3886ef50e0b1fd08bf19f7848	2.191520	62.300513	+0.099578	+0.060177	1.000037	keep		Add a second transformer layer
+0057	9632ca9286e3b1db336691a8fe4a91c30954d806	2.190858	125.501852	+0.099850	+1.135684	1.000037	keep		Remove the second transformer layer
