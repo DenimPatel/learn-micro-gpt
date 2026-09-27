@@ -68,11 +68,11 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
-            n_embd: 16,
+            n_embd: 32,
             n_head: 4,
             n_layer: 1,
             block_size: 16,
-            head_dim: 4,
+            head_dim: 8,
             vocab_size: 27,
             num_steps: 1000,
         }

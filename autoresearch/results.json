@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "b01c37896acfe9b35d3d9d22828612c87b72997605ae13e3f68d51b3bb05a409",
+    "candidate_sha256": "303ea6a857938ccb10fddae0b8211018a145d11a676d35e0e66bdf73ac88bfad",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,26 +68,27 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0019",
-    "parent": "96f095a89b7a88490f75a63fc70afc17723c855d",
-    "loss": 2.430954,
-    "steps_per_sec": 1288.426791,
-    "loss_gain": 0.001203,
-    "speed_gain": 20.925353,
+    "run_id": "0027",
+    "parent": "8191c25d1f3bd510fe33f6890bea656c82a40333",
+    "loss": 2.427764,
+    "steps_per_sec": 336.32747,
+    "loss_gain": 0.002514,
+    "speed_gain": 4.723335,
     "grad_ratio": 0.999933,
     "status": "keep",
     "reason": "",
-    "description": "Hoist Adam bias corrections and fuse each parameter update into one arena borrow"
+    "description": "Double default residual width to 32 and head dimension to 8"
   },
   "counts": {
-    "experiments": 26,
-    "keep": 13,
+    "experiments": 27,
+    "keep": 14,
     "discard": 2,
     "crash": 11
   },
   "pareto": [
     "0011",
-    "0019"
+    "0019",
+    "0027"
   ],
   "runs": [
     {
@@ -466,6 +467,20 @@
       "reason": "",
       "description": "Restore the peak Adam learning rate from 0.02 to 0.01",
       "measured": "2026-09-27T07:36:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0027",
+      "parent": "8191c25d1f3bd510fe33f6890bea656c82a40333",
+      "loss": 2.427764,
+      "steps_per_sec": 336.32747,
+      "loss_gain": 0.002514,
+      "speed_gain": 4.723335,
+      "grad_ratio": 0.999933,
+      "status": "keep",
+      "reason": "",
+      "description": "Double default residual width to 32 and head dimension to 8",
+      "measured": "2026-09-27T07:38:48Z",
       "has_record": true
     }
   ],
