@@ -80,3 +80,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0078	7027be5541e523e737361884f416a497b597db2f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo clippy failed with -D warnings	Fuse residual projections and training cross-entropy to cut tape nodes
 0079	5dfef81e54cea319108ca07d98cef90044d6212a	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore an independently initialized untied language-model head
 0080	28903e5f21dab038549a57876982f555bff7f7eb	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0081	5ce7ce4613abdb0a77d2578b477383bb608d6a42	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse residual additions and training cross entropy to cut tape nodes without changing forward arithmetic
