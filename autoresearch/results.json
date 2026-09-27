@@ -6,7 +6,7 @@
     "baseline_source": "implementations/rust/src/lib.rs",
     "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
     "candidate_source": "autoresearch/candidate/src/lib.rs",
-    "candidate_sha256": "3138aabacb43e54e518a3c141638b54614b7206fba24679e82eb9294aa28f6df",
+    "candidate_sha256": "c82058d8993cb0d14b561e2966aaa6776d827dbfa278df5e138d77cc666fb080",
     "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
     "gradient_probe_sha256": "2345e04de35305879243f69b72a992f93ad7fcf6175174d49c8adf14372aa287",
     "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d"
@@ -68,20 +68,20 @@
     "description": "the frozen track, unmodified, as this session's comparator"
   },
   "best": {
-    "run_id": "0048",
-    "parent": "fe8319dece9ed0c5fe290f425d4a06ec46785b21",
-    "loss": 2.190858,
-    "steps_per_sec": 125.657376,
-    "loss_gain": 0.09985,
-    "speed_gain": 1.13833,
-    "grad_ratio": 1.000037,
+    "run_id": "0059",
+    "parent": "2a9948b3c940ae3a5339581b5e43e37e69bae9ab",
+    "loss": 2.185464,
+    "steps_per_sec": 123.9362,
+    "loss_gain": 0.102067,
+    "speed_gain": 1.109041,
+    "grad_ratio": 1.000259,
     "status": "keep",
     "reason": "",
-    "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup"
+    "description": "Lower Adam beta2 from 0.99 to 0.98"
   },
   "counts": {
-    "experiments": 58,
-    "keep": 39,
+    "experiments": 59,
+    "keep": 40,
     "discard": 2,
     "crash": 17
   },
@@ -91,7 +91,8 @@
     "0030",
     "0031",
     "0048",
-    "0050"
+    "0050",
+    "0059"
   ],
   "runs": [
     {
@@ -918,6 +919,20 @@
       "reason": "",
       "description": "Restore fused multiply-add in linear and attention weighted-sum contractions",
       "measured": "2026-09-27T08:56:12Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0059",
+      "parent": "2a9948b3c940ae3a5339581b5e43e37e69bae9ab",
+      "loss": 2.185464,
+      "steps_per_sec": 123.9362,
+      "loss_gain": 0.102067,
+      "speed_gain": 1.109041,
+      "grad_ratio": 1.000259,
+      "status": "keep",
+      "reason": "",
+      "description": "Lower Adam beta2 from 0.99 to 0.98",
+      "measured": "2026-09-27T08:59:06Z",
       "has_record": true
     }
   ],

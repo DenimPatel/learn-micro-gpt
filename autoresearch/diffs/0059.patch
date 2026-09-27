@@ -1,0 +1,11 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -957,7 +957,7 @@
+     // first step the same size as every other one.
+     const LEARNING_RATE: f32 = 0.01;
+     const BETA1: f32 = 0.85;
+-    const BETA2: f32 = 0.99;
++    const BETA2: f32 = 0.98;
+     const EPS_ADAM: f32 = 1e-8;
+     const BATCH_SIZE: usize = 5;
+     let mut moments = vec![0.0f32; params.len()];
