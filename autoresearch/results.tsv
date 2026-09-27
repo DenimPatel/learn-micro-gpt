@@ -28,3 +28,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0026	9580574948059ada3a8a14d0aabc363a44e0f07e	2.431324	934.628319	+0.001051	+14.904711	0.999933	keep		Restore the peak Adam learning rate from 0.02 to 0.01
 0027	8191c25d1f3bd510fe33f6890bea656c82a40333	2.427764	336.327470	+0.002514	+4.723335	0.999933	keep		Double default residual width to 32 and head dimension to 8
 0028	8f78358a1b4bc71be562d1d708f6410b6e16cae9	2.435330	172.242536	-0.000595	+1.931077	0.999933	keep		Double the default model depth from one transformer block to two
+0029	621bec968ef579868b5235d569952c80db8c88f9	2.427764	403.662959	+0.002514	+5.869193	0.999933	keep		Remove the second transformer block to recover its speed cost and loss regression
