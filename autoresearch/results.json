@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 96,
+    "experiments": 97,
     "keep": 58,
     "discard": 2,
-    "crash": 36
+    "crash": 37
   },
   "pareto": [
     "0011",
@@ -1451,6 +1451,20 @@
       "reason": "the patch did not apply",
       "description": "Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic",
       "measured": "2026-09-27T11:18:18Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0097",
+      "parent": "a2062dcb7d34f165952fcd86d67844804b952d7f",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse reciprocal divisions and pairwise additions into one-node tape operations",
+      "measured": "2026-09-27T11:20:43Z",
       "has_record": true
     }
   ],
