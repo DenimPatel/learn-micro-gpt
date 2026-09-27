@@ -80,10 +80,10 @@
     "description": "Lower positional embedding initialization standard deviation to 0.02"
   },
   "counts": {
-    "experiments": 46,
+    "experiments": 47,
     "keep": 31,
     "discard": 2,
-    "crash": 13
+    "crash": 14
   },
   "pareto": [
     "0011",
@@ -750,6 +750,20 @@
       "reason": "",
       "description": "Restore linear learning-rate decay after cosine decay worsened loss",
       "measured": "2026-09-27T08:28:45Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0047",
+      "parent": "d383662b7a5e7165efd3c387ee09765b54ca2594",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace runtime parameter-name formatting and hash-map lookup with fixed state indices",
+      "measured": "2026-09-27T08:30:16Z",
       "has_record": true
     }
   ],
