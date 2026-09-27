@@ -35,3 +35,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0033	ba9d2765e621e6e5ed54f309dc7826916bc00aa5	2.245262	63.647736	+0.077498	+0.083103	0.999933	keep		Batch nine shuffled documents per Adam update
 0034	bfea873aad08e3309cf40720ca2846dd9b9b2bef	2.194568	72.051580	+0.098326	+0.226113	0.999933	keep		Restore the per-update batch size from nine documents to eight
 0035	4f0bb71054d3499bfb66fb20dea04c2835fa7ffa	2.200248	74.668351	+0.095992	+0.270643	1.038945	keep		Fuse RMSNorm square and reduction tape nodes while retaining identical forward arithmetic
+0036	e7e1d0b36b0d5df6acb275c686e2475d8b653540	2.195606	74.998238	+0.097900	+0.276256	0.999933	keep		Correct the fused RMSNorm sum-of-squares derivative

@@ -203,7 +203,7 @@
 +            for value in values {
 +                let value_data = arena.nodes[value.0].data;
 +                data += value_data * value_data;
-+                local_grads.push(value_data * value_data);
++                local_grads.push(2.0 * value_data);
 +            }
 +            TensorHandle(arena.push(Node {
 +                data,
