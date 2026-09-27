@@ -80,10 +80,10 @@
     "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes"
   },
   "counts": {
-    "experiments": 14,
+    "experiments": 15,
     "keep": 8,
     "discard": 2,
-    "crash": 4
+    "crash": 5
   },
   "pareto": [
     "0011"
@@ -297,6 +297,20 @@
       "reason": "cargo build failed",
       "description": "Fuse cross entropy and division and batch Adam arena updates",
       "measured": "2026-09-27T07:02:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0015",
+      "parent": "6be8dddc1ad632be7254b4f7369e570d8173f83e",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse attention softmax normalization and cached value mixing into one tape node per head output",
+      "measured": "2026-09-27T07:05:57Z",
       "has_record": true
     }
   ],
