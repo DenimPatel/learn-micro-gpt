@@ -32,9 +32,8 @@
 +            n_embd: 32,
              n_head: 4,
              n_layer: 1,
--            block_size: 16,
+             block_size: 16,
 -            head_dim: 4,
-+            block_size: 8,
 +            head_dim: 8,
              vocab_size: 27,
              num_steps: 1000,
@@ -440,15 +439,7 @@
              x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
              x = x
                  .iter()
-@@ -563,6 +757,7 @@
-                 .collect();
-         }
- 
-+        x = Self::rmsnorm(&x);
-         Self::linear(&x, self.get("lm_head"))
-     }
- }
-@@ -765,48 +960,65 @@
+@@ -765,48 +959,65 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
@@ -547,7 +538,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +1026,14 @@
+@@ -814,6 +1025,14 @@
              config.num_steps,
              Tensor::data(loss)
          );

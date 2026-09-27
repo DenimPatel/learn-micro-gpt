@@ -97,3 +97,4 @@ run_id	parent	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	reason	d
 0095	07c1cb67d58c5c662bc6724fdf0bcec790d97ad9	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse stable training cross entropy into one correctly differentiated tape node
 0096	162354650ca89b67b2d6008e540e31bc95d79387	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic
 0097	a2062dcb7d34f165952fcd86d67844804b952d7f	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cargo build failed	Fuse reciprocal divisions and pairwise additions into one-node tape operations
+0098	0236f5d47e7aeca6e8fb6a06b47f9873b9b716ec	2.187488	203.215527	+0.101235	+2.458149	1.000259	keep		Restore 16-token contexts and remove the terminal RMSNorm to recover the best loss-first state

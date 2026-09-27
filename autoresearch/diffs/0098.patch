@@ -1,0 +1,21 @@
+--- a/autoresearch/candidate/src/lib.rs
++++ b/autoresearch/candidate/src/lib.rs
+@@ -62,7 +62,7 @@
+         Config {
+             n_embd: 32,
+             n_head: 4,
+             n_layer: 1,
+-            block_size: 8,
++            block_size: 16,
+             head_dim: 8,
+             vocab_size: 27,
+             num_steps: 1000,
+@@ -694,7 +694,6 @@
+                 .map(|(a, b)| Tensor::add(*a, *b))
+                 .collect();
+         }
+ 
+-        x = Self::rmsnorm(&x);
+         Self::linear(&x, self.get("lm_head"))
+     }
+ }
