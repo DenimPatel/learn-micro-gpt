@@ -80,10 +80,10 @@
     "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
   },
   "counts": {
-    "experiments": 88,
+    "experiments": 89,
     "keep": 55,
     "discard": 2,
-    "crash": 31
+    "crash": 32
   },
   "pareto": [
     "0011",
@@ -1338,6 +1338,20 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-27T10:49:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0089",
+      "parent": "27de42fc6a36535e916e31603c2c9d87d49a6be4",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cargo build failed",
+      "description": "Fuse attention softmax and training cross entropy into direct tape nodes",
+      "measured": "2026-09-27T10:52:32Z",
       "has_record": true
     }
   ],
