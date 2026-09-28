@@ -206,21 +206,25 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +466,67 @@
+@@ -327,16 +466,79 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
 -	total := New(0)
++	expChildren := make([]*Value, len(logits))
++	expLocalGrads := make([]float64, len(logits))
 +	totalData := 0.0
  	for i, v := range logits {
 -		exps[i] = v.SubScalar(maxVal).Exp()
 -		total = total.Add(exps[i])
 -	}
 +		e := math.Exp(v.Data - maxVal)
++		expChildren[i] = v
++		expLocalGrads[i] = e
 +		exps[i] = &Value{
 +			Data:       e,
-+			Children:   []*Value{v},
-+			LocalGrads: []float64{e},
++			Children:   expChildren[i : i+1 : i+1],
++			LocalGrads: expLocalGrads[i : i+1 : i+1],
 +		}
 +		totalData += e
 +	}
@@ -235,13 +239,21 @@
 +	}
 +	inverseTotal := math.Pow(totalData, -1)
 +	denominatorGrad := -math.Pow(totalData, -2)
++	stride := 2 * len(exps)
++	outputChildren := make([]*Value, stride)
++	outputLocalGrads := make([]float64, stride)
  	out := make([]*Value, len(exps))
  	for i, e := range exps {
 -		out[i] = e.Div(total)
++		base := 2 * i
++		outputChildren[base] = e
++		outputChildren[base+1] = total
++		outputLocalGrads[base] = inverseTotal
++		outputLocalGrads[base+1] = e.Data * denominatorGrad
 +		out[i] = &Value{
 +			Data:       e.Data * inverseTotal,
-+			Children:   []*Value{e, total},
-+			LocalGrads: []float64{inverseTotal, e.Data * denominatorGrad},
++			Children:   outputChildren[base : base+2 : base+2],
++			LocalGrads: outputLocalGrads[base : base+2 : base+2],
 +		}
  	}
  	return out
@@ -279,7 +291,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +538,29 @@
+@@ -348,15 +550,41 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -308,13 +320,25 @@
 +		LocalGrads: []float64{-0.5 * scaleData / shifted},
 +	}
  	out := make([]*Value, len(x))
++	stride := 2 * len(x)
++	childrenBacking := make([]*Value, stride)
++	localGradsBacking := make([]float64, stride)
  	for i, v := range x {
 -		out[i] = v.MulScalar(scale)
-+		out[i] = v.Mul(scale)
++		base := 2 * i
++		childrenBacking[base] = v
++		childrenBacking[base+1] = scale
++		localGradsBacking[base] = scale.Data
++		localGradsBacking[base+1] = v.Data
++		out[i] = &Value{
++			Data:       v.Data * scale.Data,
++			Children:   childrenBacking[base : base+2 : base+2],
++			LocalGrads: localGradsBacking[base : base+2 : base+2],
++		}
  	}
  	return out
  }
-@@ -379,7 +583,9 @@
+@@ -379,7 +607,9 @@
  
  		// 1) Multi-head attention block
  		xResidual := x
@@ -325,7 +349,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,52 +596,36 @@
+@@ -390,52 +620,36 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -389,7 +413,7 @@
  	}
  
  	return linear(x, m.state["lm_head"])
-@@ -529,8 +719,8 @@
+@@ -529,8 +743,8 @@
  	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
  
  	cfg := Config{
@@ -400,7 +424,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +735,7 @@
+@@ -545,7 +759,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -409,7 +433,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +759,34 @@
+@@ -569,23 +783,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -461,7 +485,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +794,15 @@
+@@ -593,13 +818,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

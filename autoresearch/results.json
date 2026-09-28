@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "da410cc08b8c2535ef899cc208fb6af6d5d294d0047ac505ad667b336c96b2dc",
+      "candidate_sha256": "85127414f6f9bc3e91a0292afcec15d0466bc544e63557d625a69b34ecefb2f2",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 148,
-    "keep": 86,
+    "experiments": 149,
+    "keep": 87,
     "discard": 7,
     "crash": 55
   },
@@ -192,7 +192,7 @@
       "0140",
       "0141",
       "0143",
-      "0149"
+      "0151"
     ],
     "typescript": [
       "0105"
@@ -2462,6 +2462,21 @@
       "reason": "the gradient check did not pass",
       "description": "Add a zero-initialized vocabulary logit bias to learn token marginals directly",
       "measured": "2026-09-28T07:52:56Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0151",
+      "parent": "f29bb2dc15c44c1ac1f5cc21206a7ee47a65d2ed",
+      "track": "go",
+      "loss": 2.292828,
+      "steps_per_sec": 253.224612,
+      "loss_gain": 0.045124,
+      "speed_gain": 3.989595,
+      "grad_ratio": 0.999982,
+      "status": "keep",
+      "reason": "",
+      "description": "Batch RMSNorm and softmax tape operands into bounded backing arrays",
+      "measured": "2026-09-28T07:57:40Z",
       "has_record": true
     }
   ],

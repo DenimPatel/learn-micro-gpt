@@ -466,13 +466,17 @@ func softmax(logits []*Value) []*Value {
 		}
 	}
 	exps := make([]*Value, len(logits))
+	expChildren := make([]*Value, len(logits))
+	expLocalGrads := make([]float64, len(logits))
 	totalData := 0.0
 	for i, v := range logits {
 		e := math.Exp(v.Data - maxVal)
+		expChildren[i] = v
+		expLocalGrads[i] = e
 		exps[i] = &Value{
 			Data:       e,
-			Children:   []*Value{v},
-			LocalGrads: []float64{e},
+			Children:   expChildren[i : i+1 : i+1],
+			LocalGrads: expLocalGrads[i : i+1 : i+1],
 		}
 		totalData += e
 	}
@@ -487,12 +491,20 @@ func softmax(logits []*Value) []*Value {
 	}
 	inverseTotal := math.Pow(totalData, -1)
 	denominatorGrad := -math.Pow(totalData, -2)
+	stride := 2 * len(exps)
+	outputChildren := make([]*Value, stride)
+	outputLocalGrads := make([]float64, stride)
 	out := make([]*Value, len(exps))
 	for i, e := range exps {
+		base := 2 * i
+		outputChildren[base] = e
+		outputChildren[base+1] = total
+		outputLocalGrads[base] = inverseTotal
+		outputLocalGrads[base+1] = e.Data * denominatorGrad
 		out[i] = &Value{
 			Data:       e.Data * inverseTotal,
-			Children:   []*Value{e, total},
-			LocalGrads: []float64{inverseTotal, e.Data * denominatorGrad},
+			Children:   outputChildren[base : base+2 : base+2],
+			LocalGrads: outputLocalGrads[base : base+2 : base+2],
 		}
 	}
 	return out
@@ -559,8 +571,20 @@ func rmsnorm(x []*Value) []*Value {
 		LocalGrads: []float64{-0.5 * scaleData / shifted},
 	}
 	out := make([]*Value, len(x))
+	stride := 2 * len(x)
+	childrenBacking := make([]*Value, stride)
+	localGradsBacking := make([]float64, stride)
 	for i, v := range x {
-		out[i] = v.Mul(scale)
+		base := 2 * i
+		childrenBacking[base] = v
+		childrenBacking[base+1] = scale
+		localGradsBacking[base] = scale.Data
+		localGradsBacking[base+1] = v.Data
+		out[i] = &Value{
+			Data:       v.Data * scale.Data,
+			Children:   childrenBacking[base : base+2 : base+2],
+			LocalGrads: localGradsBacking[base : base+2 : base+2],
+		}
 	}
 	return out
 }
