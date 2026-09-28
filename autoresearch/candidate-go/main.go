@@ -295,8 +295,8 @@ func newModel(cfg Config, rng *rand.Rand) *model {
 		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
-		m.state[p+"mlp_fc1"] = newMatrix(rng, 2*cfg.NEmbd, cfg.NEmbd, std)
-		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, 2*cfg.NEmbd, std)
+		m.state[p+"mlp_fc1"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
+		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 	}
 	m.resetCache()
 	return m
