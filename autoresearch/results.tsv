@@ -148,3 +148,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0146	ef0f9fef7ba1bca41aa0b9f3e1a1d0ac5da7d995	go	2.292828	197.605878	+0.045124	+2.893671	0.999982	keep		Add a second width-10 transformer layer
 0147	b41887b921a4f7c51bdf54024143955138c32fc8	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Add zero-initialized biases to every trainable projection
 0148	ee6a09ad36a15fc8464e8ea75730c9575622ab19	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Restore the 16-wide four-head 4x-MLP configuration behind the best observed loss
+0149	23c5603ac27bbe88a938adb246cb5794343f6fe2	go	2.292828	240.379945	+0.045124	+3.736501	0.999982	keep		Share tape backing arrays across projection rows to reduce allocations

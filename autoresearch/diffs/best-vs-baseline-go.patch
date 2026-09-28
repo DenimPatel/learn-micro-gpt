@@ -66,26 +66,34 @@
  	}
  	m.resetCache()
  	return m
-@@ -307,13 +326,114 @@
+@@ -306,14 +325,134 @@
+ // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
- 	for _, row := range w {
+-	for _, row := range w {
 -		acc := New(0)
++	stride := 2 * len(x)
++	childrenBacking := make([]*Value, len(w)*stride)
++	localGradsBacking := make([]float64, len(w)*stride)
++	for rowIndex, row := range w {
 +		acc := 0.0
-+		children := make([]*Value, 0, 2*len(x))
-+		localGrads := make([]float64, 0, 2*len(x))
++		base := rowIndex * stride
  		for i, xi := range x {
 -			acc = acc.Add(row[i].Mul(xi))
 -		}
 -		out = append(out, acc)
 +			acc += row[i].Data * xi.Data
-+			children = append(children, row[i], xi)
-+			localGrads = append(localGrads, xi.Data, row[i].Data)
++			childIndex := base + 2*i
++			childrenBacking[childIndex] = row[i]
++			childrenBacking[childIndex+1] = xi
++			localGradsBacking[childIndex] = xi.Data
++			localGradsBacking[childIndex+1] = row[i].Data
 +		}
++		end := base + stride
 +		out = append(out, &Value{
 +			Data:       acc,
-+			Children:   children,
-+			LocalGrads: localGrads,
++			Children:   childrenBacking[base:end:end],
++			LocalGrads: localGradsBacking[base:end:end],
 +		})
  	}
  	return out
@@ -95,23 +103,30 @@
 +// tape node, avoiding a separate Add node and its two child slices per output.
 +func linearResidual(x []*Value, w Matrix, residual []*Value) []*Value {
 +	out := make([]*Value, 0, len(w))
-+	for i, row := range w {
++	stride := 2*len(x) + 1
++	childrenBacking := make([]*Value, len(w)*stride)
++	localGradsBacking := make([]float64, len(w)*stride)
++	for rowIndex, row := range w {
 +		acc := 0.0
-+		children := make([]*Value, 0, 2*len(x)+2)
-+		localGrads := make([]float64, 0, 2*len(x)+2)
++		base := rowIndex * stride
 +		for j, xi := range x {
 +			acc += row[j].Data * xi.Data
-+			children = append(children, row[j], xi)
-+			localGrads = append(localGrads, xi.Data, row[j].Data)
++			childIndex := base + 2*j
++			childrenBacking[childIndex] = row[j]
++			childrenBacking[childIndex+1] = xi
++			localGradsBacking[childIndex] = xi.Data
++			localGradsBacking[childIndex+1] = row[j].Data
 +		}
-+		residualValue := residual[i]
++		residualValue := residual[rowIndex]
 +		acc += residualValue.Data
-+		children = append(children, residualValue)
-+		localGrads = append(localGrads, 1)
++		residualIndex := base + 2*len(x)
++		childrenBacking[residualIndex] = residualValue
++		localGradsBacking[residualIndex] = 1
++		end := base + stride
 +		out = append(out, &Value{
 +			Data:       acc,
-+			Children:   children,
-+			LocalGrads: localGrads,
++			Children:   childrenBacking[base:end:end],
++			LocalGrads: localGradsBacking[base:end:end],
 +		})
 +	}
 +	return out
@@ -121,26 +136,32 @@
 +// This avoids allocating a separate ReLU node for every projected feature.
 +func reluLinear(x []*Value, w Matrix) []*Value {
 +	out := make([]*Value, 0, len(w))
-+	for _, row := range w {
++	stride := 2 * len(x)
++	childrenBacking := make([]*Value, len(w)*stride)
++	localGradsBacking := make([]float64, len(w)*stride)
++	for rowIndex, row := range w {
 +		acc := 0.0
-+		children := make([]*Value, 0, 2*len(x))
-+		localGrads := make([]float64, 0, 2*len(x))
++		base := rowIndex * stride
 +		for i, xi := range x {
 +			acc += row[i].Data * xi.Data
-+			children = append(children, row[i], xi)
-+			localGrads = append(localGrads, xi.Data, row[i].Data)
++			childIndex := base + 2*i
++			childrenBacking[childIndex] = row[i]
++			childrenBacking[childIndex+1] = xi
++			localGradsBacking[childIndex] = xi.Data
++			localGradsBacking[childIndex+1] = row[i].Data
 +		}
 +		active := 0.0
 +		if acc > 0 {
 +			active = 1
 +		}
-+		for i := range localGrads {
-+			localGrads[i] *= active
++		end := base + stride
++		for i := base; i < end; i++ {
++			localGradsBacking[i] *= active
 +		}
 +		out = append(out, &Value{
 +			Data:       math.Max(0, acc),
-+			Children:   children,
-+			LocalGrads: localGrads,
++			Children:   childrenBacking[base:end:end],
++			LocalGrads: localGradsBacking[base:end:end],
 +		})
 +	}
 +	return out
@@ -185,7 +206,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +447,67 @@
+@@ -327,16 +466,67 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -258,7 +279,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +519,29 @@
+@@ -348,15 +538,29 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -293,7 +314,7 @@
  	}
  	return out
  }
-@@ -379,7 +564,9 @@
+@@ -379,7 +583,9 @@
  
  		// 1) Multi-head attention block
  		xResidual := x
@@ -304,7 +325,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,52 +577,36 @@
+@@ -390,52 +596,36 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -368,7 +389,7 @@
  	}
  
  	return linear(x, m.state["lm_head"])
-@@ -529,8 +700,8 @@
+@@ -529,8 +719,8 @@
  	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
  
  	cfg := Config{
@@ -379,7 +400,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +716,7 @@
+@@ -545,7 +735,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -388,7 +409,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +740,34 @@
+@@ -569,23 +759,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -440,7 +461,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +775,15 @@
+@@ -593,13 +794,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

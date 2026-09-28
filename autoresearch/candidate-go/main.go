@@ -325,19 +325,25 @@ func (m *model) params() []*Value {
 // a weight matrix is used, and most of the arithmetic in the model.
 func linear(x []*Value, w Matrix) []*Value {
 	out := make([]*Value, 0, len(w))
-	for _, row := range w {
+	stride := 2 * len(x)
+	childrenBacking := make([]*Value, len(w)*stride)
+	localGradsBacking := make([]float64, len(w)*stride)
+	for rowIndex, row := range w {
 		acc := 0.0
-		children := make([]*Value, 0, 2*len(x))
-		localGrads := make([]float64, 0, 2*len(x))
+		base := rowIndex * stride
 		for i, xi := range x {
 			acc += row[i].Data * xi.Data
-			children = append(children, row[i], xi)
-			localGrads = append(localGrads, xi.Data, row[i].Data)
+			childIndex := base + 2*i
+			childrenBacking[childIndex] = row[i]
+			childrenBacking[childIndex+1] = xi
+			localGradsBacking[childIndex] = xi.Data
+			localGradsBacking[childIndex+1] = row[i].Data
 		}
+		end := base + stride
 		out = append(out, &Value{
 			Data:       acc,
-			Children:   children,
-			LocalGrads: localGrads,
+			Children:   childrenBacking[base:end:end],
+			LocalGrads: localGradsBacking[base:end:end],
 		})
 	}
 	return out
@@ -347,23 +353,30 @@ func linear(x []*Value, w Matrix) []*Value {
 // tape node, avoiding a separate Add node and its two child slices per output.
 func linearResidual(x []*Value, w Matrix, residual []*Value) []*Value {
 	out := make([]*Value, 0, len(w))
-	for i, row := range w {
+	stride := 2*len(x) + 1
+	childrenBacking := make([]*Value, len(w)*stride)
+	localGradsBacking := make([]float64, len(w)*stride)
+	for rowIndex, row := range w {
 		acc := 0.0
-		children := make([]*Value, 0, 2*len(x)+2)
-		localGrads := make([]float64, 0, 2*len(x)+2)
+		base := rowIndex * stride
 		for j, xi := range x {
 			acc += row[j].Data * xi.Data
-			children = append(children, row[j], xi)
-			localGrads = append(localGrads, xi.Data, row[j].Data)
+			childIndex := base + 2*j
+			childrenBacking[childIndex] = row[j]
+			childrenBacking[childIndex+1] = xi
+			localGradsBacking[childIndex] = xi.Data
+			localGradsBacking[childIndex+1] = row[j].Data
 		}
-		residualValue := residual[i]
+		residualValue := residual[rowIndex]
 		acc += residualValue.Data
-		children = append(children, residualValue)
-		localGrads = append(localGrads, 1)
+		residualIndex := base + 2*len(x)
+		childrenBacking[residualIndex] = residualValue
+		localGradsBacking[residualIndex] = 1
+		end := base + stride
 		out = append(out, &Value{
 			Data:       acc,
-			Children:   children,
-			LocalGrads: localGrads,
+			Children:   childrenBacking[base:end:end],
+			LocalGrads: localGradsBacking[base:end:end],
 		})
 	}
 	return out
@@ -373,26 +386,32 @@ func linearResidual(x []*Value, w Matrix, residual []*Value) []*Value {
 // This avoids allocating a separate ReLU node for every projected feature.
 func reluLinear(x []*Value, w Matrix) []*Value {
 	out := make([]*Value, 0, len(w))
-	for _, row := range w {
+	stride := 2 * len(x)
+	childrenBacking := make([]*Value, len(w)*stride)
+	localGradsBacking := make([]float64, len(w)*stride)
+	for rowIndex, row := range w {
 		acc := 0.0
-		children := make([]*Value, 0, 2*len(x))
-		localGrads := make([]float64, 0, 2*len(x))
+		base := rowIndex * stride
 		for i, xi := range x {
 			acc += row[i].Data * xi.Data
-			children = append(children, row[i], xi)
-			localGrads = append(localGrads, xi.Data, row[i].Data)
+			childIndex := base + 2*i
+			childrenBacking[childIndex] = row[i]
+			childrenBacking[childIndex+1] = xi
+			localGradsBacking[childIndex] = xi.Data
+			localGradsBacking[childIndex+1] = row[i].Data
 		}
 		active := 0.0
 		if acc > 0 {
 			active = 1
 		}
-		for i := range localGrads {
-			localGrads[i] *= active
+		end := base + stride
+		for i := base; i < end; i++ {
+			localGradsBacking[i] *= active
 		}
 		out = append(out, &Value{
 			Data:       math.Max(0, acc),
-			Children:   children,
-			LocalGrads: localGrads,
+			Children:   childrenBacking[base:end:end],
+			LocalGrads: localGradsBacking[base:end:end],
 		})
 	}
 	return out

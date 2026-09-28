@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "906252092929dbc335bb195f544c4767341ee544b38de479e9e2c681cc7a3a05",
+      "candidate_sha256": "da410cc08b8c2535ef899cc208fb6af6d5d294d0047ac505ad667b336c96b2dc",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 146,
-    "keep": 85,
+    "experiments": 147,
+    "keep": 86,
     "discard": 7,
     "crash": 54
   },
@@ -192,7 +192,7 @@
       "0140",
       "0141",
       "0143",
-      "0144"
+      "0149"
     ],
     "typescript": [
       "0105"
@@ -2432,6 +2432,21 @@
       "reason": "the gradient check did not pass",
       "description": "Restore the 16-wide four-head 4x-MLP configuration behind the best observed loss",
       "measured": "2026-09-28T07:46:51Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0149",
+      "parent": "23c5603ac27bbe88a938adb246cb5794343f6fe2",
+      "track": "go",
+      "loss": 2.292828,
+      "steps_per_sec": 240.379945,
+      "loss_gain": 0.045124,
+      "speed_gain": 3.736501,
+      "grad_ratio": 0.999982,
+      "status": "keep",
+      "reason": "",
+      "description": "Share tape backing arrays across projection rows to reduce allocations",
+      "measured": "2026-09-28T07:49:40Z",
       "has_record": true
     }
   ],
