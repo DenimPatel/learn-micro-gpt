@@ -2537,12 +2537,23 @@ select:hover {
    scatter plot would cost more than it saves in a repository whose argument is
    that you can read all of its code.
 
-   Stroke widths are in device pixels, not viewBox units, for the same reason
-   `.chart` uses `non-scaling-stroke`: the viewBox is stretched with
-   `preserveAspectRatio="none"`, so a sub-pixel user-unit stroke lands well under
-   one device pixel and disappears -- the same reason `.chart` uses
-   `non-scaling-stroke`. The grid, the frontier and the zero line are 1px,
-   matching `.chart__rule`; the data series is 1.75px, matching `.chart__line`. */
+   These two do *not* do what `.chart` does, and the difference is load-bearing.
+   `.chart` is a 100x100 viewBox stretched with `preserveAspectRatio="none"`
+   into a box several times wider than it is tall, which is why its strokes use
+   `non-scaling-stroke` and why it has no axis: a <text> in a 100-unit box
+   stretched 4:1 is unreadable, so there is no label to put on it. The research
+   charts measure their container instead (`usePlotWidth` in `ResearchPage.tsx`)
+   and set `viewBox="0 0 <width> <height>"` in CSS pixels with the default
+   `preserveAspectRatio`. Nothing is stretched, one user unit is one CSS pixel,
+   and the axis labels are 11px of type at every width.
+
+   Stroke widths are therefore in CSS pixels, which is also in device pixels on
+   an ordinary display and a two-pixel hairline on a HiDPI one -- the same
+   1px/1.75px scale the rest of the page draws its rules and series at, and the
+   same value `.chart` uses once `non-scaling-stroke` has cancelled its
+   transform. `non-scaling-stroke` is kept anyway: it costs nothing at a 1:1
+   transform and it holds the line if the box is ever a fraction of a pixel
+   short of the viewBox. */
 
 /* Which implementation the loop is working on. A `fieldset` rather than a row of
    links, because these buttons change what the page below is *about* and a
@@ -2596,16 +2607,58 @@ select:hover {
   font-size: 0.85em;
   opacity: 0.75;
 }
-.research__scatter {
-  height: 17rem;
+/* The box the chart is measured against, and the two charts themselves.
+
+   `width: 100%; height: auto` rather than `.chart`'s `calc(100% - 18px)` and a
+   fixed height: the viewBox is the measured pixel width of `.research__plot`
+   (see `usePlotWidth`), so the box and the viewBox are the same size and the
+   aspect ratio is the shape of the chart. `height: auto` is what keeps them
+   equal, and the padding is cleared because on a replaced element with an
+   intrinsic ratio it would come out of the ratio instead of the box. */
+.research__plot {
+  margin: 0 18px;
 }
+.research__scatter,
 .research__gains {
-  height: 11rem;
+  width: 100%;
+  height: auto;
+  padding: 0;
+  margin: 0;
 }
+/* The grid is one step below the axes, not the same step: a gridline a reader
+   can mistake for an axis is a gridline that has stopped saying "nothing is
+   measured here". */
 .research__grid {
-  stroke: var(--edge);
+  stroke: var(--edge-soft);
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
+}
+/* The axes, and the tick marks on them. `--edge-strong`, one step above the
+   grid, and the same 1px everything else in the system draws a rule at. */
+.research__axis {
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.research__axis--tick {
+  stroke: var(--faint);
+}
+/* Tick values. Mono, because they are measured numbers and the rest of the
+   page's numbers are too; `--muted` rather than `--ink` so a label is quieter
+   than the marks it labels. */
+.research__tick {
+  fill: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.research__axis-title {
+  fill: var(--faint);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 /* The staircase between frontier points. A straight segment would imply an
    interpolation through a region that is dominated, not intermediate. */
@@ -2616,26 +2669,60 @@ select:hover {
   vector-effect: non-scaling-stroke;
 }
 .research__point {
-  /* `r` is an SVG attribute, so the sizing is in user units and needs
-     `vector-effect` on the stroke to stay hairline under `preserveAspectRatio:
-     none`, which stretches the box non-uniformly. */
+  /* `r` and the stroke are both in user units, which are CSS pixels here, so
+     the mark is a 6px dot and its stroke is a 1px hairline at every width --
+     and `non-scaling-stroke` keeps it one if the box is ever a hair off the
+     viewBox. */
   stroke-width: 1;
   vector-effect: non-scaling-stroke;
 }
+/* The crowd is translucent, so overlapping runs read as a dark patch: where the
+   loop spent its runs is legible at a resolution no individual run is. The
+   marks drawn over the top of it are fully opaque, and the opacity has to
+   match the token it is mixed with or the two densities will not look like the
+   same ink. */
+.research__point--baseline,
+.research__point--keep,
+.research__point--discard {
+  fill-opacity: 0.62;
+}
 .research__point--baseline {
-  fill: var(--muted);
+  /* `--surface-1` rather than `none`: the widget's own background, so the fill
+     is invisible as a fill and still punches a hole in the crowd behind it. */
+  fill: var(--surface-1);
   stroke: var(--ink);
+  fill-opacity: 1;
+  stroke-width: 1.5;
 }
 .research__point--keep {
   fill: var(--moss-ink);
   stroke: var(--paper);
 }
 .research__point--discard {
-  fill: var(--edge-strong);
+  /* `--muted`, not `--edge-strong`: on `--surface-1` a rule colour at 62% is
+     below the contrast of the grid it is drawn on, and a discard is a verdict
+     the reader has to be able to find. */
+  fill: var(--muted);
   stroke: var(--paper);
+}
+.research__point.is-frontier,
+.research__point.is-best {
+  fill-opacity: 1;
 }
 .research__point.is-frontier {
   stroke: var(--chart-line);
+  stroke-width: 1.5;
+}
+.research__point.is-best {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+/* The ring the run selector draws. Nothing filled: it has to be findable on top
+   of a mark that is already there. */
+.research__point--selected {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
 }
 /* The zero line. The loss axis is only meaningful against zero, so it is
    drawn rather than left to the axis label. */
@@ -2647,8 +2734,10 @@ select:hover {
 /* The regression tolerance, drawn rather than described: a point outside this
    band on either axis is a discard however far the other axis went. */
 .research__band {
-  fill: var(--surface-2);
-  opacity: 0.7;
+  /* `--surface-3`, one step past the widget, because the band is the thing the
+     rule turns on and a tolerance nobody can see is a tolerance that is not
+     drawn. */
+  fill: var(--surface-3);
 }
 .research__series {
   stroke-width: 1.75;
@@ -2660,10 +2749,98 @@ select:hover {
 .research__series--speed {
   stroke: var(--amber-ink);
 }
-.research__keep-tick {
-  stroke: var(--moss-ink);
-  stroke-width: 1;
-  vector-effect: non-scaling-stroke;
+/* Which runs were kept, as a barcode under the axis. Sixty-five separate tick
+   marks on a 300px axis fuse into one green bar that then says "all of them"
+   for two thirds of the ledger; a strip with a gap between cells says the same
+   thing and still has a cell per run. */
+.research__strip--keep {
+  fill: var(--moss-ink);
+}
+.research__strip--discard {
+  fill: var(--muted);
+}
+.research__strip--baseline {
+  fill: var(--muted);
+}
+
+/* The legends. `.chart__legend` lays them out; these are the marks, and each is
+   the same shape the plot uses for the same thing. */
+.research__key-dot,
+.research__key-line,
+.research__key-band,
+.research__key-cell {
+  display: block;
+  flex: none;
+}
+.research__key-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.research__key-dot--keep {
+  background: color-mix(in oklab, var(--moss-ink) 62%, var(--paper));
+}
+.research__key-dot--discard {
+  background: color-mix(in oklab, var(--muted) 62%, var(--paper));
+}
+.research__key-dot--baseline {
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1.5px var(--ink);
+}
+.research__key-line {
+  width: 16px;
+  height: 0;
+  border-top: 2px solid var(--faint);
+}
+.research__key-line--loss {
+  border-top-color: var(--chart-line);
+}
+.research__key-line--speed {
+  border-top-color: var(--amber-ink);
+}
+.research__key-band {
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--surface-3);
+}
+.research__key-cell {
+  width: 12px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--muted);
+}
+.research__key-cell--keep {
+  background: var(--moss-ink);
+}
+
+/* The run lookup under the scatter: the answer to "which one is the point I
+   cannot see", and a control rather than a tooltip, because the page has to
+   work without a mouse.
+
+   A single-column grid rather than a row, because a row cannot work: the label
+   and a select whose widest option is a whole sentence compete for 278px on a
+   phone, and the select wins and hangs off the right edge of the widget. */
+.research__lookup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--edge-soft);
+}
+.research__lookup label {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.research__lookup select {
+  width: 100%;
+  max-width: 32rem;
+}
+.research__lookup-readout {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .research__badge {

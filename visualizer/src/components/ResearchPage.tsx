@@ -21,7 +21,8 @@
  *    `autoresearch/results.json` is the ledger. The page draws what it is given.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import {
   baselineRow,
   bestRow,
@@ -32,14 +33,12 @@ import {
   formatRatio,
   formatSpeed,
   frontierIds,
-  isFrontier,
   linearScale,
   logScale,
   lossTicks,
   measuredRows,
   ratioErrorPercent,
   shortDigest,
-  speedTicks,
   statusCount,
   trackRows,
   tracks,
@@ -70,19 +69,148 @@ function StatusBadge({ status }: { status: ResearchRow['status'] }) {
   )
 }
 
+/* --- plot geometry ---------------------------------------------------------
+   The two charts below are measured, not assumed.
+
+   Both used to be a `0 0 100 100` viewBox stretched into a box several times
+   wider than it was tall with `preserveAspectRatio="none"`, which is why neither
+   had an axis: a `<text>` in that coordinate system comes out stretched along
+   one axis only, so a label was either unreadable or left out. The fix is not a
+   nicer label, it is a coordinate system that matches the box. The viewBox is
+   now the container's own width in CSS pixels with a height derived from it, so
+   one user unit is one CSS pixel, `preserveAspectRatio` does its default thing
+   (`xMidYMid meet`, an exact fit at this aspect), and a tick label is 11px of
+   type whatever the screen. `vector-effect: non-scaling-stroke` is kept on the
+   strokes anyway: it is free at a 1:1 transform and it keeps every stroke a
+   device-pixel hairline if the box is ever a fraction of a pixel off. */
+
+const clamp = (value: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, value))
+
+/**
+ * Below this rendered width the charts drop ticks rather than shrink them.
+ *
+ * A tick label is ~40px of monospace. Four of them on a 300px plot is a tick
+ * every 60px, which reads; six is a picket fence. So the count is a function of
+ * the space, not only of the number of points.
+ */
+const NARROW = 520
+
+/**
+ * The rendered width of a chart's container, in CSS pixels.
+ *
+ * This is what the viewBox is built from, and it is measured rather than
+ * inferred from a media query because the chart is not laid out against the
+ * viewport: it sits in a widget in a column whose width is the viewport minus a
+ * 270px rail, and that column goes single-column at 980px. A media query would
+ * have to be a second copy of the layout's breakpoints, and would still be wrong
+ * about the widget's own padding.
+ */
+function usePlotWidth(fallback: number): [RefObject<HTMLDivElement | null>, number] {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const [width, setWidth] = useState(fallback)
+  useLayoutEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const measure = () => {
+      const next = Math.round(node.clientWidth)
+      if (next > 0) setWidth(next)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, width]
+}
+
+/**
+ * Ticks for a logarithmic axis, on the decade grid.
+ *
+ * Decades, and not a uniform step in value, because a uniform step in value is
+ * not what a log axis is measuring. Over the speed range this page shows -- 62
+ * to 1362 steps per second, a little over one decade -- `speedTicks` returns
+ * either 500, 1000, or 200, 400, 600, 800, 1000, 1200, and the second set is
+ * evenly spaced *in value* and visibly bunched into the top quarter of the
+ * plot. The spacing would be asserting the opposite of the thing the axis is
+ * for. Speed here is compared as a ratio ("3x the reference"), so its grid is
+ * 1, 2 and 5 inside each decade with the decades themselves marked, and equal
+ * ratios get equal distance.
+ *
+ * Coarsening is by removing mantissas, not by widening a step: a narrow chart
+ * gets the decades alone, which is the grid a reader can still do arithmetic
+ * on. It lives here rather than beside `speedTicks` in `data/research.ts`
+ * because that file is not part of this change; it belongs there, `speedTicks`
+ * should become its linear-axis sibling or go away, and that is a separate edit.
+ */
+function decadeTicks(lo: number, hi: number, count: number): number[] {
+  if (!(hi > lo) || lo <= 0) return []
+  const grid = (mantissas: number[]): number[] => {
+    const ticks: number[] = []
+    const from = Math.floor(Math.log10(lo)) - 1
+    const to = Math.ceil(Math.log10(hi)) + 1
+    for (let exponent = from; exponent <= to; exponent += 1) {
+      for (const mantissa of mantissas) {
+        const value = Number((mantissa * 10 ** exponent).toFixed(6))
+        if (value >= lo && value <= hi) ticks.push(value)
+      }
+    }
+    return ticks
+  }
+  const full = grid([1, 2, 5])
+  if (full.length <= count) return full
+  const decades = grid([1])
+  if (decades.length <= count) return decades
+  // More than `count` decades is a range wider than any axis here, but it has
+  // to degrade rather than overflow, so every other decade is kept.
+  return decades.filter((_, index) => index % Math.ceil(decades.length / count) === 0)
+}
+
 /**
  * The Pareto scatter: loss on x, speed on y, one point per measured run.
  *
  * This is the objective, drawn. The rule is "win one axis, do not lose the other
  * by more than the tolerance", so a scatter is the only honest picture of it: a
- * scalar would have to throw one of the two away.
+ * scalar would have to throw one of the two away, and the frontier it produces
+ * is a set of points in a plane rather than a ranking. The alternative -- a
+ * table, a beeswarm, or a pair of small multiples -- trades the plane for rows
+ * a reader then has to sort in their head, which is the thing this chart is
+ * for.
+ *
+ * Density is the objection to sixty-odd marks, and it is real, but it is not
+ * the objection it looks like: no two runs land on the same pair of numbers.
+ * What crowds is a column of runs at one loss value (a dozen at exactly the
+ * baseline's) and a band of runs inside a hundredth of a nat, and at 3px those
+ * overlap. Three things answer it:
+ *
+ *  - The crowd is drawn at partial opacity, so overlapping runs read as a dark
+ *    patch. That is not a loss of precision, it is the answer: it says *where*
+ *    the loop spent its runs, at a resolution no individual run is legible at
+ *    and does not need to be.
+ *  - The marks that carry the argument are drawn over the top of the crowd, at
+ *    full opacity and a size up: the frontier, the best run, and the baseline.
+ *    The baseline is a ring rather than a dot as well as a different colour,
+ *    because a comparator that differs only in colour is invisible to a reader
+ *    who cannot see colour, and the baseline is the one mark that must be
+ *    found. It is also drawn last and filled with the widget's own background,
+ *    so it punches a hole in whatever it is sitting on.
+ *  - The run selector under the plot names any single run and rings it, so
+ *    "which one is the point I cannot see" has an exact answer rather than a
+ *    shrug. A control rather than a tooltip, because this page has to work
+ *    without a mouse, and the runs are already listed in the ledger above under
+ *    the same ids. That is also why every mark keeps its `<title>`.
  */
 function ParetoScatter({ track }: { track: ResearchTrack }) {
   const rows = measuredRows(track)
+  const [selected, setSelected] = useState<string | null>(null)
+  const [ref, width] = usePlotWidth(760)
   const loss = useMemo(() => linearScale(rows.map((row) => row.loss)), [rows])
   const speed = useMemo(() => logScale(rows.map((row) => row.steps_per_sec)), [rows])
-  const ticks = useMemo(() => lossTicks(loss), [loss])
-  const speedMarks = useMemo(() => speedTicks(speed), [speed])
+  const narrow = width < NARROW
+  const ticks = useMemo(() => lossTicks(loss, narrow ? 3 : 6), [loss, narrow])
+  const speedMarks = useMemo(
+    () => decadeTicks(speed.min, speed.max, narrow ? 3 : 6),
+    [speed, narrow],
+  )
   const frontier = new Set(frontierIds(track))
   const best = bestRow(track)
 
@@ -94,12 +222,27 @@ function ParetoScatter({ track }: { track: ResearchTrack }) {
     )
   }
 
+  // One user unit is one CSS pixel, so these are pixel paddings: a tick label is
+  // ~40px of monospace and needs its own gutter on the left, 34px of headroom
+  // carries the y axis's title, and 46px of foot carries the x tick labels and
+  // the x title.
+  const height = Math.round(clamp(300, width * 0.46, 460))
+  const pad = { top: 34, right: 16, bottom: 46, left: narrow ? 52 : 56 }
+  const plot = {
+    w: Math.max(120, width - pad.left - pad.right),
+    h: Math.max(150, height - pad.top - pad.bottom),
+  }
+  const axisY = pad.top + plot.h
+  const xOf = (value: number) => pad.left + (loss.at(value) / 100) * plot.w
+  const yOf = (value: number) => pad.top + (1 - speed.at(value) / 100) * plot.h
+
   const summary = rows
     .map(
       (row) =>
         `run ${row.run_id}: loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps per second, ${STATUS_LABEL[row.status]}`,
     )
     .join('. ')
+  const chosen = rows.find((row) => row.run_id === selected) ?? null
 
   return (
     <figure className="widget">
@@ -109,74 +252,269 @@ function ParetoScatter({ track }: { track: ResearchTrack }) {
         is better. Up is steps per second &mdash; higher is better. A point down and to the left
         dominates a point up and to the right, and the joined line is the frontier of points nothing
         dominates. Speed is on a log scale because it is compared as a ratio, and a linear axis
-        makes a 3&times; difference look like a nudge.
+        makes a 3&times; difference look like a nudge; its ticks are therefore at decades rather
+        than at equal intervals of steps per second.
       </figcaption>
 
-      <svg
-        viewBox="0 0 100 100"
-        className="chart research__scatter"
-        role="img"
-        aria-label={`Pareto scatter of ${rows.length} measured runs. ${summary}.`}
-        preserveAspectRatio="none"
-      >
-        {speedMarks.map((tick) => (
-          <g key={`s${tick}`}>
-            <line
-              className="research__grid"
-              x1="0"
-              x2="100"
-              y1={100 - speed.at(tick)}
-              y2={100 - speed.at(tick)}
-            />
-          </g>
-        ))}
-        {ticks.map((tick) => (
-          <line
-            key={`l${tick}`}
-            className="research__grid"
-            x1={loss.at(tick)}
-            x2={loss.at(tick)}
-            y1="0"
-            y2="100"
-          />
-        ))}
+      {/*
+        A legend, because the plot has four kinds of mark and no way to ask
+        which is which. The counts are in it because a reader who sees a hundred
+        small marks wants to know how they divide before they start looking at
+        any one of them.
+      */}
+      <p className="chart__legend research__key">
+        <span>
+          <i className="research__key-dot research__key-dot--keep" />
+          kept ({statusCount('keep', track)})
+        </span>
+        <span>
+          <i className="research__key-dot research__key-dot--discard" />
+          discarded ({statusCount('discard', track)})
+        </span>
+        <span>
+          <i className="research__key-dot research__key-dot--baseline" />
+          session baseline
+        </span>
+        <span>
+          <i className="research__key-line" />
+          the frontier &mdash; {frontier.size} runs nothing dominates
+        </span>
+      </p>
 
-        {/* The frontier, drawn as a staircase. Straight segments would imply
-            interpolations between points that were never measured, and the
-            region between two frontier points is dominated, not intermediate. */}
-        {rows
-          .filter((row) => frontier.has(row.run_id))
-          .sort((a, b) => a.loss - b.loss)
-          .map((row, index, ordered) => {
-            const previous = index > 0 ? ordered[index - 1] : undefined
-            if (!previous) return null
+      <div className="research__plot" ref={ref}>
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
+          className="chart research__scatter"
+          role="img"
+          aria-label={`Pareto scatter of ${rows.length} measured runs on two axes. Horizontal axis: mean loss over the last ${research.protocol.trend_window} of ${research.protocol.steps} steps, ${formatLoss(loss.min)} to ${formatLoss(loss.max)}, lower is better. Vertical axis: steps per second on a log scale, ${formatSpeed(speed.min)} to ${formatSpeed(speed.max)}, higher is better. ${summary}.`}
+        >
+          {/* Grid, then axes. The grid is `--edge-soft` and the axes are
+              `--edge-strong`: a gridline the eye can mistake for an axis is a
+              gridline that cannot be read as "nothing is measured here". */}
+          {ticks.map((tick) => (
+            <line
+              key={`l${tick}`}
+              className="research__grid"
+              x1={xOf(tick)}
+              x2={xOf(tick)}
+              y1={pad.top}
+              y2={axisY}
+            />
+          ))}
+          {speedMarks.map((tick) => (
+            <line
+              key={`s${tick}`}
+              className="research__grid"
+              x1={pad.left}
+              x2={pad.left + plot.w}
+              y1={yOf(tick)}
+              y2={yOf(tick)}
+            />
+          ))}
+          <line
+            className="research__axis"
+            x1={pad.left}
+            x2={pad.left + plot.w}
+            y1={axisY}
+            y2={axisY}
+          />
+          <line className="research__axis" x1={pad.left} x2={pad.left} y1={pad.top} y2={axisY} />
+          {ticks.map((tick) => (
+            <line
+              key={`lx${tick}`}
+              className="research__axis research__axis--tick"
+              x1={xOf(tick)}
+              x2={xOf(tick)}
+              y1={axisY}
+              y2={axisY + 4}
+            />
+          ))}
+          {speedMarks.map((tick) => (
+            <line
+              key={`sx${tick}`}
+              className="research__axis research__axis--tick"
+              x1={pad.left - 4}
+              x2={pad.left}
+              y1={yOf(tick)}
+              y2={yOf(tick)}
+            />
+          ))}
+
+          {/* The frontier, drawn as a staircase. Straight segments would imply
+              interpolations between points that were never measured, and the
+              region between two frontier points is dominated, not intermediate. */}
+          {rows
+            .filter((row) => frontier.has(row.run_id))
+            .sort((a, b) => a.loss - b.loss)
+            .map((row, index, ordered) => {
+              const previous = index > 0 ? ordered[index - 1] : undefined
+              if (!previous) return null
+              return (
+                <path
+                  key={`f${row.run_id}`}
+                  className="research__frontier"
+                  fill="none"
+                  d={`M${xOf(previous.loss)},${yOf(previous.steps_per_sec)} L${xOf(row.loss)},${yOf(previous.steps_per_sec)} L${xOf(row.loss)},${yOf(row.steps_per_sec)}`}
+                />
+              )
+            })}
+
+          {/*
+            The crowd, then the marks that matter, in that order: a frontier run
+            that lands under three discards is still visible, which it would not
+            be if the order were by status.
+          */}
+          {rows.map((row) => {
+            const isBest = best?.run_id === row.run_id
+            const isOnFrontier = frontier.has(row.run_id)
+            if (isBest || isOnFrontier || row.status === 'baseline') return null
             return (
-              <path
-                key={`f${row.run_id}`}
-                className="research__frontier"
-                fill="none"
-                d={`M${loss.at(previous.loss)},${100 - speed.at(previous.steps_per_sec)} L${loss.at(row.loss)},${100 - speed.at(previous.steps_per_sec)} L${loss.at(row.loss)},${100 - speed.at(row.steps_per_sec)}`}
-              />
+              <circle
+                key={row.run_id}
+                className={`research__point research__point--${row.status}`}
+                cx={xOf(row.loss)}
+                cy={yOf(row.steps_per_sec)}
+                r="3.1"
+              >
+                <title>
+                  {`run ${row.run_id} (${STATUS_LABEL[row.status]}): loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps/s — ${row.description}`}
+                </title>
+              </circle>
             )
           })}
-
-        {rows.map((row) => {
-          const isBest = best?.run_id === row.run_id
-          return (
+          {rows
+            .filter((row) => frontier.has(row.run_id))
+            .map((row) => (
+              <circle
+                key={`g${row.run_id}`}
+                className={`research__point research__point--${row.status} is-frontier`}
+                cx={xOf(row.loss)}
+                cy={yOf(row.steps_per_sec)}
+                r="4.3"
+              >
+                <title>
+                  {`run ${row.run_id} (${STATUS_LABEL[row.status]}, on the frontier): loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps/s — ${row.description}`}
+                </title>
+              </circle>
+            ))}
+          {/* The baseline is a ring rather than a dot: it is the one mark a
+              reader has to find among a hundred, and half a dozen candidates
+              share its loss, so it is drawn on top, opaque, and hollow. */}
+          {rows
+            .filter((row) => row.status === 'baseline')
+            .map((row) => (
+              <circle
+                key={`b${row.run_id}`}
+                className="research__point research__point--baseline"
+                cx={xOf(row.loss)}
+                cy={yOf(row.steps_per_sec)}
+                r="4.6"
+              >
+                <title>
+                  {`run ${row.run_id} (session baseline): loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps/s — ${row.description}`}
+                </title>
+              </circle>
+            ))}
+          {rows
+            .filter((row) => best?.run_id === row.run_id && !frontier.has(row.run_id))
+            .map((row) => (
+              <circle
+                key={`n${row.run_id}`}
+                className="research__point research__point--keep is-best"
+                cx={xOf(row.loss)}
+                cy={yOf(row.steps_per_sec)}
+                r="5.2"
+              >
+                <title>{`run ${row.run_id} (best kept): loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps/s — ${row.description}`}</title>
+              </circle>
+            ))}
+          {chosen ? (
             <circle
-              key={row.run_id}
-              className={`research__point research__point--${row.status}${isFrontier(row.run_id, track) ? ' is-frontier' : ''}`}
-              cx={loss.at(row.loss)}
-              cy={100 - speed.at(row.steps_per_sec)}
-              r={isBest ? 1.8 : 1.1}
+              className="research__point research__point--selected"
+              cx={xOf(chosen.loss)}
+              cy={yOf(chosen.steps_per_sec)}
+              r="8"
+            />
+          ) : null}
+
+          {ticks.map((tick) => (
+            <text
+              key={`tx${tick}`}
+              className="research__tick"
+              x={xOf(tick)}
+              y={axisY + 17}
+              textAnchor="middle"
             >
-              <title>
-                {`run ${row.run_id} (${STATUS_LABEL[row.status]}): loss ${formatLoss(row.loss)}, ${formatSpeed(row.steps_per_sec)} steps/s — ${row.description}`}
-              </title>
-            </circle>
-          )
-        })}
-      </svg>
+              {formatLoss(tick)}
+            </text>
+          ))}
+          {speedMarks.map((tick) => (
+            <text
+              key={`ty${tick}`}
+              className="research__tick"
+              x={pad.left - 8}
+              y={yOf(tick)}
+              textAnchor="end"
+              dominantBaseline="middle"
+            >
+              {formatSpeed(tick)}
+            </text>
+          ))}
+          <text
+            className="research__axis-title"
+            x={pad.left + plot.w / 2}
+            y={height - 8}
+            textAnchor="middle"
+          >
+            {narrow
+              ? 'mean loss'
+              : `mean loss, last ${research.protocol.trend_window} of ${research.protocol.steps} steps`}
+          </text>
+          {/*
+            The y axis's title, horizontal, in the headroom above the axis and
+            ending flush with it. Rotated down the left edge is the other
+            convention and it does not survive contact with a 40px tick label:
+            the title occupies the same 12px column the labels hang into, and
+            whichever tick happens to be at the middle of the axis collides with
+            it. This cannot collide, and it costs the plot 12px of height.
+          */}
+          <text className="research__axis-title" x={pad.left} y={pad.top - 10} textAnchor="start">
+            {narrow ? 'steps/s' : 'steps per second — log scale'}
+          </text>
+        </svg>
+      </div>
+
+      {/*
+        The way to read a point you cannot see. Not a tooltip: a tooltip is a
+        mouse affordance, this page has to work on a phone, and the runs are
+        already listed in the ledger above with the same ids, so the selector is
+        a lookup rather than a control.
+      */}
+      <div className="widget__controls research__lookup">
+        <label>
+          find a run
+          <select
+            value={selected ?? ''}
+            onChange={(event) => setSelected(event.target.value || null)}
+          >
+            <option value="">{rows.length} measured runs &mdash; choose one&hellip;</option>
+            {rows.map((row) => (
+              <option key={row.run_id} value={row.run_id}>
+                {row.run_id} — {STATUS_LABEL[row.status]} — {row.description}
+              </option>
+            ))}
+          </select>
+        </label>
+        {chosen ? (
+          <span className="research__lookup-readout">
+            run {chosen.run_id}: {formatLoss(chosen.loss)}, {formatSpeed(chosen.steps_per_sec)}{' '}
+            steps/s ({formatGain(chosen.loss_gain)} loss, {formatGain(chosen.speed_gain)} speed)
+            {frontier.has(chosen.run_id) ? ' — on the frontier' : ''}
+          </span>
+        ) : null}
+      </div>
 
       <dl className="stats">
         <div>
@@ -213,9 +551,29 @@ function ParetoScatter({ track }: { track: ResearchTrack }) {
  * turns on them: a point inside the lossy band and below the material line is a
  * discard, and a reader who cannot see where the band is cannot tell a
  * near-miss from a non-event.
+ *
+ * The y scale is symmetric-log, and it has to be. Both series are ratios against
+ * one baseline, and they are not the same size: the loss series lives inside
+ * ±10% because that is all the loss axis moves, while the speed series runs to
+ * +2200% because fusing two matmuls into one is worth twenty-two times the
+ * wall clock. On the linear axis this chart used to draw, a ±2440% domain puts
+ * the whole tolerance band in the middle two tenths of one percent of the plot
+ * and the loss series is a straight line lying on the zero line -- which reads
+ * as "no experiment changed the loss", the one claim this chart must never make
+ * by accident. So the scale is linear out to ±10%, which is twice the loss
+ * tolerance and the entire range the loss axis occupies, and logarithmic above
+ * it, where the speed axis actually is. The same objection that puts speed on a
+ * log scale in the scatter applies to a change that is itself a ratio.
  */
+const GAIN_LINEAR = 0.1
+/** How much of each half of the plot the linear region gets. */
+const GAIN_LINEAR_SHARE = 0.42
+
 function GainsChart({ track }: { track: ResearchTrack }) {
   const rows = experiments(track).filter((row) => row.status !== 'crash')
+  const [ref, width] = usePlotWidth(760)
+  const narrow = width < NARROW
+
   if (rows.length === 0) {
     return (
       <p className="research__empty">
@@ -225,8 +583,56 @@ function GainsChart({ track }: { track: ResearchTrack }) {
   }
   const all = rows.flatMap((row) => [row.loss_gain, row.speed_gain])
   const bound = Math.max(0.05, ...all.map((value) => Math.abs(value))) * 1.1
-  const y = (value: number) => 50 - (value / bound) * 50
-  const x = (index: number) => (rows.length === 1 ? 50 : (index / (rows.length - 1)) * 92 + 4)
+
+  const height = Math.round(clamp(220, width * 0.3, 320))
+  // 66px of left gutter, because `formatGain` runs to eight characters wide at
+  // "+1000.0%" and a clipped tick label is worse than a narrow plot.
+  const pad = { top: 34, right: 16, bottom: 54, left: narrow ? 66 : 70 }
+  const plot = {
+    w: Math.max(120, width - pad.left - pad.right),
+    h: Math.max(130, height - pad.top - pad.bottom),
+  }
+  const axisY = pad.top + plot.h
+  const zeroY = pad.top + plot.h / 2
+
+  // Symmetric log: linear to `GAIN_LINEAR`, then log out to `bound`.
+  const y = (value: number) => {
+    const magnitude = Math.abs(value)
+    const decades = Math.log10(bound / GAIN_LINEAR)
+    const share =
+      magnitude <= GAIN_LINEAR
+        ? (magnitude / GAIN_LINEAR) * GAIN_LINEAR_SHARE
+        : GAIN_LINEAR_SHARE +
+          (Math.log10(magnitude / GAIN_LINEAR) / decades) * (1 - GAIN_LINEAR_SHARE)
+    return zeroY - Math.sign(value) * share * (plot.h / 2)
+  }
+  const x = (index: number) =>
+    rows.length === 1 ? pad.left + plot.w / 2 : pad.left + (index / (rows.length - 1)) * plot.w
+
+  const tolerance = research.thresholds.loss_tolerance
+  const linearMarks = narrow
+    ? [-GAIN_LINEAR, 0, GAIN_LINEAR]
+    : [-GAIN_LINEAR, -tolerance, 0, tolerance, GAIN_LINEAR]
+  // The decade grid starts one decade above the linear region, so +10% is the
+  // tolerance and not also a decade label.
+  const logMarks = decadeTicks(GAIN_LINEAR * 10, bound, 3)
+  // A negative decade is only labelled if a run actually reached it: this
+  // ledger's worst regression is under 5%, and an axis labelled to -1000% on
+  // the strength of a rule rather than a measurement is decoration.
+  const slowest = Math.min(...rows.map((row) => Math.min(row.loss_gain, row.speed_gain)))
+  const gainMarks = [
+    ...linearMarks,
+    ...logMarks.flatMap((mark) => (slowest <= -mark ? [-mark, mark] : [mark])),
+  ]
+  // Ordinal positions, not run ids: the ids skip, because a crash is a row that
+  // never reached this chart, and a tick every n-th *experiment* is the only
+  // spacing that does not claim runs exist between two labels.
+  const xMarkCount = Math.min(narrow ? 3 : 6, rows.length)
+  const xMarks = Array.from({ length: xMarkCount }, (_, index) =>
+    xMarkCount === 1 ? 0 : Math.round((index * (rows.length - 1)) / (xMarkCount - 1)),
+  )
+  const step = rows.length > 1 ? plot.w / (rows.length - 1) : plot.w
+  const cell = Math.max(1.5, Math.min(step * 0.66, 10))
 
   const series = (key: 'loss_gain' | 'speed_gain') =>
     rows
@@ -242,53 +648,196 @@ function GainsChart({ track }: { track: ResearchTrack }) {
         Each experiment&rsquo;s change against the session baseline: loss on one line, speed on the
         other. Zero is the baseline. A candidate is kept when one line clears its material threshold
         while the other stays inside its tolerance, so a point outside the shaded band on one axis
-        is a discard no matter how far the other went.
+        is a discard no matter how far the other went. The axis is linear to &plusmn;10% &mdash;
+        twice the loss tolerance, and outside the whole range the loss axis moves in &mdash; and
+        logarithmic above it, because a change against a baseline is a ratio. It has to be: the loss
+        series reaches {formatGain(Math.max(...rows.map((row) => row.loss_gain)))} and the speed
+        series {formatGain(Math.max(...rows.map((row) => row.speed_gain)))} on one pair of axes.
       </figcaption>
-      <svg
-        viewBox="0 0 100 100"
-        className="chart research__gains"
-        role="img"
-        aria-label={`Change against the session baseline for ${rows.length} experiments. ${rows
-          .map(
-            (row) =>
-              `run ${row.run_id}: loss ${formatGain(row.loss_gain)}, speed ${formatGain(row.speed_gain)}`,
-          )
-          .join('. ')}.`}
-        preserveAspectRatio="none"
-      >
-        <rect
-          className="research__band"
-          x="0"
-          y={y(-research.thresholds.loss_tolerance)}
-          width="100"
-          height={Math.abs(
-            y(research.thresholds.loss_tolerance) - y(-research.thresholds.loss_tolerance),
-          )}
-        />
-        <line className="research__zero" x1="0" x2="100" y1="50" y2="50" />
-        <path
-          className="research__series research__series--loss"
-          d={series('loss_gain')}
-          fill="none"
-        />
-        <path
-          className="research__series research__series--speed"
-          d={series('speed_gain')}
-          fill="none"
-        />
-        {rows.map((row, index) =>
-          row.status === 'keep' ? (
+
+      <p className="chart__legend research__key">
+        <span>
+          <i className="research__key-line research__key-line--loss" />
+          change in loss
+        </span>
+        <span>
+          <i className="research__key-line research__key-line--speed" />
+          change in speed
+        </span>
+        <span>
+          <i className="research__key-band" />
+          the &plusmn;{(tolerance * 100).toFixed(0)}% tolerance
+        </span>
+        <span>
+          <i className="research__key-cell research__key-cell--keep" />
+          kept ({statusCount('keep', track)})
+        </span>
+        <span>
+          <i className="research__key-cell" />
+          discarded ({statusCount('discard', track)})
+        </span>
+      </p>
+
+      <div className="research__plot" ref={ref}>
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
+          className="chart research__gains"
+          role="img"
+          aria-label={`Change against the session baseline for ${rows.length} experiments, in the order they ran. Vertical axis: percentage change, zero at the session baseline, linear to ${formatGain(GAIN_LINEAR)} and logarithmic above, up to ${formatGain(bound / 1.1)}. ${rows
+            .map(
+              (row) =>
+                `run ${row.run_id}: loss ${formatGain(row.loss_gain)}, speed ${formatGain(row.speed_gain)}`,
+            )
+            .join('. ')}.`}
+        >
+          {gainMarks.map((mark) => (
             <line
-              key={row.run_id}
-              className="research__keep-tick"
-              x1={x(index)}
-              x2={x(index)}
-              y1="96"
-              y2="100"
+              key={`g${mark}`}
+              className="research__grid"
+              x1={pad.left}
+              x2={pad.left + plot.w}
+              y1={y(mark)}
+              y2={y(mark)}
             />
-          ) : null,
-        )}
-      </svg>
+          ))}
+          {xMarks.map((mark) => (
+            <line
+              key={`x${mark}`}
+              className="research__grid"
+              x1={x(mark)}
+              x2={x(mark)}
+              y1={pad.top}
+              y2={axisY}
+            />
+          ))}
+
+          {/* The regression tolerance, drawn rather than described: a point
+              outside this band on either axis is a discard however far the
+              other axis went. The top edge is the *smaller* of the two, not
+              `y(-tolerance)`: this used to anchor the rect at -5% and grow it
+              downwards, which put the whole band below the zero line. On the
+              linear scale it drew before, 10% of a domain in the thousands of
+              percent was invisible either way, so nothing caught it. */}
+          <rect
+            className="research__band"
+            x={pad.left}
+            y={Math.min(y(-tolerance), y(tolerance))}
+            width={plot.w}
+            height={Math.abs(y(tolerance) - y(-tolerance))}
+          />
+          <line
+            className="research__zero"
+            x1={pad.left}
+            x2={pad.left + plot.w}
+            y1={zeroY}
+            y2={zeroY}
+          />
+          <line
+            className="research__axis"
+            x1={pad.left}
+            x2={pad.left + plot.w}
+            y1={axisY}
+            y2={axisY}
+          />
+          <line className="research__axis" x1={pad.left} x2={pad.left} y1={pad.top} y2={axisY} />
+          {gainMarks.map((mark) => (
+            <line
+              key={`gy${mark}`}
+              className="research__axis research__axis--tick"
+              x1={pad.left - 4}
+              x2={pad.left}
+              y1={y(mark)}
+              y2={y(mark)}
+            />
+          ))}
+          {xMarks.map((mark) => (
+            <line
+              key={`xx${mark}`}
+              className="research__axis research__axis--tick"
+              x1={x(mark)}
+              x2={x(mark)}
+              y1={axisY}
+              y2={axisY + 4}
+            />
+          ))}
+
+          <path
+            className="research__series research__series--loss"
+            d={series('loss_gain')}
+            fill="none"
+          />
+          <path
+            className="research__series research__series--speed"
+            d={series('speed_gain')}
+            fill="none"
+          />
+
+          {/*
+            Which runs were kept, as a status strip under the axis rather than a
+            tick per run. Sixty-five tick marks on a 300px axis fuse into one
+            green bar and then say "all of them" for two thirds of the ledger;
+            the strip is a barcode, which is what it is, and each cell keeps its
+            own title so the exact run is still one hover away.
+          */}
+          {rows.map((row, index) => (
+            <rect
+              key={row.run_id}
+              className={`research__strip research__strip--${row.status}`}
+              x={x(index) - cell / 2}
+              y={axisY + 8}
+              width={cell}
+              height="4"
+              rx="1"
+            >
+              <title>
+                {`run ${row.run_id} (${STATUS_LABEL[row.status]}): loss ${formatGain(row.loss_gain)}, speed ${formatGain(row.speed_gain)}`}
+              </title>
+            </rect>
+          ))}
+
+          {gainMarks.map((mark) => (
+            <text
+              key={`ty${mark}`}
+              className="research__tick"
+              x={pad.left - 8}
+              y={y(mark)}
+              textAnchor="end"
+              dominantBaseline="middle"
+            >
+              {formatGain(mark)}
+            </text>
+          ))}
+          {xMarks.map((mark) => (
+            <text
+              key={`tx${mark}`}
+              className="research__tick"
+              x={x(mark)}
+              y={axisY + 28}
+              // The first and last labels are anchored inwards: a run id
+              // centred on the first experiment hangs 20px off the left of the
+              // viewBox and is half a character wide.
+              textAnchor={mark === 0 ? 'start' : mark === rows.length - 1 ? 'end' : 'middle'}
+            >
+              {rows[mark]?.run_id}
+            </text>
+          ))}
+          <text
+            className="research__axis-title"
+            x={pad.left + plot.w / 2}
+            y={height - 8}
+            textAnchor="middle"
+          >
+            {narrow ? 'experiment' : 'experiment, in the order the loop ran them'}
+          </text>
+          {/* Horizontal, in the headroom, ending flush with the axis — see the
+              scatter for why this is not rotated down the left edge. */}
+          <text className="research__axis-title" x={pad.left} y={pad.top - 10} textAnchor="start">
+            {narrow ? 'change' : 'change against the baseline'}
+          </text>
+        </svg>
+      </div>
       <dl className="stats">
         <div>
           <dt>loss tolerance</dt>
