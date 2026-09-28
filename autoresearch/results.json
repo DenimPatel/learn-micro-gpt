@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "529b69c96caed7f1736b84d415d671c8753af7f86d1782085e9543a773dcd938",
+      "candidate_sha256": "daa8aff62ed28618a4c54d446542287daa255c0acf2dc6c1637b968aea05d021",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 115,
-    "keep": 72,
+    "experiments": 116,
+    "keep": 73,
     "discard": 3,
     "crash": 40
   },
@@ -186,7 +186,7 @@
     "go": [
       "0111",
       "0115",
-      "0116"
+      "0118"
     ],
     "typescript": [
       "0105"
@@ -1961,6 +1961,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse attention scaling and weighted value reduction into analytic tape nodes",
       "measured": "2026-09-28T05:34:47Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0118",
+      "parent": "444ab6cd42e38931b77965f16a2695b7c8cb8b2f",
+      "track": "go",
+      "loss": 2.387866,
+      "steps_per_sec": 472.005093,
+      "loss_gain": 0.005544,
+      "speed_gain": 8.300496,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Fold attention scaling into dot products to remove scalar tape nodes",
+      "measured": "2026-09-28T05:36:49Z",
       "has_record": true
     }
   ],

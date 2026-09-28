@@ -390,6 +390,25 @@ func dot(x, y []*Value) *Value {
 	}
 }
 
+// dotScaled records scale*(x dot y) as one node, avoiding a separate
+// multiplication tape node and its constant leaf for every attention logit.
+func dotScaled(x, y []*Value, scale float64) *Value {
+	acc := 0.0
+	children := make([]*Value, 0, 2*len(x))
+	localGrads := make([]float64, 0, 2*len(x))
+	for i, xi := range x {
+		yi := y[i]
+		acc += xi.Data * yi.Data
+		children = append(children, xi, yi)
+		localGrads = append(localGrads, yi.Data*scale, xi.Data*scale)
+	}
+	return &Value{
+		Data:       acc * scale,
+		Children:   children,
+		LocalGrads: localGrads,
+	}
+}
+
 // softmax subtracts the max before exponentiating. That is not a numerical nicety,
 // it is what makes the function usable: `math.Exp` overflows above about 709, and
 // subtracting a constant leaves the result exactly unchanged.
@@ -536,7 +555,7 @@ func (m *model) forward(tokenID, posID int) []*Value {
 			attnLogits := make([]*Value, len(m.keys[li]))
 			for t := range m.keys[li] {
 				kH := m.keys[li][t][hs : hs+m.cfg.HeadDim]
-				attnLogits[t] = dot(qH, kH).DivScalar(math.Sqrt(float64(m.cfg.HeadDim)))
+				attnLogits[t] = dotScaled(qH, kH, 1/math.Sqrt(float64(m.cfg.HeadDim)))
 			}
 			attnWeights := softmax(attnLogits)
 
