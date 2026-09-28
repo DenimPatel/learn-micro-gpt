@@ -354,14 +354,34 @@ func softmax(logits []*Value) []*Value {
 		}
 	}
 	exps := make([]*Value, len(logits))
-	total := New(0)
+	totalData := 0.0
 	for i, v := range logits {
-		exps[i] = v.SubScalar(maxVal).Exp()
-		total = total.Add(exps[i])
+		e := math.Exp(v.Data - maxVal)
+		exps[i] = &Value{
+			Data:       e,
+			Children:   []*Value{v},
+			LocalGrads: []float64{e},
+		}
+		totalData += e
 	}
+	totalLocalGrads := make([]float64, len(exps))
+	for i := range totalLocalGrads {
+		totalLocalGrads[i] = 1
+	}
+	total := &Value{
+		Data:       totalData,
+		Children:   exps,
+		LocalGrads: totalLocalGrads,
+	}
+	inverseTotal := math.Pow(totalData, -1)
+	denominatorGrad := -math.Pow(totalData, -2)
 	out := make([]*Value, len(exps))
 	for i, e := range exps {
-		out[i] = e.Div(total)
+		out[i] = &Value{
+			Data:       e.Data * inverseTotal,
+			Children:   []*Value{e, total},
+			LocalGrads: []float64{inverseTotal, e.Data * denominatorGrad},
+		}
 	}
 	return out
 }

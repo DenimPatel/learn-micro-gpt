@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "4c81ace0243d9a6ab7faad3fc062b138ca8b71e9a182cea826bf9f33bba3bbfb",
+      "candidate_sha256": "0673eaf91f5efea2369ff1f928024e50d113b1bb32b7a21a70573e4dfdcd6db9",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0108",
-      "parent": "9b327875158d78346ae6933117474cc7e942c94a",
+      "run_id": "0109",
+      "parent": "39160a777a277c6956342c91ae4a3a107236f5e4",
       "track": "go",
       "loss": 2.397624,
-      "steps_per_sec": 253.728573,
+      "steps_per_sec": 305.030087,
       "loss_gain": 0.00148,
-      "speed_gain": 3.999526,
+      "speed_gain": 5.010382,
       "grad_ratio": 1.127378,
       "status": "keep",
       "reason": "",
-      "description": "Fuse attention dot products and hoist Adam bias corrections to cut tape and scalar overhead"
+      "description": "Fuse shifted exponentials normalization and division into fewer tape nodes"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 106,
-    "keep": 65,
+    "experiments": 107,
+    "keep": 66,
     "discard": 3,
     "crash": 38
   },
@@ -184,7 +184,7 @@
       "0102"
     ],
     "go": [
-      "0108"
+      "0109"
     ],
     "typescript": [
       "0105"
@@ -1824,6 +1824,21 @@
       "reason": "",
       "description": "Fuse attention dot products and hoist Adam bias corrections to cut tape and scalar overhead",
       "measured": "2026-09-28T05:10:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0109",
+      "parent": "39160a777a277c6956342c91ae4a3a107236f5e4",
+      "track": "go",
+      "loss": 2.397624,
+      "steps_per_sec": 305.030087,
+      "loss_gain": 0.00148,
+      "speed_gain": 5.010382,
+      "grad_ratio": 1.127378,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse shifted exponentials normalization and division into fewer tape nodes",
+      "measured": "2026-09-28T05:12:27Z",
       "has_record": true
     }
   ],
