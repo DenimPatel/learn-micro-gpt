@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 159,
+    "experiments": 160,
     "keep": 94,
     "discard": 7,
-    "crash": 58
+    "crash": 59
   },
   "pareto": {
     "rust": [
@@ -2624,6 +2624,21 @@
       "reason": "",
       "description": "Fuse token and position addition into first RMSNorm",
       "measured": "2026-09-28T08:22:45Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0162",
+      "parent": "4e0962e3df63fdf89b0555aecfcf569235a49ae4",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead",
+      "measured": "2026-09-28T08:24:50Z",
       "has_record": true
     }
   ],

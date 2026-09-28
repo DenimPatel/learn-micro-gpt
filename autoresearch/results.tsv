@@ -161,3 +161,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0159	47153c0c39cccbd7628e442daf0c8d9e86f63642	go	2.258892	148.488500	+0.059257	+1.925851	0.999990	keep		Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices
 0160	69db35be22f1981cf40f8174a61903bd6bc7a92f	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a 0.01 leaky-ReLU MLP activation to preserve gradients for negative preactivations
 0161	da34eff47c965a845df1836a4c76bd2d2d3b42c4	go	2.258892	141.149660	+0.059257	+1.781245	0.999990	keep		Fuse token and position addition into first RMSNorm
+0162	4e0962e3df63fdf89b0555aecfcf569235a49ae4	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead
