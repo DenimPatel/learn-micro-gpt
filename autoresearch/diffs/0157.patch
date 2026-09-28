@@ -1,0 +1,178 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -407,6 +407,59 @@ func dotScaled(x, y []*Value, scale float64) *Value {
+ 	}
+ }
+ 
++// attentionMix computes one attention head directly as a function of its
++// logits and values, recording the analytic softmax Jacobian on each output.
++func attentionMix(logits []*Value, values [][]*Value, start, width int) []*Value {
++	probabilities := make([]float64, len(logits))
++	maxVal := math.Inf(-1)
++	for _, logit := range logits {
++		if logit.Data > maxVal {
++			maxVal = logit.Data
++		}
++	}
++	total := 0.0
++	for i, logit := range logits {
++		probabilities[i] = math.Exp(logit.Data - maxVal)
++		total += probabilities[i]
++	}
++	inverseTotal := 1 / total
++	for i := range probabilities {
++		probabilities[i] *= inverseTotal
++	}
++
++	stride := 2 * len(logits)
++	childrenBacking := make([]*Value, width*stride)
++	localGradsBacking := make([]float64, width*stride)
++	out := make([]*Value, width)
++	for j := 0; j < width; j++ {
++		acc := 0.0
++		base := j * stride
++		for t, logit := range logits {
++			value := values[t][start+j]
++			acc += probabilities[t] * value.Data
++			childIndex := base + t
++			childrenBacking[childIndex] = logit
++			childrenBacking[childIndex+len(logits)] = value
++		}
++		for t := range logits {
++			childIndex := base + t
++			value := values[t][start+j]
++			localGradsBacking[childIndex] = probabilities[t] * (value.Data - acc)
++			localGradsBacking[childIndex+len(logits)] = probabilities[t]
++		}
++		out[j] = &Value{
++			Data:       acc,
++			Children:   childrenBacking[base : base+stride : base+stride],
++			LocalGrads: localGradsBacking[base : base+stride : base+stride],
++		}
++	}
++	return out
++}
++
+ // softmax subtracts the max before exponentiating. That is not a numerical nicety,
+ // it is what makes the function usable: `math.Exp` overflows above about 709, and
+ // subtracting a constant leaves the result exactly unchanged.
+@@ -519,6 +572,57 @@ func softmaxCrossEntropy(logits []*Value, target int) *Value {
+ 	}
+ }
+ 
++// linearCrossEntropy fuses the final vocabulary projection and its
++// cross-entropy into one tape node. Rows are recorded in reverse order so the
++// hidden-state gradients accumulate in the same order as separate linear nodes.
++func linearCrossEntropy(x []*Value, w Matrix, target int) *Value {
++	expData := make([]float64, len(w))
++	for i, row := range w {
++		acc := 0.0
++		for j, xi := range x {
++			acc += row[j].Data * xi.Data
++		}
++		expData[i] = acc
++	}
++	maxVal := math.Inf(-1)
++	for _, logit := range expData {
++		if logit > maxVal {
++			maxVal = logit
++		}
++	}
++	totalData := 0.0
++	for i, logit := range expData {
++		expData[i] = math.Exp(logit - maxVal)
++		totalData += expData[i]
++	}
++	inverseTotal := 1 / totalData
++
++	nIn := len(x)
++	stride := 2 * nIn
++	childrenBacking := make([]*Value, len(w)*stride)
++	localGradsBacking := make([]float64, len(w)*stride)
++	for i := len(w) - 1; i >= 0; i-- {
++		probability := expData[i] * inverseTotal
++		if i == target {
++			probability--
++		}
++		row := w[i]
++		base := i * stride
++		for j, xi := range x {
++			childIndex := base + j
++			childrenBacking[childIndex] = row[j]
++			childrenBacking[childIndex+nIn] = xi
++			localGradsBacking[childIndex] = probability * xi.Data
++			localGradsBacking[childIndex+nIn] = probability * row[j].Data
++		}
++	}
++	return &Value{
++		Data:       -math.Log(expData[target] * inverseTotal),
++		Children:   childrenBacking,
++		LocalGrads: localGradsBacking,
++	}
++}
++
+ // SubScalar is `val - m` for a plain Go float, recorded as a node so the
+ // subtraction is part of the graph.
+ func (v *Value) SubScalar(other float64) *Value {
+@@ -576,9 +680,8 @@ func rmsnorm(x []*Value) []*Value {
+ 	return out
+ }
+ 
+-// forward is a stateless function from one token id at one position to logits
+-// over the vocabulary, given the keys and values of earlier positions. That
+-// four-argument signature is the whole design: it *is* the KV cache, spelled the
+-// long way.
+-func (m *model) forward(tokenID, posID int) []*Value {
++// forwardHidden returns the final hidden state given the keys and values of
++// earlier positions.
++func (m *model) forwardHidden(tokenID, posID int) []*Value {
+ 	tokEmb := m.state["wte"][tokenID]
+ 	posEmb := m.state["wpe"][posID]
+ 	x := make([]*Value, len(tokEmb))
+@@ -626,19 +729,7 @@ func (m *model) forward(tokenID, posID int) []*Value {
+ 				attnLogits[t] = dotScaled(qH, kH, 1/math.Sqrt(float64(m.cfg.HeadDim)))
+ 			}
+-			attnWeights := softmax(attnLogits)
+-
+-			// A convex combination of the values, so the output magnitude does not
+-			// grow with sequence length.
+-			headOut := make([]*Value, m.cfg.HeadDim)
+-			valueColumn := make([]*Value, len(m.values[li]))
+-			for j := 0; j < m.cfg.HeadDim; j++ {
+-				for t := range m.values[li] {
+-					valueColumn[t] = m.values[li][t][j]
+-				}
+-				headOut[j] = dot(attnWeights, valueColumn)
+-			}
+-			xAttn = append(xAttn, headOut...)
++			xAttn = append(xAttn, attentionMix(attnLogits, m.values[li], hs, m.cfg.HeadDim)...)
+ 		}
+ 		x = linearResidual(xAttn, m.state[p+"attn_wo"], xResidual)
+ 
+@@ -652,7 +743,17 @@ func (m *model) forward(tokenID, posID int) []*Value {
+ 		x = linearResidual(x, m.state[p+"mlp_fc2"], xResidual)
+ 	}
+ 
+-	return linear(x, m.state["lm_head"])
++	return x
++}
++
++func (m *model) forward(tokenID, posID int) []*Value {
++	return linear(m.forwardHidden(tokenID, posID), m.state["lm_head"])
++}
++
++func (m *model) forwardLoss(tokenID, posID, target int) *Value {
++	return linearCrossEntropy(m.forwardHidden(tokenID, posID), m.state["lm_head"], target)
+ }
+ 
+ func addAll(a, b []*Value) []*Value {
+@@ -857,8 +958,7 @@ func main() {
+ 
+ 				docLosses := make([]*Value, 0, n)
+ 				for posID := 0; posID < n; posID++ {
+-					logits := docModel.forward(tokens[posID], posID)
+-					docLosses = append(docLosses, softmaxCrossEntropy(logits, tokens[posID+1]))
++					docLosses = append(docLosses, docModel.forwardLoss(tokens[posID], posID, tokens[posID+1]))
+ 				}
+ 				lossesByDoc[batchIndex] = docLosses
+ 			}(b)

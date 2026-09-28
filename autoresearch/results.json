@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "1ffc584678e3d9f150880ad757bdc0a301512bb69a5fdf2c65f310a91adf1ef9",
+      "candidate_sha256": "d3ef435d4c8bfdbfacfa967c61f821bbf3b1108f4a0f0a14f6bd3c9f3f9e1579",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 154,
-    "keep": 91,
+    "experiments": 155,
+    "keep": 92,
     "discard": 7,
     "crash": 56
   },
@@ -2551,6 +2551,21 @@
       "reason": "",
       "description": "Collapse the mean tape into one node to remove 127 add nodes and their allocations per step",
       "measured": "2026-09-28T08:07:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0157",
+      "parent": "41d95f6014a5410fd83e5983da4dd7419d5bce87",
+      "track": "go",
+      "loss": 2.301022,
+      "steps_per_sec": 373.0308,
+      "loss_gain": 0.041711,
+      "speed_gain": 6.350284,
+      "grad_ratio": 0.999984,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse attention mixing and vocabulary cross-entropy to cut tape nodes and allocations",
+      "measured": "2026-09-28T08:14:02Z",
       "has_record": true
     }
   ],

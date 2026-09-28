@@ -82,7 +82,7 @@
  	}
  	m.resetCache()
  	return m
-@@ -306,14 +332,134 @@
+@@ -306,12 +332,181 @@
  // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
@@ -111,8 +111,8 @@
 +			Children:   childrenBacking[base:end:end],
 +			LocalGrads: localGradsBacking[base:end:end],
 +		})
- 	}
- 	return out
++	}
++	return out
 +}
 +
 +// linearResidual applies a matrix projection and residual addition as one
@@ -219,10 +219,57 @@
 +		Children:   children,
 +		LocalGrads: localGrads,
 +	}
++}
++
++// attentionMix computes one attention head directly as a function of its
++// logits and values, recording the analytic softmax Jacobian on each output.
++func attentionMix(logits []*Value, values [][]*Value, start, width int) []*Value {
++	probabilities := make([]float64, len(logits))
++	maxVal := math.Inf(-1)
++	for _, logit := range logits {
++		if logit.Data > maxVal {
++			maxVal = logit.Data
++		}
++	}
++	total := 0.0
++	for i, logit := range logits {
++		probabilities[i] = math.Exp(logit.Data - maxVal)
++		total += probabilities[i]
++	}
++	inverseTotal := 1 / total
++	for i := range probabilities {
++		probabilities[i] *= inverseTotal
++	}
++
++	stride := 2 * len(logits)
++	childrenBacking := make([]*Value, width*stride)
++	localGradsBacking := make([]float64, width*stride)
++	out := make([]*Value, width)
++	for j := 0; j < width; j++ {
++		acc := 0.0
++		base := j * stride
++		for t, logit := range logits {
++			value := values[t][start+j]
++			acc += probabilities[t] * value.Data
++			childIndex := base + t
++			childrenBacking[childIndex] = logit
++			childrenBacking[childIndex+len(logits)] = value
++		}
++		for t := range logits {
++			childIndex := base + t
++			value := values[t][start+j]
++			localGradsBacking[childIndex] = probabilities[t] * (value.Data - acc)
++			localGradsBacking[childIndex+len(logits)] = probabilities[t]
++		}
++		out[j] = &Value{
++			Data:       acc,
++			Children:   childrenBacking[base : base+stride : base+stride],
++			LocalGrads: localGradsBacking[base : base+stride : base+stride],
++		}
+ 	}
+ 	return out
  }
- 
- // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +473,79 @@
+@@ -327,16 +522,130 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -304,10 +351,61 @@
 +		Children:   children,
 +		LocalGrads: localGrads,
 +	}
++}
++
++// linearCrossEntropy fuses the final vocabulary projection and its
++// cross-entropy into one tape node. Rows are recorded in reverse order so the
++// hidden-state gradients accumulate in the same order as separate linear nodes.
++func linearCrossEntropy(x []*Value, w Matrix, target int) *Value {
++	expData := make([]float64, len(w))
++	for i, row := range w {
++		acc := 0.0
++		for j, xi := range x {
++			acc += row[j].Data * xi.Data
++		}
++		expData[i] = acc
++	}
++	maxVal := math.Inf(-1)
++	for _, logit := range expData {
++		if logit > maxVal {
++			maxVal = logit
++		}
++	}
++	totalData := 0.0
++	for i, logit := range expData {
++		expData[i] = math.Exp(logit - maxVal)
++		totalData += expData[i]
++	}
++	inverseTotal := 1 / totalData
++
++	nIn := len(x)
++	stride := 2 * nIn
++	childrenBacking := make([]*Value, len(w)*stride)
++	localGradsBacking := make([]float64, len(w)*stride)
++	for i := len(w) - 1; i >= 0; i-- {
++		probability := expData[i] * inverseTotal
++		if i == target {
++			probability--
++		}
++		row := w[i]
++		base := i * stride
++		for j, xi := range x {
++			childIndex := base + j
++			childrenBacking[childIndex] = row[j]
++			childrenBacking[childIndex+nIn] = xi
++			localGradsBacking[childIndex] = probability * xi.Data
++			localGradsBacking[childIndex+nIn] = probability * row[j].Data
++		}
++	}
++	return &Value{
++		Data:       -math.Log(expData[target] * inverseTotal),
++		Children:   childrenBacking,
++		LocalGrads: localGradsBacking,
++	}
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +557,41 @@
+@@ -348,24 +657,48 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -354,7 +452,19 @@
  	}
  	return out
  }
-@@ -379,7 +614,9 @@
+ 
+-// forward is a stateless function from one token id at one position to logits
+-// over the vocabulary, given the keys and values of earlier positions. That
+-// four-argument signature is the whole design: it *is* the KV cache, spelled the
+-// long way.
+-func (m *model) forward(tokenID, posID int) []*Value {
++// forwardHidden returns the final hidden state given the keys and values of
++// earlier positions.
++func (m *model) forwardHidden(tokenID, posID int) []*Value {
+ 	tokEmb := m.state["wte"][tokenID]
+ 	posEmb := m.state["wpe"][posID]
+ 	x := make([]*Value, len(tokEmb))
+@@ -379,7 +712,9 @@
  
  		// 1) Multi-head attention block
  		xResidual := x
@@ -365,7 +475,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,52 +627,36 @@
+@@ -390,55 +725,35 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -393,26 +503,24 @@
 +				kH := m.keys[li][t][hs : hs+m.cfg.HeadDim]
 +				attnLogits[t] = dotScaled(qH, kH, 1/math.Sqrt(float64(m.cfg.HeadDim)))
  			}
- 			attnWeights := softmax(attnLogits)
- 
- 			// A convex combination of the values, so the output magnitude does not
- 			// grow with sequence length.
- 			headOut := make([]*Value, m.cfg.HeadDim)
-+			valueColumn := make([]*Value, len(m.values[li]))
- 			for j := 0; j < m.cfg.HeadDim; j++ {
+-			attnWeights := softmax(attnLogits)
+-
+-			// A convex combination of the values, so the output magnitude does not
+-			// grow with sequence length.
+-			headOut := make([]*Value, m.cfg.HeadDim)
+-			for j := 0; j < m.cfg.HeadDim; j++ {
 -				acc := New(0)
 -				for t := range vH {
 -					acc = acc.Add(attnWeights[t].Mul(vH[t][j]))
-+				for t := range m.values[li] {
-+					valueColumn[t] = m.values[li][t][j]
- 				}
+-				}
 -				headOut[j] = acc
-+				headOut[j] = dot(attnWeights, valueColumn)
- 			}
- 			xAttn = append(xAttn, headOut...)
- 		}
+-			}
+-			xAttn = append(xAttn, headOut...)
+-		}
 -		x = linear(xAttn, m.state[p+"attn_wo"])
 -		x = addAll(x, xResidual)
++			xAttn = append(xAttn, attentionMix(attnLogits, m.values[li], hs, m.cfg.HeadDim)...)
++		}
 +		x = linearResidual(xAttn, m.state[p+"attn_wo"], xResidual)
  
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
@@ -424,12 +532,26 @@
 -		}
 -		x = linear(x, m.state[p+"mlp_fc2"])
 -		x = addAll(x, xResidual)
+-	}
+-
+-	return linear(x, m.state["lm_head"])
 +		x = reluLinear(x, m.state[p+"mlp_fc1"])
 +		x = linearResidual(x, m.state[p+"mlp_fc2"], xResidual)
- 	}
++	}
++
++	return x
++}
++
++func (m *model) forward(tokenID, posID int) []*Value {
++	return linear(m.forwardHidden(tokenID, posID), m.state["lm_head"])
++}
++
++func (m *model) forwardLoss(tokenID, posID, target int) *Value {
++	return linearCrossEntropy(m.forwardHidden(tokenID, posID), m.state["lm_head"], target)
+ }
  
- 	return linear(x, m.state["lm_head"])
-@@ -529,8 +750,8 @@
+ func addAll(a, b []*Value) []*Value {
+@@ -529,8 +844,8 @@
  	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
  
  	cfg := Config{
@@ -440,7 +562,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +766,7 @@
+@@ -545,7 +860,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -449,7 +571,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +790,34 @@
+@@ -569,23 +884,33 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -488,8 +610,7 @@
 +
 +				docLosses := make([]*Value, 0, n)
 +				for posID := 0; posID < n; posID++ {
-+					logits := docModel.forward(tokens[posID], posID)
-+					docLosses = append(docLosses, softmaxCrossEntropy(logits, tokens[posID+1]))
++					docLosses = append(docLosses, docModel.forwardLoss(tokens[posID], posID, tokens[posID+1]))
 +				}
 +				lossesByDoc[batchIndex] = docLosses
 +			}(b)
@@ -501,7 +622,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +825,15 @@
+@@ -593,13 +918,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))
