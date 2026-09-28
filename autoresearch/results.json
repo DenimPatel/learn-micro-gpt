@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 133,
+    "experiments": 134,
     "keep": 79,
     "discard": 7,
-    "crash": 47
+    "crash": 48
   },
   "pareto": {
     "rust": [
@@ -2233,6 +2233,21 @@
       "reason": "the model request failed: The read operation timed out",
       "description": "the model returned nothing usable",
       "measured": "2026-09-28T06:52:57Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0136",
+      "parent": "4349006c62b4048572897a0fa6a108e1d747d233",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Batch projection tape operands into bounded backing arrays",
+      "measured": "2026-09-28T06:54:19Z",
       "has_record": true
     }
   ],
