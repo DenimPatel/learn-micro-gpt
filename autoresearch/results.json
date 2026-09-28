@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 122,
+    "experiments": 123,
     "keep": 77,
     "discard": 5,
-    "crash": 40
+    "crash": 41
   },
   "pareto": {
     "rust": [
@@ -2068,6 +2068,21 @@
       "reason": "no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance",
       "description": "Reduce the training minibatch from eight documents to four",
       "measured": "2026-09-28T06:01:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0125",
+      "parent": "517c9f025ab1f82bf079ccb046120666cc749b39",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "go build failed",
+      "description": "Batch fused projection and softmax tape operands into disjoint fixed-capacity backing arrays",
+      "measured": "2026-09-28T06:03:22Z",
       "has_record": true
     }
   ],
