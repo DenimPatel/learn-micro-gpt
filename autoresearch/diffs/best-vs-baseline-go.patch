@@ -55,7 +55,7 @@
  
  	v.Grad = 1
  	for i := len(topo) - 1; i >= 0; i-- {
-@@ -307,13 +326,88 @@
+@@ -307,13 +326,114 @@
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
  	for _, row := range w {
@@ -78,6 +78,32 @@
 +		})
  	}
  	return out
++}
++
++// linearResidual applies a matrix projection and residual addition as one
++// tape node, avoiding a separate Add node and its two child slices per output.
++func linearResidual(x []*Value, w Matrix, residual []*Value) []*Value {
++	out := make([]*Value, 0, len(w))
++	for i, row := range w {
++		acc := 0.0
++		children := make([]*Value, 0, 2*len(x)+2)
++		localGrads := make([]float64, 0, 2*len(x)+2)
++		for j, xi := range x {
++			acc += row[j].Data * xi.Data
++			children = append(children, row[j], xi)
++			localGrads = append(localGrads, xi.Data, row[j].Data)
++		}
++		residualValue := residual[i]
++		acc += residualValue.Data
++		children = append(children, residualValue)
++		localGrads = append(localGrads, 1)
++		out = append(out, &Value{
++			Data:       acc,
++			Children:   children,
++			LocalGrads: localGrads,
++		})
++	}
++	return out
 +}
 +
 +// reluLinear applies a matrix projection followed by ReLU as one tape node.
@@ -148,7 +174,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +421,67 @@
+@@ -327,16 +447,67 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -221,7 +247,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +493,29 @@
+@@ -348,15 +519,29 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -256,7 +282,7 @@
  	}
  	return out
  }
-@@ -390,37 +549,26 @@
+@@ -390,52 +575,36 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -302,7 +328,10 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -430,10 +578,7 @@
+-		x = linear(xAttn, m.state[p+"attn_wo"])
+-		x = addAll(x, xResidual)
++		x = linearResidual(xAttn, m.state[p+"attn_wo"], xResidual)
+ 
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
  		xResidual = x
  		x = rmsnorm(x)
@@ -310,11 +339,14 @@
 -		for i := range x {
 -			x[i] = x[i].ReLU()
 -		}
+-		x = linear(x, m.state[p+"mlp_fc2"])
+-		x = addAll(x, xResidual)
 +		x = reluLinear(x, m.state[p+"mlp_fc1"])
- 		x = linear(x, m.state[p+"mlp_fc2"])
- 		x = addAll(x, xResidual)
++		x = linearResidual(x, m.state[p+"mlp_fc2"], xResidual)
  	}
-@@ -545,7 +690,7 @@
+ 
+ 	return linear(x, m.state["lm_head"])
+@@ -545,7 +714,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -323,7 +355,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +714,34 @@
+@@ -569,23 +738,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -375,7 +407,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +749,15 @@
+@@ -593,13 +773,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

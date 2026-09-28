@@ -343,6 +343,32 @@ func linear(x []*Value, w Matrix) []*Value {
 	return out
 }
 
+// linearResidual applies a matrix projection and residual addition as one
+// tape node, avoiding a separate Add node and its two child slices per output.
+func linearResidual(x []*Value, w Matrix, residual []*Value) []*Value {
+	out := make([]*Value, 0, len(w))
+	for i, row := range w {
+		acc := 0.0
+		children := make([]*Value, 0, 2*len(x)+2)
+		localGrads := make([]float64, 0, 2*len(x)+2)
+		for j, xi := range x {
+			acc += row[j].Data * xi.Data
+			children = append(children, row[j], xi)
+			localGrads = append(localGrads, xi.Data, row[j].Data)
+		}
+		residualValue := residual[i]
+		acc += residualValue.Data
+		children = append(children, residualValue)
+		localGrads = append(localGrads, 1)
+		out = append(out, &Value{
+			Data:       acc,
+			Children:   children,
+			LocalGrads: localGrads,
+		})
+	}
+	return out
+}
+
 // reluLinear applies a matrix projection followed by ReLU as one tape node.
 // This avoids allocating a separate ReLU node for every projected feature.
 func reluLinear(x []*Value, w Matrix) []*Value {
@@ -572,15 +598,13 @@ func (m *model) forward(tokenID, posID int) []*Value {
 			}
 			xAttn = append(xAttn, headOut...)
 		}
-		x = linear(xAttn, m.state[p+"attn_wo"])
-		x = addAll(x, xResidual)
+		x = linearResidual(xAttn, m.state[p+"attn_wo"], xResidual)
 
 		// 2) MLP block. The same four steps: save, normalise, transform, add.
 		xResidual = x
 		x = rmsnorm(x)
 		x = reluLinear(x, m.state[p+"mlp_fc1"])
-		x = linear(x, m.state[p+"mlp_fc2"])
-		x = addAll(x, xResidual)
+		x = linearResidual(x, m.state[p+"mlp_fc2"], xResidual)
 	}
 
 	return linear(x, m.state["lm_head"])

@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "b22d1d8c8bdcd8b5aefa413dd77642c2dbf678a4bb3baa8d6561f5fa82d6ba62",
+      "candidate_sha256": "a2ee53a9756b38d500d63fdf9f66854a8aac8ac903195223efe4035480d3f986",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 120,
-    "keep": 76,
+    "experiments": 121,
+    "keep": 77,
     "discard": 4,
     "crash": 40
   },
@@ -2038,6 +2038,21 @@
       "reason": "",
       "description": "Increase the training minibatch from four documents to eight",
       "measured": "2026-09-28T05:53:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0123",
+      "parent": "c600c3bc46fd5519bc72b5f5724e8bbaf702fbd0",
+      "track": "go",
+      "loss": 2.269484,
+      "steps_per_sec": 61.137386,
+      "loss_gain": 0.054846,
+      "speed_gain": 0.204665,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse residual additions into projection nodes to reduce tape and allocation overhead",
+      "measured": "2026-09-28T05:58:29Z",
       "has_record": true
     }
   ],
