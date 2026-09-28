@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "f550280dc709f0b58c437860dabff92b5b781415ce5ace15201b145f5ec39f1d",
+      "candidate_sha256": "1ffc584678e3d9f150880ad757bdc0a301512bb69a5fdf2c65f310a91adf1ef9",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 153,
-    "keep": 90,
+    "experiments": 154,
+    "keep": 91,
     "discard": 7,
     "crash": 56
   },
@@ -2536,6 +2536,21 @@
       "reason": "",
       "description": "Remove the second transformer layer to gain speed with negligible loss regression",
       "measured": "2026-09-28T08:05:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0156",
+      "parent": "5d2b84e8ac9f8cd8b0e978e4ff968d29e84940a1",
+      "track": "go",
+      "loss": 2.301022,
+      "steps_per_sec": 391.652936,
+      "loss_gain": 0.041711,
+      "speed_gain": 6.717219,
+      "grad_ratio": 0.999982,
+      "status": "keep",
+      "reason": "",
+      "description": "Collapse the mean tape into one node to remove 127 add nodes and their allocations per step",
+      "measured": "2026-09-28T08:07:03Z",
       "has_record": true
     }
   ],

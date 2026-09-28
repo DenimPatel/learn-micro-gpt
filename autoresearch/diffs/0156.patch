@@ -1,0 +1,17 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -226,7 +226,15 @@
+ // Mean divides by a count, matching `(1 / n) * sum(losses)`.
+ func Mean(values []*Value) *Value {
+-	return Sum(values).DivScalar(float64(len(values)))
++	total := 0.0
++	localGrads := make([]float64, len(values))
++	meanGrad := 1 / float64(len(values))
++	for i, v := range values {
++		total += v.Data
++		localGrads[i] = meanGrad
++	}
++	return &Value{Data: total * meanGrad, Children: values[:len(values):len(values)], LocalGrads: localGrads}
+ }
+ 
+ // DivScalar is `x / n` for a plain Go float, as a *scalar* division so that the

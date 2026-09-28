@@ -55,7 +55,23 @@
  
  	v.Grad = 1
  	for i := len(topo) - 1; i >= 0; i-- {
-@@ -276,8 +295,8 @@
+@@ -214,7 +233,14 @@
+ 
+ // Mean divides by a count, matching `(1 / n) * sum(losses)`.
+ func Mean(values []*Value) *Value {
+-	return Sum(values).DivScalar(float64(len(values)))
++	total := 0.0
++	localGrads := make([]float64, len(values))
++	meanGrad := 1 / float64(len(values))
++	for i, v := range values {
++		total += v.Data
++		localGrads[i] = meanGrad
++	}
++	return &Value{Data: total * meanGrad, Children: values[:len(values):len(values)], LocalGrads: localGrads}
+ }
+ 
+ // DivScalar is `x / n` for a plain Go float, as a *scalar* division so that the
+@@ -276,8 +302,8 @@
  		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
@@ -66,7 +82,7 @@
  	}
  	m.resetCache()
  	return m
-@@ -306,14 +325,134 @@
+@@ -306,14 +332,134 @@
  // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
@@ -206,7 +222,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +466,79 @@
+@@ -327,16 +473,79 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -291,7 +307,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +550,41 @@
+@@ -348,15 +557,41 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -338,7 +354,7 @@
  	}
  	return out
  }
-@@ -379,7 +607,9 @@
+@@ -379,7 +614,9 @@
  
  		// 1) Multi-head attention block
  		xResidual := x
@@ -349,7 +365,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,52 +620,36 @@
+@@ -390,52 +627,36 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -413,7 +429,7 @@
  	}
  
  	return linear(x, m.state["lm_head"])
-@@ -529,8 +743,8 @@
+@@ -529,8 +750,8 @@
  	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
  
  	cfg := Config{
@@ -424,7 +440,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +759,7 @@
+@@ -545,7 +766,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -433,7 +449,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +783,34 @@
+@@ -569,23 +790,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -485,7 +501,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +818,15 @@
+@@ -593,13 +825,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))
