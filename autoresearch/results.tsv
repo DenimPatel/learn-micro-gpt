@@ -169,3 +169,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0167	522e3beb804a09200b39ec0bbb6ba2c40ca1dd76	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Raise the Go garbage-collection target to reduce autograd tape collection overhead
 0168	9771ae257cafe3e912209182b1b482a18e57d21d	go	2.230962	60.288232	+0.070889	+0.187933	0.999993	keep		Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads
 0169	6e1beb5b0d7af51cb554d34b8350482a0554f1f6	go	2.230962	66.188536	+0.070889	+0.304194	0.999993	keep		Right-size the autograd topology buffer to reduce per-step GC pressure
+0170	b509272993c012e8469dcc0b86ca2f037eae7574	go	2.224834	52.943912	+0.073441	+0.043219	0.999984	keep		Halve the one-layer MLP width from 64 to 32
