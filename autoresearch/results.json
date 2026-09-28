@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 134,
+    "experiments": 135,
     "keep": 79,
     "discard": 7,
-    "crash": 48
+    "crash": 49
   },
   "pareto": {
     "rust": [
@@ -2248,6 +2248,21 @@
       "reason": "the patch did not apply",
       "description": "Batch projection tape operands into bounded backing arrays",
       "measured": "2026-09-28T06:54:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0137",
+      "parent": "f8e53a53dca608ea2ea358aae2136a6363245ec3",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse vocabulary projection and cross entropy into one tape node",
+      "measured": "2026-09-28T06:56:44Z",
       "has_record": true
     }
   ],
