@@ -714,7 +714,7 @@ func main() {
 
 	started := time.Now()
 	for step := 0; step < *steps; step++ {
-		const batchSize = 4
+		const batchSize = 8
 		lossesByDoc := make([][]*Value, batchSize)
 		var wg sync.WaitGroup
 		wg.Add(batchSize)

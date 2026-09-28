@@ -344,7 +344,7 @@
 -			// very first step. Which is at least a loud failure rather than a
 -			// quietly wrong loss.
 -			losses = append(losses, probs[tokens[posID+1]].Log().Neg())
-+		const batchSize = 4
++		const batchSize = 8
 +		lossesByDoc := make([][]*Value, batchSize)
 +		var wg sync.WaitGroup
 +		wg.Add(batchSize)

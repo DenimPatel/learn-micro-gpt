@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "1f6aff54dc078ea36aad3465f33d08157a3a0c57d3d82a5df72e5b6d7a63cd4a",
+      "candidate_sha256": "b22d1d8c8bdcd8b5aefa413dd77642c2dbf678a4bb3baa8d6561f5fa82d6ba62",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0121",
-      "parent": "486fdebb6fa4c197d986d60f6ba935c1fa31d02d",
+      "run_id": "0122",
+      "parent": "e2f5f5db0c27344fd40139282757fc6d4c0dd72a",
       "track": "go",
-      "loss": 2.27431,
-      "steps_per_sec": 106.198455,
-      "loss_gain": 0.052836,
-      "speed_gain": 1.092559,
+      "loss": 2.269484,
+      "steps_per_sec": 65.84608,
+      "loss_gain": 0.054846,
+      "speed_gain": 0.297446,
       "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Parallelize the four per-document forward graphs to raise training throughput without changing the loss"
+      "description": "Increase the training minibatch from four documents to eight"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 119,
-    "keep": 75,
+    "experiments": 120,
+    "keep": 76,
     "discard": 4,
     "crash": 40
   },
@@ -187,7 +187,8 @@
       "0111",
       "0115",
       "0118",
-      "0121"
+      "0121",
+      "0122"
     ],
     "typescript": [
       "0105"
@@ -2022,6 +2023,21 @@
       "reason": "",
       "description": "Parallelize the four per-document forward graphs to raise training throughput without changing the loss",
       "measured": "2026-09-28T05:52:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0122",
+      "parent": "e2f5f5db0c27344fd40139282757fc6d4c0dd72a",
+      "track": "go",
+      "loss": 2.269484,
+      "steps_per_sec": 65.84608,
+      "loss_gain": 0.054846,
+      "speed_gain": 0.297446,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Increase the training minibatch from four documents to eight",
+      "measured": "2026-09-28T05:53:49Z",
       "has_record": true
     }
   ],
