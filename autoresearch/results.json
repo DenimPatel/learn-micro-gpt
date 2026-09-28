@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 145,
+    "experiments": 146,
     "keep": 85,
     "discard": 7,
-    "crash": 53
+    "crash": 54
   },
   "pareto": {
     "rust": [
@@ -2417,6 +2417,21 @@
       "reason": "the gradient check did not pass",
       "description": "Add zero-initialized biases to every trainable projection",
       "measured": "2026-09-28T07:44:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0148",
+      "parent": "ee6a09ad36a15fc8464e8ea75730c9575622ab19",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Restore the 16-wide four-head 4x-MLP configuration behind the best observed loss",
+      "measured": "2026-09-28T07:46:51Z",
       "has_record": true
     }
   ],
