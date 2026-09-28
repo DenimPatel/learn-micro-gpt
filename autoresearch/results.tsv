@@ -123,3 +123,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0121	486fdebb6fa4c197d986d60f6ba935c1fa31d02d	go	2.274310	106.198455	+0.052836	+1.092559	0.999989	keep		Parallelize the four per-document forward graphs to raise training throughput without changing the loss
 0122	e2f5f5db0c27344fd40139282757fc6d4c0dd72a	go	2.269484	65.846080	+0.054846	+0.297446	0.999989	keep		Increase the training minibatch from four documents to eight
 0123	c600c3bc46fd5519bc72b5f5724e8bbaf702fbd0	go	2.269484	61.137386	+0.054846	+0.204665	0.999989	keep		Fuse residual additions into projection nodes to reduce tape and allocation overhead
+0124	dced13289fc381c42fb1f13ee1740f0b253b4e2c	go	2.274310	47.719359	+0.052836	-0.059727	0.999989	discard	no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance	Reduce the training minibatch from eight documents to four

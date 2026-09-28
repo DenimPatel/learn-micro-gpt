@@ -1,0 +1,10 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -688,7 +688,7 @@ func main() {
+ 	started := time.Now()
+ 	for step := 0; step < *steps; step++ {
+-		const batchSize = 8
++		const batchSize = 4
+ 		lossesByDoc := make([][]*Value, batchSize)
+ 		var wg sync.WaitGroup
+ 		wg.Add(batchSize)

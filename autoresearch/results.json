@@ -167,9 +167,9 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 121,
+    "experiments": 122,
     "keep": 77,
-    "discard": 4,
+    "discard": 5,
     "crash": 40
   },
   "pareto": {
@@ -2053,6 +2053,21 @@
       "reason": "",
       "description": "Fuse residual additions into projection nodes to reduce tape and allocation overhead",
       "measured": "2026-09-28T05:58:29Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0124",
+      "parent": "dced13289fc381c42fb1f13ee1740f0b253b4e2c",
+      "track": "go",
+      "loss": 2.27431,
+      "steps_per_sec": 47.719359,
+      "loss_gain": 0.052836,
+      "speed_gain": -0.059727,
+      "grad_ratio": 0.999989,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance",
+      "description": "Reduce the training minibatch from eight documents to four",
+      "measured": "2026-09-28T06:01:03Z",
       "has_record": true
     }
   ],
