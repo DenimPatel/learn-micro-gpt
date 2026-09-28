@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "a2ee53a9756b38d500d63fdf9f66854a8aac8ac903195223efe4035480d3f986",
+      "candidate_sha256": "199e57397e9807c3a5e4580074814df64d761235789754cd19c01479381c3bf8",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0122",
-      "parent": "e2f5f5db0c27344fd40139282757fc6d4c0dd72a",
+      "run_id": "0126",
+      "parent": "f75b786c2c8cc85548a5867861550bc180d711fb",
       "track": "go",
-      "loss": 2.269484,
-      "steps_per_sec": 65.84608,
-      "loss_gain": 0.054846,
-      "speed_gain": 0.297446,
+      "loss": 2.26196,
+      "steps_per_sec": 62.177145,
+      "loss_gain": 0.057979,
+      "speed_gain": 0.225153,
       "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Increase the training minibatch from four documents to eight"
+      "description": "Use two attention heads of width eight instead of four heads of width four"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 123,
-    "keep": 77,
+    "experiments": 124,
+    "keep": 78,
     "discard": 5,
     "crash": 41
   },
@@ -188,7 +188,8 @@
       "0115",
       "0118",
       "0121",
-      "0122"
+      "0122",
+      "0126"
     ],
     "typescript": [
       "0105"
@@ -2083,6 +2084,21 @@
       "reason": "go build failed",
       "description": "Batch fused projection and softmax tape operands into disjoint fixed-capacity backing arrays",
       "measured": "2026-09-28T06:03:22Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0126",
+      "parent": "f75b786c2c8cc85548a5867861550bc180d711fb",
+      "track": "go",
+      "loss": 2.26196,
+      "steps_per_sec": 62.177145,
+      "loss_gain": 0.057979,
+      "speed_gain": 0.225153,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Use two attention heads of width eight instead of four heads of width four",
+      "measured": "2026-09-28T06:05:39Z",
       "has_record": true
     }
   ],

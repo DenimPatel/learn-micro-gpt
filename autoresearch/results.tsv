@@ -125,3 +125,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0123	c600c3bc46fd5519bc72b5f5724e8bbaf702fbd0	go	2.269484	61.137386	+0.054846	+0.204665	0.999989	keep		Fuse residual additions into projection nodes to reduce tape and allocation overhead
 0124	dced13289fc381c42fb1f13ee1740f0b253b4e2c	go	2.274310	47.719359	+0.052836	-0.059727	0.999989	discard	no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance	Reduce the training minibatch from eight documents to four
 0125	517c9f025ab1f82bf079ccb046120666cc749b39	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	go build failed	Batch fused projection and softmax tape operands into disjoint fixed-capacity backing arrays
+0126	f75b786c2c8cc85548a5867861550bc180d711fb	go	2.261960	62.177145	+0.057979	+0.225153	0.999989	keep		Use two attention heads of width eight instead of four heads of width four
