@@ -155,9 +155,9 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 103,
+    "experiments": 104,
     "keep": 63,
-    "discard": 2,
+    "discard": 3,
     "crash": 38
   },
   "pareto": {
@@ -1767,6 +1767,21 @@
       "reason": "frozen implementations/typescript, re-measured this session",
       "description": "the frozen TypeScript track, unmodified, as this session's comparator",
       "measured": "2026-09-27T17:04:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0106",
+      "parent": "63e740a6e77585c84d0358886428ef4bb5f7dd26",
+      "track": "go",
+      "loss": 2.37519,
+      "steps_per_sec": 48.374809,
+      "loss_gain": 0.010823,
+      "speed_gain": -0.046812,
+      "grad_ratio": 0.99999,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +1.1%, speed -4.7%; failing loss_material, speed_material",
+      "description": "Add tape-aware RMSNorm gradients through one shared scale node",
+      "measured": "2026-09-28T05:04:17Z",
       "has_record": true
     }
   ],

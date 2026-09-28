@@ -1,0 +1,30 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -303,16 +303,24 @@
+ // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
+ // inside the square root to bound the division.
+ func rmsnorm(x []*Value) []*Value {
++	n := float64(len(x))
+ 	ms := 0.0
+ 	for _, v := range x {
+ 		ms += v.Data * v.Data
+ 	}
+-	ms /= float64(len(x))
++	ms /= n
+ 	scale := math.Pow(ms+1e-5, -0.5)
++	scaleGrads := make([]float64, len(x))
++	for i, v := range x {
++		scaleGrads[i] = -v.Data * scale * scale * scale / n
++	}
++	scaleValue := &Value{
++		Data:       scale,
++		Children:   x,
++		LocalGrads: scaleGrads,
++	}
+ 	out := make([]*Value, len(x))
+ 	for i, v := range x {
+-		out[i] = v.MulScalar(scale)
++		out[i] = v.Mul(scaleValue)
+ 	}
+ 	return out
+ }
