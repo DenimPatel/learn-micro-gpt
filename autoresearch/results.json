@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 130,
+    "experiments": 131,
     "keep": 79,
     "discard": 7,
-    "crash": 44
+    "crash": 45
   },
   "pareto": {
     "rust": [
@@ -2188,6 +2188,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse RMS scaling into projection nodes to remove normalization multiply nodes",
       "measured": "2026-09-28T06:28:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0133",
+      "parent": "8f5d024a7d5246dda731fc2631f76d9af1cec911",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Collapse mean and batch softmax tape allocations to reduce Go overhead",
+      "measured": "2026-09-28T06:33:31Z",
       "has_record": true
     }
   ],
