@@ -293,7 +293,7 @@ func newMatrix(rng *rand.Rand, nout, nin int, std float64) Matrix {
 func newModel(cfg Config, rng *rand.Rand) *model {
 	m := &model{cfg: cfg, state: make(map[string]Matrix)}
 	std := 0.08
-	mlpWidth := 4 * cfg.NEmbd
+	mlpWidth := 2 * cfg.NEmbd
 	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
 	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
 	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
