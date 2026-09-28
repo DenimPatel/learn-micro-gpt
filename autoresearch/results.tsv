@@ -134,3 +134,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0132	c87d584e7a248992ae0582ee1cd0e5f3bd20ad18	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse RMS scaling into projection nodes to remove normalization multiply nodes
 0133	8f5d024a7d5246dda731fc2631f76d9af1cec911	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Collapse mean and batch softmax tape allocations to reduce Go overhead
 0134	a5b6e483ba2078717831e28bff4ef9af8b3bd8f5	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Batch linear projection tape operands into disjoint backing arrays
+0135	a4c950026597e8e5a63b7a2ca673b0db076d32dd	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: The read operation timed out	the model returned nothing usable
