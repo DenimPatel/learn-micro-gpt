@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 129,
+    "experiments": 130,
     "keep": 79,
     "discard": 7,
-    "crash": 43
+    "crash": 44
   },
   "pareto": {
     "rust": [
@@ -2173,6 +2173,21 @@
       "reason": "the patch did not apply",
       "description": "Reuse backward topological scratch and merge slice restoration into the reverse pass",
       "measured": "2026-09-28T06:23:47Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0132",
+      "parent": "c87d584e7a248992ae0582ee1cd0e5f3bd20ad18",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse RMS scaling into projection nodes to remove normalization multiply nodes",
+      "measured": "2026-09-28T06:28:55Z",
       "has_record": true
     }
   ],
