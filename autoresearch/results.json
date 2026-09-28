@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "85127414f6f9bc3e91a0292afcec15d0466bc544e63557d625a69b34ecefb2f2",
+      "candidate_sha256": "1006da6c7188f1e9d311fb917ab063360ad033633e515b3512b28c730396ed11",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 149,
-    "keep": 87,
+    "experiments": 150,
+    "keep": 88,
     "discard": 7,
     "crash": 55
   },
@@ -2477,6 +2477,21 @@
       "reason": "",
       "description": "Batch RMSNorm and softmax tape operands into bounded backing arrays",
       "measured": "2026-09-28T07:57:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0152",
+      "parent": "373d52da75195e4060e27e341d0fd85262eeacff",
+      "track": "go",
+      "loss": 2.362714,
+      "steps_per_sec": 222.967827,
+      "loss_gain": 0.016019,
+      "speed_gain": 3.393409,
+      "grad_ratio": 0.999946,
+      "status": "keep",
+      "reason": "",
+      "description": "Tie token embeddings to the vocabulary projection while preserving the initialization draw sequence",
+      "measured": "2026-09-28T07:59:26Z",
       "has_record": true
     }
   ],

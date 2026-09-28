@@ -288,7 +288,9 @@ func newModel(cfg Config, rng *rand.Rand) *model {
 	std := 0.08
 	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
 	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
-	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+	// Preserve the original draw sequence so this experiment isolates sharing.
+	_ = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+	m.state["lm_head"] = m.state["wte"]
 	for i := 0; i < cfg.NLayer; i++ {
 		p := fmt.Sprintf("layer%d.", i)
 		m.state[p+"attn_wq"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)

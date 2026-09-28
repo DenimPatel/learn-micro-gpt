@@ -151,3 +151,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0149	23c5603ac27bbe88a938adb246cb5794343f6fe2	go	2.292828	240.379945	+0.045124	+3.736501	0.999982	keep		Share tape backing arrays across projection rows to reduce allocations
 0150	e26ae807aef1d87c585739aa3377da23c04ae9e7	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Add a zero-initialized vocabulary logit bias to learn token marginals directly
 0151	f29bb2dc15c44c1ac1f5cc21206a7ee47a65d2ed	go	2.292828	253.224612	+0.045124	+3.989595	0.999982	keep		Batch RMSNorm and softmax tape operands into bounded backing arrays
+0152	373d52da75195e4060e27e341d0fd85262eeacff	go	2.362714	222.967827	+0.016019	+3.393409	0.999946	keep		Tie token embeddings to the vocabulary projection while preserving the initialization draw sequence
