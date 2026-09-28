@@ -111,7 +111,7 @@ MIT, Copyright (c) 2026 Vishal (TheVixhal). Our local revision does not match an
 ### `implementations/c/microgpt-scaled.c`
 
 - **Status:** derived (adapted by us)
-- **sha256:** `9e39a1811f8a54b86002821a88e11cf5bbb314b6b94a6b6aa7587670c23d2e71`
+- **sha256:** `40f542597357c110328b12cdb06972839f61a4b1bf9c4720c2ec94c660eb39ac`
 - **Origin:** C port in the microgpt-c lineage (scaled config, benchmark track)
 - **Author / copyright:** Vishal (TheVixhal), adapted by this repository
 - **License:** MIT

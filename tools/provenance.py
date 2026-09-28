@@ -166,7 +166,7 @@ PROVENANCE: tuple[ProvenanceEntry, ...] = (
     ),
     ProvenanceEntry(
         path="implementations/c/microgpt-scaled.c",
-        sha256="9e39a1811f8a54b86002821a88e11cf5bbb314b6b94a6b6aa7587670c23d2e71",
+        sha256="40f542597357c110328b12cdb06972839f61a4b1bf9c4720c2ec94c660eb39ac",
         origin="C port in the microgpt-c lineage (scaled config, benchmark track)",
         url="https://github.com/vixhal-baraiya/microgpt-c",
         license="MIT",

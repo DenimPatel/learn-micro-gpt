@@ -20,6 +20,7 @@ passes only while nobody touches them.
 
 from __future__ import annotations
 
+import re
 import shutil
 import tempfile
 import unittest
@@ -204,3 +205,85 @@ class TestTheRealManifestIsInASaneState(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _without_comments(text: str) -> str:
+    """Strip C comments, so a mention inside one does not count as a use."""
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    return re.sub(r"//[^\n]*", " ", text)
+
+
+class TestTheCHeadersItActuallyNeeds(unittest.TestCase):
+    """A portability check that does not need the platform it is checking.
+
+    `microgpt-scaled.c` used `uint32_t` without including `<stdint.h>`. Apple's
+    headers pull stdint.h in transitively through stdio.h and glibc's do not, so
+    the file compiled on every Mac and failed on the Linux CI runner with
+    `'uint32_t' undeclared` -- in a build that had never run, because the workflow
+    containing it has been failing at 0s since it was added.
+
+    The general form is a file using a type whose header it does not include,
+    relying on someone else's to include it, where the two platform C libraries
+    disagree about which. So the check is static: for each C file, does it use a
+    type from a header it does not include?
+
+    Not a substitute for building on the other platform -- a type from
+    `<stdbool.h>` or a POSIX header would slip past it. It catches the class that
+    actually bit us, on a machine that cannot build for the platform that noticed.
+    """
+
+    #: Type name -> the header required to declare it. Deliberately short: these
+    #: have a well-known single owning header, and every entry is a thing that has
+    #: been found missing rather than one imagined.
+    REQUIRED_HEADER = {
+        "uint8_t": "stdint.h",
+        "uint16_t": "stdint.h",
+        "uint32_t": "stdint.h",
+        "uint64_t": "stdint.h",
+        "int8_t": "stdint.h",
+        "int16_t": "stdint.h",
+        "int32_t": "stdint.h",
+        "int64_t": "stdint.h",
+        "intptr_t": "stdint.h",
+        "uintptr_t": "stdint.h",
+    }
+
+    SOURCES = (
+        "implementations/c/microgpt.c",
+        "implementations/c/microgpt-scaled.c",
+        "implementations/c/test_gradients.c",
+        "implementations/c/microgpt_simd.h",
+    )
+
+    def test_no_c_file_uses_a_type_whose_header_it_omits(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        for relative in self.SOURCES:
+            with self.subTest(source=relative):
+                code = _without_comments((root / relative).read_text(encoding="utf-8"))
+                includes = set(re.findall(r"#\s*include\s*<([^>]+)>", code))
+                for type_name, header in self.REQUIRED_HEADER.items():
+                    if not re.search(rf"\b{type_name}\b", code):
+                        continue
+                    self.assertIn(
+                        header,
+                        includes,
+                        f"{relative} uses {type_name} but does not include <{header}>. "
+                        f"It may compile here because another header pulls it in, and "
+                        f"fail on a runner whose libc does not.",
+                    )
+
+    def test_the_check_would_notice_a_removed_include(self) -> None:
+        """A guard on the guard.
+
+        Otherwise this test is a check that silently finds nothing, which is
+        indistinguishable from a check that works -- and the whole reason this
+        check exists is a bug nothing noticed.
+        """
+        offenders = []
+        for type_name, header in self.REQUIRED_HEADER.items():
+            code = "uint32_t x;\n#include <stdio.h>\n"
+            if re.search(rf"\b{type_name}\b", code) and header not in re.findall(
+                r"#\s*include\s*<([^>]+)>", code
+            ):
+                offenders.append(type_name)
+        self.assertIn("uint32_t", offenders)

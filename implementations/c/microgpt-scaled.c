@@ -26,7 +26,16 @@
 
 #include "microgpt_simd.h"
 
+/*
+ * stdint.h is here because the model file uses uint32_t, and not because of
+ * habit. Apple's headers happen to pull stdint.h in transitively through stdio.h
+ * and glibc's do not, so the file compiled on every Mac and failed on the Linux
+ * CI runner with `'uint32_t' undeclared`. The dependency was real and the header
+ * providing it was implicit, which is the kind of thing that only shows up on the
+ * platform whose headers nobody was looking at.
+ */
 #include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

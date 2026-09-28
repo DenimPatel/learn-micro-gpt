@@ -118,21 +118,50 @@ describe('measured rows exclude crashes', () => {
   })
 
   it('counts statuses consistently with the rows themselves', () => {
-    expect(research.counts.keep).toBe(statusCount('keep'))
-    expect(research.counts.discard).toBe(statusCount('discard'))
-    expect(research.counts.crash).toBe(statusCount('crash'))
-    expect(research.counts.experiments).toBe(experiments().length)
+    // `research.counts` is the ledger-wide total, so it is checked against
+    // ledger-wide counts. Comparing it against `statusCount('keep')` -- which
+    // defaults to one track -- passed for as long as one track was the whole
+    // ledger, and started failing the moment a second track had rows. The stat
+    // and the count it is checked against have to be about the same set.
+    const all = research.runs
+    const counted = (status: string) => all.filter((row) => row.status === status).length
+    expect(research.counts.keep).toBe(counted('keep'))
+    expect(research.counts.discard).toBe(counted('discard'))
+    expect(research.counts.crash).toBe(counted('crash'))
+    expect(research.counts.experiments).toBe(all.filter((row) => row.status !== 'baseline').length)
   })
 
-  it("excludes every track's baseline from the experiment count", () => {
-    // There is one baseline row per seeded track, not one for the ledger, so the
-    // subtracted count is the number of tracks with a baseline rather than a
-    // literal 1. Getting this wrong inflates the count by one per track and the
-    // page never notices, because the stat is compared against nothing else.
-    expect(experiments('rust').some((row) => row.status === 'baseline')).toBe(false)
-    const baselines = research.runs.filter((row) => row.status === 'baseline').length
-    expect(baselines).toBeGreaterThan(0)
-    expect(experiments('rust').length).toBe(research.runs.length - baselines)
+  it('gives per-track counts that add up to the ledger-wide ones', () => {
+    // The page's own stats are per-track, derived from the rows rather than read
+    // from `research.counts`, because it is showing one track's chart. So the two
+    // have to agree in aggregate, and the per-track numbers have to be that
+    // track's rows and not the whole ledger's.
+    const total = tracks().reduce((sum, track) => sum + statusCount('keep', track), 0)
+    expect(total).toBe(research.counts.keep)
+    for (const track of tracks()) {
+      const mine = trackRows(track)
+      expect(statusCount('keep', track)).toBe(mine.filter((row) => row.status === 'keep').length)
+      expect(experiments(track).length).toBe(mine.filter((row) => row.status !== 'baseline').length)
+    }
+  })
+
+  it("excludes each track's own baseline from its experiment count", () => {
+    // One baseline row per seeded track, not one for the ledger. And the count
+    // and the total it is subtracted from have to be about the *same* track: the
+    // first version of this compared a rust-only experiment count against every
+    // non-baseline row in the repository, which is only the same number while
+    // one track is the whole ledger.
+    for (const track of tracks()) {
+      const mine = trackRows(track)
+      const baselines = mine.filter((row) => row.status === 'baseline').length
+      expect(baselines).toBeLessThanOrEqual(1)
+      expect(experiments(track).some((row) => row.status === 'baseline')).toBe(false)
+      expect(experiments(track).length).toBe(mine.length - baselines)
+    }
+    // And the total is the sum of the parts, so the two cannot drift.
+    expect(tracks().reduce((sum, track) => sum + experiments(track).length, 0)).toBe(
+      research.runs.filter((row) => row.status !== 'baseline').length,
+    )
   })
 
   it("gives each track its own experiments, and never another track's", () => {
