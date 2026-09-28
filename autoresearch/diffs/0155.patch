@@ -1,0 +1,8 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -766,7 +766,7 @@
+ 	cfg := Config{
+-		NEmbd: 10, NHead: 1, NLayer: 2, BlockSize: 16,
++		NEmbd: 10, NHead: 1, NLayer: 1, BlockSize: 16,
+ 		HeadDim: 10, VocabSize: bos + 1, Steps: *steps,
+ 	}
