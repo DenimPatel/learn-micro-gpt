@@ -157,12 +157,22 @@ jobs:
         # Accelerate + NEON, scalar BLAS + NEON, and fully scalar must produce
         # the same loss curve. A fallback that rounded differently would look to
         # the parity gate exactly like a different algorithm.
-        run: |
-          make -C implementations/c test
-          # Accelerate does not exist on Linux, so on this runner that
-          # configuration is skipped and the script compares the two portable
-          # ones. It says so rather than passing silently.
-          grep -q 'equivalence' <(cd implementations/c && ./test_equivalence.sh)
+        #
+        # `make test` *is* `./test_equivalence.sh`, and the script runs under
+        # `set -e` and exits non-zero unless every configuration learns the same
+        # thing -- so its exit status is the check, and this step is it.
+        #
+        # This used to run the script a second time under `grep -q`, to assert
+        # that its output mentioned the comparison. That doubled the slowest step
+        # in this job, and because `grep -q` exits the moment it matches it closed
+        # the pipe on a script that was still writing, so the runner logged
+        # `printf: I/O error` from a `printf` downstream of the first match.
+        # Harmless, and not something to leave in a required gate.
+        #
+        # Accelerate does not exist on Linux, so on this runner that configuration
+        # is skipped and the script compares the two portable ones. It says so in
+        # its own output, which is why there is nothing here to grep for.
+        run: make -C implementations/c test
 
       - name: The C gradient and invariant tests
         # Includes the locked known-issue check on the backward pass's directional

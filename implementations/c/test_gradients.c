@@ -439,6 +439,25 @@ static void test_linear(void) {
   for (int i = 0; i < nin * nout; i++) w[i] = (float)(i % 7) * 0.1f;
   for (int i = 0; i < nout; i++) dx[i] = (float)(i % 5) * 0.25f;
 
+  /* `linear_bwd_x` is the *accumulating* form -- CBLAS beta = 1, "dx_out +=
+   * W^T * dout" -- so its destination has to start at zero.
+   *
+   * It was not zeroed, and the check compared a computed W^T * dx against
+   * (whatever was on the stack) + W^T * dx. So it passed exactly when that stack
+   * slot was zero, which it was on macOS and was not on the Linux runner. Same
+   * shape as the beta = 0 bug in microgpt_simd.h, one level up: an
+   * accumulate-versus-overwrite assumption that looks harmless because finite
+   * garbage adds to a finite result rather than producing NaN.
+   *
+   * Poisoned rather than merely zeroed, and then zeroed. Zeroing alone leaves
+   * this check correct by luck again -- it would pass on any machine whose stack
+   * happened to be clean and fail on one whose stack did not, which is the same
+   * bug with the same symptom. Filling first means that removing the memset makes
+   * this fail *deterministically* on every platform, which is the property a
+   * regression lock is supposed to have.
+   */
+  for (int i = 0; i < 64; i++) dx_want[i] = 1e30f;
+  memset(dx_want, 0, sizeof(dx_want));
   linear_bwd_x(dx, w, dx_want, nout, nin);
   memset(dx_got, 0, sizeof(dx_got));
   cblas_sgemv(CblasRowMajor, CblasTrans, nout, nin, 1.0f, w, nin, dx, 1, 0.0f, dx_got, 1);
