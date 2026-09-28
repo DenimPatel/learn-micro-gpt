@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "daa8aff62ed28618a4c54d446542287daa255c0acf2dc6c1637b968aea05d021",
+      "candidate_sha256": "84ded7edc28bce2ad1f7c5d7bc4b8af8255e4213eafccd03ee7b2bed0c8fea22",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0115",
-      "parent": "7f9312905abd7956a2eec52eeeeee15f15ee5e6e",
+      "run_id": "0120",
+      "parent": "382ab2c79e76669e978212897bc43dbe9744cadd",
       "track": "go",
-      "loss": 2.380292,
-      "steps_per_sec": 363.53741,
-      "loss_gain": 0.008698,
-      "speed_gain": 6.163224,
+      "loss": 2.27431,
+      "steps_per_sec": 53.963503,
+      "loss_gain": 0.052836,
+      "speed_gain": 0.063309,
       "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Differentiate the shared RMSNorm scale and add a second transformer block to lower loss"
+      "description": "Train on four-document minibatches to reduce gradient variance and improve final loss"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 117,
-    "keep": 73,
+    "experiments": 118,
+    "keep": 74,
     "discard": 4,
     "crash": 40
   },
@@ -186,7 +186,8 @@
     "go": [
       "0111",
       "0115",
-      "0118"
+      "0118",
+      "0120"
     ],
     "typescript": [
       "0105"
@@ -1991,6 +1992,21 @@
       "reason": "no axis improved materially: discarded: loss +0.4%, speed -22.4%; failing loss_material, speed_material, speed_tolerance",
       "description": "Restore beta2 0.99 and deepen the residual stack to four blocks",
       "measured": "2026-09-28T05:41:35Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0120",
+      "parent": "382ab2c79e76669e978212897bc43dbe9744cadd",
+      "track": "go",
+      "loss": 2.27431,
+      "steps_per_sec": 53.963503,
+      "loss_gain": 0.052836,
+      "speed_gain": 0.063309,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Train on four-document minibatches to reduce gradient variance and improve final loss",
+      "measured": "2026-09-28T05:48:50Z",
       "has_record": true
     }
   ],

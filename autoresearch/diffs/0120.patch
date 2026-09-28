@@ -1,0 +1,45 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -203,7 +203,7 @@
+ 	// avoids allocating and hashing a map entry for every node in every step.
+ 	// All slices have the required capacity because they are made immediately
+ 	// before their children are appended.
+-	topo := make([]*Value, 0, 16384)
++	topo := make([]*Value, 0, 65536)
+ 	visitedLeaf := make([]*Value, 0)
+ 	var buildTopo func(x *Value)
+ 	buildTopo = func(x *Value) {
+@@ -722,19 +722,23 @@
+ 
+ 	started := time.Now()
+ 	for step := 0; step < *steps; step++ {
+-		doc := docs[step%len(docs)]
+-		tokens := tokenize(doc, charIndex, bos)
+-		n := cfg.BlockSize
+-		if len(tokens)-1 < n {
+-			n = len(tokens) - 1
+-		}
+-
+-		m.resetCache()
+-		losses := make([]*Value, 0, n)
+-		for posID := 0; posID < n; posID++ {
+-			logits := m.forward(tokens[posID], posID)
+-			losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
++		const batchSize = 4
++		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		for b := 0; b < batchSize; b++ {
++			doc := docs[(step*batchSize+b)%len(docs)]
++			tokens := tokenize(doc, charIndex, bos)
++			n := cfg.BlockSize
++			if len(tokens)-1 < n {
++				n = len(tokens) - 1
++			}
++
++			m.resetCache()
++			for posID := 0; posID < n; posID++ {
++				logits := m.forward(tokens[posID], posID)
++				losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
++			}
+ 		}
+ 		loss := Mean(losses)
+ 		loss.Backward()

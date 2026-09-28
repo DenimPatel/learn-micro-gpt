@@ -10,7 +10,7 @@
 +	// avoids allocating and hashing a map entry for every node in every step.
 +	// All slices have the required capacity because they are made immediately
 +	// before their children are appended.
-+	topo := make([]*Value, 0, 16384)
++	topo := make([]*Value, 0, 65536)
 +	visitedLeaf := make([]*Value, 0)
  	var buildTopo func(x *Value)
  	buildTopo = func(x *Value) {
@@ -315,21 +315,46 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -580,12 +724,7 @@
- 		losses := make([]*Value, 0, n)
- 		for posID := 0; posID < n; posID++ {
- 			logits := m.forward(tokens[posID], posID)
+@@ -569,23 +713,21 @@
+ 
+ 	started := time.Now()
+ 	for step := 0; step < *steps; step++ {
+-		doc := docs[step%len(docs)]
+-		tokens := tokenize(doc, charIndex, bos)
+-		n := cfg.BlockSize
+-		if len(tokens)-1 < n {
+-			n = len(tokens) - 1
+-		}
+-
+-		m.resetCache()
+-		losses := make([]*Value, 0, n)
+-		for posID := 0; posID < n; posID++ {
+-			logits := m.forward(tokens[posID], posID)
 -			probs := softmax(logits)
 -			// Log FIRST, then negate: `-probs[target].log()`. The order matters,
 -			// and getting it backwards gives `log(-p)` and therefore NaN from the
 -			// very first step. Which is at least a loud failure rather than a
 -			// quietly wrong loss.
 -			losses = append(losses, probs[tokens[posID+1]].Log().Neg())
-+			losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
++		const batchSize = 4
++		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		for b := 0; b < batchSize; b++ {
++			doc := docs[(step*batchSize+b)%len(docs)]
++			tokens := tokenize(doc, charIndex, bos)
++			n := cfg.BlockSize
++			if len(tokens)-1 < n {
++				n = len(tokens) - 1
++			}
++
++			m.resetCache()
++			for posID := 0; posID < n; posID++ {
++				logits := m.forward(tokens[posID], posID)
++				losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
++			}
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +732,15 @@
+@@ -593,13 +735,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))
