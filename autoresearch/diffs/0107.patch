@@ -1,6 +1,7 @@
---- a/implementations/go/main.go
+--- a/autoresearch/candidate-go/main.go
 +++ b/autoresearch/candidate-go/main.go
-@@ -307,11 +307,19 @@
+@@ -327,16 +327,24 @@ func (m *model) params() []*Value {
+ // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
  	for _, row := range w {
@@ -10,12 +11,11 @@
 +		localGrads := make([]float64, 0, 2*len(x))
  		for i, xi := range x {
 -			acc = acc.Add(row[i].Mul(xi))
--		}
--		out = append(out, acc)
 +			acc += row[i].Data * xi.Data
 +			children = append(children, row[i], xi)
 +			localGrads = append(localGrads, xi.Data, row[i].Data)
-+		}
+ 		}
+-		out = append(out, acc)
 +		out = append(out, &Value{
 +			Data:       acc,
 +			Children:   children,

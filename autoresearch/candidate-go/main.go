@@ -307,11 +307,19 @@ func (m *model) params() []*Value {
 func linear(x []*Value, w Matrix) []*Value {
 	out := make([]*Value, 0, len(w))
 	for _, row := range w {
-		acc := New(0)
+		acc := 0.0
+		children := make([]*Value, 0, 2*len(x))
+		localGrads := make([]float64, 0, 2*len(x))
 		for i, xi := range x {
-			acc = acc.Add(row[i].Mul(xi))
+			acc += row[i].Data * xi.Data
+			children = append(children, row[i], xi)
+			localGrads = append(localGrads, xi.Data, row[i].Data)
 		}
-		out = append(out, acc)
+		out = append(out, &Value{
+			Data:       acc,
+			Children:   children,
+			LocalGrads: localGrads,
+		})
 	}
 	return out
 }

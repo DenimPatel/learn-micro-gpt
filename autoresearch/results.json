@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
+      "candidate_sha256": "ae79ac770d9995084080172c7d7b92e6c8c05cc1f0aff000e7d65ecff2634314",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -151,12 +151,24 @@
       "reason": "",
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
-    "go": null,
+    "go": {
+      "run_id": "0107",
+      "parent": "25a44ae6fcabc5e0acbb4cb0cbdc92a60c89a1c8",
+      "track": "go",
+      "loss": 2.401178,
+      "steps_per_sec": 212.632792,
+      "loss_gain": 0.0,
+      "speed_gain": 3.189765,
+      "grad_ratio": 1.126874,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse each linear dot product into one correctly differentiated tape node"
+    },
     "typescript": null
   },
   "counts": {
-    "experiments": 104,
-    "keep": 63,
+    "experiments": 105,
+    "keep": 64,
     "discard": 3,
     "crash": 38
   },
@@ -172,7 +184,7 @@
       "0102"
     ],
     "go": [
-      "0104"
+      "0107"
     ],
     "typescript": [
       "0105"
@@ -1782,6 +1794,21 @@
       "reason": "no axis improved materially: discarded: loss +1.1%, speed -4.7%; failing loss_material, speed_material",
       "description": "Add tape-aware RMSNorm gradients through one shared scale node",
       "measured": "2026-09-28T05:04:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0107",
+      "parent": "25a44ae6fcabc5e0acbb4cb0cbdc92a60c89a1c8",
+      "track": "go",
+      "loss": 2.401178,
+      "steps_per_sec": 212.632792,
+      "loss_gain": 0.0,
+      "speed_gain": 3.189765,
+      "grad_ratio": 1.126874,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse each linear dot product into one correctly differentiated tape node",
+      "measured": "2026-09-28T05:06:05Z",
       "has_record": true
     }
   ],
