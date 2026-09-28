@@ -1431,13 +1431,29 @@ def verify_model_spec(spec: dict[str, Any]) -> None:
         )
 
 
-def ask_model(spec: dict[str, Any], prompt: str, max_tokens: int) -> tuple[str, dict[str, Any]]:
+def build_messages(track: Track, prompt: str) -> list[dict[str, str]]:
+    """The two messages the model gets: the brief, then the ask.
+
+    Split out from `ask_model` so that it can be checked without a network or an
+    API key. That is not a stylistic preference: `ask_model`'s previous version
+    assembled the messages inline, referenced a `track` it did not have, and
+    nothing in the test suite called it -- so `make lint`, 193 Python tests, the
+    web suite, the full gate and `autoresearch verify` all passed, and the very
+    first experiment on a new track died with a `NameError` about 95 seconds in.
+    A function whose only caller needs a network is a function nothing tests.
+    """
+    return [
+        {"role": "system", "content": read_prompt(track)},
+        {"role": "user", "content": prompt},
+    ]
+
+
+def ask_model(
+    spec: dict[str, Any], track: Track, prompt: str, max_tokens: int
+) -> tuple[str, dict[str, Any]]:
     body: dict[str, Any] = {
         "model": spec["model"],
-        "messages": [
-            {"role": "system", "content": read_prompt(track)},
-            {"role": "user", "content": prompt},
-        ],
+        "messages": build_messages(track, prompt),
         "max_tokens": max_tokens,
         "temperature": spec.get("temperature", 1.0),
     }
@@ -2145,7 +2161,10 @@ def cmd_loop(args: argparse.Namespace) -> int:
         usage: dict[str, Any] = {}
         try:
             text, usage = ask_model(
-                spec, build_prompt(track, rows, baseline), int(spec.get("max_tokens", 32768))
+                spec,
+                track,
+                build_prompt(track, rows, baseline),
+                int(spec.get("max_tokens", 32768)),
             )
             # The raw response is kept, unedited, next to the run record. When a
             # session produces six crashes in a row this is the difference

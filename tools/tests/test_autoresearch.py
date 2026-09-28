@@ -712,6 +712,92 @@ class TestProposalParsingIsStrict(unittest.TestCase):
         self.assertEqual(ar.parse_proposal(response).description, "no summary given")
 
 
+class TestTheModelIsActuallyAsked(unittest.TestCase):
+    """The path that only runs when a real experiment runs.
+
+    Everything else in this file is testable without a network, which is exactly
+    the problem: `ask_model` was the one function nothing could reach, and it
+    assembled its messages around a `track` it did not have. So `--experiments 0`
+    passed, `verify` passed, the whole gate passed, and the first experiment on
+    the first new track died with a NameError after the model had already been
+    asked. These two tests reach the same code without a network, and check the
+    signature that made the NameError possible.
+    """
+
+    def test_the_messages_are_a_brief_and_an_ask_for_every_track(self) -> None:
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                messages = ar.build_messages(track, "THE ASK")
+                self.assertEqual([m["role"] for m in messages], ["system", "user"])
+                self.assertEqual(messages[1]["content"], "THE ASK")
+                self.assertEqual(messages[0]["content"], ar.read_prompt(track))
+                self.assertNotIn("{{", messages[0]["content"])
+
+    def test_ask_model_completes_for_every_track_with_a_stubbed_endpoint(self) -> None:
+        """End to end, with the network replaced.
+
+        `build_messages` proves the brief renders; this proves `ask_model` gets
+        that far and hands back a parsed reply. The bug it guards is a `NameError`
+        on the first network call, so stubbing the endpoint is the only way to
+        reach the code that had it.
+        """
+        import contextlib
+        import io
+        import json as json_module
+
+        spec = ar.read_json(ar.MODEL_JSON)
+        seen: list[dict] = []
+
+        @contextlib.contextmanager
+        def fake_urlopen(request, timeout=None):
+            seen.append(json_module.loads(request.data.decode("utf-8")))
+            payload = {
+                "model": spec["model"],
+                "choices": [{"message": {"content": "PATCH"}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 20},
+            }
+            yield io.BytesIO(json_module.dumps(payload).encode("utf-8"))
+
+        original_urlopen = ar.urllib.request.urlopen
+        original_key = ar.openrouter_key
+        ar.urllib.request.urlopen = fake_urlopen
+        ar.openrouter_key = lambda _spec: "stub"
+        try:
+            for track in ar.TRACKS.values():
+                with self.subTest(track=track.name):
+                    seen.clear()
+                    text, usage = ar.ask_model(spec, track, "THE ASK", 512)
+                    self.assertEqual(text, "PATCH")
+                    self.assertEqual(usage["model"], spec["model"])
+                    body = seen[0]
+                    self.assertEqual([m["role"] for m in body["messages"]], ["system", "user"])
+                    self.assertEqual(body["messages"][1]["content"], "THE ASK")
+                    self.assertIn(f"improving a {track.language} implementation", body["messages"][0]["content"])
+                    self.assertEqual(body["model"], spec["model"])
+                    self.assertEqual(body[spec["reasoning_parameter"]], spec["reasoning_effort"])
+        finally:
+            ar.urllib.request.urlopen = original_urlopen
+            ar.openrouter_key = original_key
+
+    def test_ask_model_takes_the_track_the_caller_has(self) -> None:
+        """A signature check, because the failure was a signature.
+
+        `ask_model` reads the brief for a track, so it must be *given* one. If a
+        future edit drops the parameter, the body breaks again -- at the first
+        experiment, on a real machine, after a real API call.
+        """
+        import inspect
+
+        parameters = list(inspect.signature(ar.ask_model).parameters)
+        self.assertIn(
+            "track",
+            parameters,
+            f"ask_model must be given the track it builds the brief for; got {parameters}",
+        )
+        annotation = inspect.signature(ar.ask_model).parameters["track"].annotation
+        self.assertEqual(annotation, "Track")
+
+
 class TestTheBriefIsWrittenForWhicheverTrackIsRunning(unittest.TestCase):
     """`autoresearch/program.md` is the system prompt, and it is a template.
 
