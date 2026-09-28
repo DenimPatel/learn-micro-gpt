@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "e768c608ad5c411a98f967a25fbc9c8da5df65631545107d8a45c8b89f4f1845",
+      "candidate_sha256": "ec94c06a303d9c39452e6eff3c9a9dfb8c2976afa1eb7fc0bee61f359715f4d5",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0168",
-      "parent": "9771ae257cafe3e912209182b1b482a18e57d21d",
+      "run_id": "0169",
+      "parent": "6e1beb5b0d7af51cb554d34b8350482a0554f1f6",
       "track": "go",
       "loss": 2.230962,
-      "steps_per_sec": 60.288232,
+      "steps_per_sec": 66.188536,
       "loss_gain": 0.070889,
-      "speed_gain": 0.187933,
+      "speed_gain": 0.304194,
       "grad_ratio": 0.999993,
       "status": "keep",
       "reason": "",
-      "description": "Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads"
+      "description": "Right-size the autograd topology buffer to reduce per-step GC pressure"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 166,
-    "keep": 98,
+    "experiments": 167,
+    "keep": 99,
     "discard": 7,
     "crash": 61
   },
@@ -191,7 +191,7 @@
       "0159",
       "0163",
       "0166",
-      "0168"
+      "0169"
     ],
     "typescript": [
       "0105"
@@ -2731,6 +2731,21 @@
       "reason": "",
       "description": "Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads",
       "measured": "2026-09-28T08:41:09Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0169",
+      "parent": "6e1beb5b0d7af51cb554d34b8350482a0554f1f6",
+      "track": "go",
+      "loss": 2.230962,
+      "steps_per_sec": 66.188536,
+      "loss_gain": 0.070889,
+      "speed_gain": 0.304194,
+      "grad_ratio": 0.999993,
+      "status": "keep",
+      "reason": "",
+      "description": "Right-size the autograd topology buffer to reduce per-step GC pressure",
+      "measured": "2026-09-28T08:43:40Z",
       "has_record": true
     }
   ],

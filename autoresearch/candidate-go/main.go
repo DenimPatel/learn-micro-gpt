@@ -184,7 +184,7 @@ func (v *Value) Backward() {
 	// avoids allocating and hashing a map entry for every node in every step.
 	// All slices have the required capacity because they are made immediately
 	// before their children are appended.
-	topo := make([]*Value, 0, 65536)
+	topo := make([]*Value, 0, 1024)
 	visitedLeaf := make([]*Value, 0)
 	var buildTopo func(x *Value)
 	buildTopo = func(x *Value) {
