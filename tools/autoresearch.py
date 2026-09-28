@@ -925,8 +925,17 @@ def measure_track(
     measured on.
     """
     tool = require_tool(track.tool, track.tool_hint)
-    is_candidate = project_dir == track.candidate
-    source_name = track.candidate_source if is_candidate else track.comparator_source
+    # Whether this is the *frozen* comparator, not whether it is the candidate.
+    # The distinction is load-bearing: a proposal is measured in a scratch copy of
+    # the candidate, which is neither the candidate nor the comparator, and the
+    # first version of this asked the wrong question. Answering "is this the
+    # candidate?" skipped the gradient probe for every scratch measurement, so
+    # every experiment was recorded with `grad_ratio 0.0` and, worse, no proposal
+    # was finite-difference checked at all. The gate the whole harness exists to
+    # enforce was silently not running, and 0.0 is the documented "not measured"
+    # value, so a skipped probe was indistinguishable from a probe that had not run.
+    is_frozen = project_dir == track.comparator
+    source_name = track.comparator_source if is_frozen else track.candidate_source
     for required in (DATASET, project_dir / source_name, track.probe):
         if not required.is_file():
             raise ResearchError(
@@ -935,7 +944,7 @@ def measure_track(
             )
     command = build_track(tool, track, project_dir)
     lint_track(tool, track, project_dir)
-    if is_candidate:
+    if not is_frozen:
         grad = run_gradient_probe(tool, track, project_dir)
     else:
         # The frozen track has no probe -- the probe is part of the candidate, not
@@ -1741,7 +1750,7 @@ def commit_message(
     message that only says "keep" is a worse record than the results.tsv row it
     duplicates.
     """
-    lines = [f"research(rust): {status} {run_id} -- {row.description}", ""]
+    lines = [f"research({row.track}): {status} {run_id} -- {row.description}", ""]
     if status == "crash":
         lines += [
             f"Experiment {run_id} · crash · {failure}",
@@ -2316,8 +2325,8 @@ def cmd_loop(args: argparse.Namespace) -> int:
                     # still the previous best -- and recording the wrong one
                     # would make `--verify-only` compare a run against code that
                     # never produced it.
-                    "autoresearch/candidate/src/lib.rs": (
-                        sha256_file(crate / "src" / "lib.rs")
+                    track.source_key: (
+                        sha256_file(crate / track.candidate_source)
                         if crate is not None
                         else ""
                     ),
@@ -2327,7 +2336,7 @@ def cmd_loop(args: argparse.Namespace) -> int:
 
         write_json(RUNS_DIR / f"{run_id}.json", record)
         append_ledger(row)
-        regenerate_best_diff()
+        regenerate_best_diff(track)
         render()
 
         message = commit_message(

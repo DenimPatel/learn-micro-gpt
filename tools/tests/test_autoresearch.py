@@ -28,6 +28,8 @@ pushing, which is the same argument that made `test_gradients.c` worthless.
 
 from __future__ import annotations
 
+import ast
+import inspect
 import json
 import unittest
 from pathlib import Path
@@ -712,6 +714,115 @@ class TestProposalParsingIsStrict(unittest.TestCase):
         self.assertEqual(ar.parse_proposal(response).description, "no summary given")
 
 
+class TestEveryTrackTakingFunctionIsCalledWithATrack(unittest.TestCase):
+    """A sweep for the whole bug class, in one place.
+
+    Making a function take a `track` means every call site has to change, and a
+    call site that does not is a `TypeError` on a line that only runs during a real
+    experiment. Four separate bugs of that shape got past a 193-test suite, lint, a
+    full gate and `verify`, because each sat downstream of a network call or a
+    measurement -- so every check that does not execute that line passed.
+
+    `ast` finds them without executing any of them.
+    """
+
+    @staticmethod
+    def _sweep(source: str) -> tuple[set[str], list[tuple[int, str]]]:
+        tree = ast.parse(source)
+        needs_track = {
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.args.args
+            and node.args.args[0].arg == "track"
+        }
+        offenders = [
+            (node.lineno, node.func.id)
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in needs_track
+            and not node.args
+            and not any(keyword.arg == "track" for keyword in node.keywords)
+        ]
+        return needs_track, offenders
+
+    def test_no_function_taking_a_track_is_called_without_one(self) -> None:
+        needs_track, offenders = self._sweep(open(ar.__file__, encoding="utf-8").read())
+        self.assertGreater(len(needs_track), 5, "the sweep is not finding the functions")
+        self.assertEqual(
+            offenders, [],
+            "these are called with no `track`, so they raise a TypeError the first "
+            "time a real experiment reaches them",
+        )
+
+    def test_the_sweep_would_notice_a_missing_argument(self) -> None:
+        """A guard on the guard.
+
+        Otherwise this test is a sweep that silently finds nothing, which is
+        indistinguishable from a sweep that works.
+        """
+        needs_track, offenders = self._sweep(
+            "def f(track: int) -> None: ...\n"
+            "def g() -> None:\n"
+            "    f(1)\n"
+            "    f()\n"
+        )
+        self.assertEqual(needs_track, {"f"})
+        self.assertEqual(offenders, [(4, "f")])
+
+
+class TestEveryProposalIsGradientChecked(unittest.TestCase):
+    """The gate the harness exists to enforce, checked from both sides.
+
+    A proposal is measured in a *scratch copy* of the candidate, so "is this the
+    candidate?" is the wrong question, and answering it wrong skips the probe for
+    every experiment. That happened: one conditional read the wrong way, every run
+    record came out with `grad_ratio 0.0`, and nothing failed.
+    """
+
+    def test_the_probe_is_gated_on_being_the_frozen_comparator(self) -> None:
+        source = inspect.getsource(ar.measure_track)
+        self.assertIn("if not is_frozen:", source)
+        self.assertNotIn("if is_candidate:", source)
+
+    def test_every_recorded_experiment_has_a_measured_ratio(self) -> None:
+        """The data check, which is the one that would actually have caught it."""
+        checked = 0
+        for row in ar.read_ledger():
+            if row.status not in ("keep", "discard"):
+                continue
+            record_path = ar.RUNS_DIR / f"{row.run_id}.json"
+            if not record_path.is_file():
+                continue
+            record = ar.read_json(record_path)
+            if "grad" not in record:
+                continue
+            checked += 1
+            self.assertGreater(
+                record["grad"]["ratio"], 0.0,
+                f"experiment {row.run_id} recorded no gradient ratio, so its "
+                f"proposal was never finite-difference checked",
+            )
+        self.assertGreater(checked, 0, "no run records carried a grad block to check")
+
+    def test_a_run_record_files_its_own_track_source_digest(self) -> None:
+        """A Go run's digest belongs under the Go key.
+
+        Recording it under the Rust key would make `verify` compare a Go candidate
+        against a Rust digest, and would silently pass whenever they happened to
+        match.
+        """
+        for track in ar.TRACKS.values():
+            with self.subTest(track=track.name):
+                rows = [r for r in ar.read_ledger() if r.track == track.name
+                        and r.status in ("keep", "discard")]
+                if not rows:
+                    continue
+                record = ar.read_json(ar.RUNS_DIR / f"{rows[-1].run_id}.json")
+                self.assertEqual(list(record.get("source_sha256", {})), [track.source_key])
+
+
 class TestTheModelIsActuallyAsked(unittest.TestCase):
     """The path that only runs when a real experiment runs.
 
@@ -786,8 +897,6 @@ class TestTheModelIsActuallyAsked(unittest.TestCase):
         future edit drops the parameter, the body breaks again -- at the first
         experiment, on a real machine, after a real API call.
         """
-        import inspect
-
         parameters = list(inspect.signature(ar.ask_model).parameters)
         self.assertIn(
             "track",
