@@ -473,15 +473,29 @@ func (v *Value) SubScalar(other float64) *Value {
 // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
 // inside the square root to bound the division.
 func rmsnorm(x []*Value) []*Value {
+	n := float64(len(x))
 	ms := 0.0
-	for _, v := range x {
+	localGrads := make([]float64, len(x))
+	for i, v := range x {
 		ms += v.Data * v.Data
+		localGrads[i] = 2 * v.Data / n
 	}
-	ms /= float64(len(x))
-	scale := math.Pow(ms+1e-5, -0.5)
+	ms /= n
+	mean := &Value{
+		Data:       ms,
+		Children:   x,
+		LocalGrads: localGrads,
+	}
+	shifted := ms + 1e-5
+	scaleData := math.Pow(shifted, -0.5)
+	scale := &Value{
+		Data:       scaleData,
+		Children:   []*Value{mean},
+		LocalGrads: []float64{-0.5 * scaleData / shifted},
+	}
 	out := make([]*Value, len(x))
 	for i, v := range x {
-		out[i] = v.MulScalar(scale)
+		out[i] = v.Mul(scale)
 	}
 	return out
 }
@@ -640,7 +654,7 @@ func main() {
 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
 
 	cfg := Config{
-		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
+		NEmbd: 16, NHead: 4, NLayer: 2, BlockSize: 16,
 		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
 	}
 	m := newModel(cfg, rng)

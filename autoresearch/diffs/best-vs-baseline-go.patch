@@ -194,7 +194,42 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -390,37 +515,26 @@
+@@ -348,15 +473,29 @@
+ // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
+ // inside the square root to bound the division.
+ func rmsnorm(x []*Value) []*Value {
++	n := float64(len(x))
+ 	ms := 0.0
+-	for _, v := range x {
++	localGrads := make([]float64, len(x))
++	for i, v := range x {
+ 		ms += v.Data * v.Data
+-	}
+-	ms /= float64(len(x))
+-	scale := math.Pow(ms+1e-5, -0.5)
++		localGrads[i] = 2 * v.Data / n
++	}
++	ms /= n
++	mean := &Value{
++		Data:       ms,
++		Children:   x,
++		LocalGrads: localGrads,
++	}
++	shifted := ms + 1e-5
++	scaleData := math.Pow(shifted, -0.5)
++	scale := &Value{
++		Data:       scaleData,
++		Children:   []*Value{mean},
++		LocalGrads: []float64{-0.5 * scaleData / shifted},
++	}
+ 	out := make([]*Value, len(x))
+ 	for i, v := range x {
+-		out[i] = v.MulScalar(scale)
++		out[i] = v.Mul(scale)
+ 	}
+ 	return out
+ }
+@@ -390,37 +529,26 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -240,7 +275,7 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -430,10 +544,7 @@
+@@ -430,10 +558,7 @@
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
  		xResidual = x
  		x = rmsnorm(x)
@@ -252,7 +287,16 @@
  		x = linear(x, m.state[p+"mlp_fc2"])
  		x = addAll(x, xResidual)
  	}
-@@ -545,7 +656,7 @@
+@@ -529,7 +654,7 @@
+ 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
+ 
+ 	cfg := Config{
+-		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
++		NEmbd: 16, NHead: 4, NLayer: 2, BlockSize: 16,
+ 		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
+ 	}
+ 	m := newModel(cfg, rng)
+@@ -545,7 +670,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -261,7 +305,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -580,12 +691,7 @@
+@@ -580,12 +705,7 @@
  		losses := make([]*Value, 0, n)
  		for posID := 0; posID < n; posID++ {
  			logits := m.forward(tokens[posID], posID)
@@ -275,7 +319,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +699,15 @@
+@@ -593,13 +713,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

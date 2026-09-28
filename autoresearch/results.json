@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "6fbd0a2ea6cdb3ed9fa522d11b9a6aef0592e4d55a959d7fd863833e09d9b597",
+      "candidate_sha256": "3f3de2d9d641445460b88b02c2123a765f00153a83c35f044615293584b3f64d",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0111",
-      "parent": "172e5ff26217aaa2462440d29aaae052bc630b42",
+      "run_id": "0115",
+      "parent": "7f9312905abd7956a2eec52eeeeee15f15ee5e6e",
       "track": "go",
-      "loss": 2.397624,
-      "steps_per_sec": 512.316133,
-      "loss_gain": 0.00148,
-      "speed_gain": 9.094794,
-      "grad_ratio": 1.127378,
+      "loss": 2.380292,
+      "steps_per_sec": 363.53741,
+      "loss_gain": 0.008698,
+      "speed_gain": 6.163224,
+      "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Map-free topological marking with a 16K-node buffer"
+      "description": "Differentiate the shared RMSNorm scale and add a second transformer block to lower loss"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 112,
-    "keep": 70,
+    "experiments": 113,
+    "keep": 71,
     "discard": 3,
     "crash": 39
   },
@@ -184,7 +184,8 @@
       "0102"
     ],
     "go": [
-      "0111"
+      "0111",
+      "0115"
     ],
     "typescript": [
       "0105"
@@ -1914,6 +1915,21 @@
       "reason": "",
       "description": "Fuse final softmax cross entropy into one tape node",
       "measured": "2026-09-28T05:28:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0115",
+      "parent": "7f9312905abd7956a2eec52eeeeee15f15ee5e6e",
+      "track": "go",
+      "loss": 2.380292,
+      "steps_per_sec": 363.53741,
+      "loss_gain": 0.008698,
+      "speed_gain": 6.163224,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Differentiate the shared RMSNorm scale and add a second transformer block to lower loss",
+      "measured": "2026-09-28T05:31:33Z",
       "has_record": true
     }
   ],
