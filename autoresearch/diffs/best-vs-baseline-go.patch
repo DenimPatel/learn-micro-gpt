@@ -1,6 +1,14 @@
 --- a/implementations/go/main.go
 +++ b/autoresearch/candidate-go/main.go
-@@ -179,20 +179,38 @@
+@@ -40,6 +40,7 @@
+ 	"math/rand"
+ 	"os"
+ 	"strings"
++	"sync"
+ 	"time"
+ )
+ 
+@@ -179,20 +180,38 @@
  // document, every position, and every head, so its gradient has many
  // contributions to sum.
  func (v *Value) Backward() {
@@ -47,7 +55,7 @@
  
  	v.Grad = 1
  	for i := len(topo) - 1; i >= 0; i-- {
-@@ -307,13 +325,88 @@
+@@ -307,13 +326,88 @@
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
  	for _, row := range w {
@@ -140,7 +148,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,16 +420,67 @@
+@@ -327,16 +421,67 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -213,7 +221,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,15 +492,29 @@
+@@ -348,15 +493,29 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -248,7 +256,7 @@
  	}
  	return out
  }
-@@ -390,37 +548,26 @@
+@@ -390,37 +549,26 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -294,7 +302,7 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -430,10 +577,7 @@
+@@ -430,10 +578,7 @@
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
  		xResidual = x
  		x = rmsnorm(x)
@@ -306,7 +314,7 @@
  		x = linear(x, m.state[p+"mlp_fc2"])
  		x = addAll(x, xResidual)
  	}
-@@ -545,7 +689,7 @@
+@@ -545,7 +690,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -315,7 +323,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +713,21 @@
+@@ -569,23 +714,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -337,24 +345,37 @@
 -			// quietly wrong loss.
 -			losses = append(losses, probs[tokens[posID+1]].Log().Neg())
 +		const batchSize = 4
-+		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		lossesByDoc := make([][]*Value, batchSize)
++		var wg sync.WaitGroup
++		wg.Add(batchSize)
 +		for b := 0; b < batchSize; b++ {
-+			doc := docs[(step*batchSize+b)%len(docs)]
-+			tokens := tokenize(doc, charIndex, bos)
-+			n := cfg.BlockSize
-+			if len(tokens)-1 < n {
-+				n = len(tokens) - 1
-+			}
++			go func(batchIndex int) {
++				defer wg.Done()
++				docModel := *m
++				docModel.resetCache()
++				doc := docs[(step*batchSize+batchIndex)%len(docs)]
++				tokens := tokenize(doc, charIndex, bos)
++				n := cfg.BlockSize
++				if len(tokens)-1 < n {
++					n = len(tokens) - 1
++				}
 +
-+			m.resetCache()
-+			for posID := 0; posID < n; posID++ {
-+				logits := m.forward(tokens[posID], posID)
-+				losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
-+			}
++				docLosses := make([]*Value, 0, n)
++				for posID := 0; posID < n; posID++ {
++					logits := docModel.forward(tokens[posID], posID)
++					docLosses = append(docLosses, softmaxCrossEntropy(logits, tokens[posID+1]))
++				}
++				lossesByDoc[batchIndex] = docLosses
++			}(b)
++		}
++		wg.Wait()
++		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		for _, docLosses := range lossesByDoc {
++			losses = append(losses, docLosses...)
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +735,15 @@
+@@ -593,13 +749,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

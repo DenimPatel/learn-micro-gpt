@@ -1,0 +1,55 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -38,6 +38,7 @@ import (
+ 	"math/rand"
+ 	"os"
+ 	"strings"
++	"sync"
+ 	"time"
+ )
+@@ -707,10 +708,12 @@ func main() {
+ 	started := time.Now()
+ 	for step := 0; step < *steps; step++ {
+ 		const batchSize = 4
+-		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		lossesByDoc := make([][]*Value, batchSize)
++		var wg sync.WaitGroup
++		wg.Add(batchSize)
+ 		for b := 0; b < batchSize; b++ {
+-			doc := docs[(step*batchSize+b)%len(docs)]
+-			tokens := tokenize(doc, charIndex, bos)
+-			n := cfg.BlockSize
+-			if len(tokens)-1 < n {
+-				n = len(tokens) - 1
+-			}
++			go func(batchIndex int) {
++				defer wg.Done()
++				docModel := *m
++				docModel.resetCache()
++				doc := docs[(step*batchSize+batchIndex)%len(docs)]
++				tokens := tokenize(doc, charIndex, bos)
++				n := cfg.BlockSize
++				if len(tokens)-1 < n {
++					n = len(tokens) - 1
++				}
+ 
+-			m.resetCache()
+-			for posID := 0; posID < n; posID++ {
+-				logits := m.forward(tokens[posID], posID)
+-				losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
+-			}
++				docLosses := make([]*Value, 0, n)
++				for posID := 0; posID < n; posID++ {
++					logits := docModel.forward(tokens[posID], posID)
++					docLosses = append(docLosses, softmaxCrossEntropy(logits, tokens[posID+1]))
++				}
++				lossesByDoc[batchIndex] = docLosses
++			}(b)
+ 		}
++		wg.Wait()
++		losses := make([]*Value, 0, batchSize*cfg.BlockSize)
++		for _, docLosses := range lossesByDoc {
++			losses = append(losses, docLosses...)
++		}
+ 		loss := Mean(losses)
+ 		loss.Backward()

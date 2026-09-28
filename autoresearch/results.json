@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "84ded7edc28bce2ad1f7c5d7bc4b8af8255e4213eafccd03ee7b2bed0c8fea22",
+      "candidate_sha256": "1f6aff54dc078ea36aad3465f33d08157a3a0c57d3d82a5df72e5b6d7a63cd4a",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0120",
-      "parent": "382ab2c79e76669e978212897bc43dbe9744cadd",
+      "run_id": "0121",
+      "parent": "486fdebb6fa4c197d986d60f6ba935c1fa31d02d",
       "track": "go",
       "loss": 2.27431,
-      "steps_per_sec": 53.963503,
+      "steps_per_sec": 106.198455,
       "loss_gain": 0.052836,
-      "speed_gain": 0.063309,
+      "speed_gain": 1.092559,
       "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Train on four-document minibatches to reduce gradient variance and improve final loss"
+      "description": "Parallelize the four per-document forward graphs to raise training throughput without changing the loss"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 118,
-    "keep": 74,
+    "experiments": 119,
+    "keep": 75,
     "discard": 4,
     "crash": 40
   },
@@ -187,7 +187,7 @@
       "0111",
       "0115",
       "0118",
-      "0120"
+      "0121"
     ],
     "typescript": [
       "0105"
@@ -2007,6 +2007,21 @@
       "reason": "",
       "description": "Train on four-document minibatches to reduce gradient variance and improve final loss",
       "measured": "2026-09-28T05:48:50Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0121",
+      "parent": "486fdebb6fa4c197d986d60f6ba935c1fa31d02d",
+      "track": "go",
+      "loss": 2.27431,
+      "steps_per_sec": 106.198455,
+      "loss_gain": 0.052836,
+      "speed_gain": 1.092559,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Parallelize the four per-document forward graphs to raise training throughput without changing the loss",
+      "measured": "2026-09-28T05:52:10Z",
       "has_record": true
     }
   ],
