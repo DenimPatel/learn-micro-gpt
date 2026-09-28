@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "ca0ba434d1bae2fe1f0b014626fe1f86cde5898ea4df0a7b4bb393608bf3bdd9",
+      "candidate_sha256": "52ae4b78c3b372085ec17b51d334c1b1d62a8b2b88f3c941d6110ed3c7eefb9e",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 158,
-    "keep": 93,
+    "experiments": 159,
+    "keep": 94,
     "discard": 7,
     "crash": 58
   },
@@ -2609,6 +2609,21 @@
       "reason": "the patch did not apply",
       "description": "Use a 0.01 leaky-ReLU MLP activation to preserve gradients for negative preactivations",
       "measured": "2026-09-28T08:20:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0161",
+      "parent": "da34eff47c965a845df1836a4c76bd2d2d3b42c4",
+      "track": "go",
+      "loss": 2.258892,
+      "steps_per_sec": 141.14966,
+      "loss_gain": 0.059257,
+      "speed_gain": 1.781245,
+      "grad_ratio": 0.99999,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse token and position addition into first RMSNorm",
+      "measured": "2026-09-28T08:22:45Z",
       "has_record": true
     }
   ],

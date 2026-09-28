@@ -697,16 +697,64 @@ func rmsnorm(x []*Value) []*Value {
 	return out
 }
 
+// rmsnormAdd computes rmsnorm(a+b) without materializing the intermediate
+// addition nodes. Their derivatives are folded directly into the norm tape.
+func rmsnormAdd(a, b []*Value) []*Value {
+	n := float64(len(a))
+	ms := 0.0
+	meanChildren := make([]*Value, 2*len(a))
+	meanLocalGrads := make([]float64, 2*len(a))
+	for i := range a {
+		x := a[i].Data + b[i].Data
+		ms += x * x
+		childIndex := 2 * i
+		meanChildren[childIndex] = a[i]
+		meanChildren[childIndex+1] = b[i]
+		meanLocalGrads[childIndex] = 2 * x / n
+		meanLocalGrads[childIndex+1] = 2 * x / n
+	}
+	ms /= n
+	mean := &Value{
+		Data:       ms,
+		Children:   meanChildren,
+		LocalGrads: meanLocalGrads,
+	}
+	shifted := ms + 1e-5
+	scaleData := math.Pow(shifted, -0.5)
+	scale := &Value{
+		Data:       scaleData,
+		Children:   []*Value{mean},
+		LocalGrads: []float64{-0.5 * scaleData / shifted},
+	}
+
+	out := make([]*Value, len(a))
+	stride := 3 * len(a)
+	childrenBacking := make([]*Value, stride)
+	localGradsBacking := make([]float64, stride)
+	for i := range a {
+		x := a[i].Data + b[i].Data
+		base := 3 * i
+		childrenBacking[base] = a[i]
+		childrenBacking[base+1] = b[i]
+		childrenBacking[base+2] = scale
+		localGradsBacking[base] = scale.Data
+		localGradsBacking[base+1] = scale.Data
+		localGradsBacking[base+2] = x
+		out[i] = &Value{
+			Data:       x * scale.Data,
+			Children:   childrenBacking[base : base+3 : base+3],
+			LocalGrads: localGradsBacking[base : base+3 : base+3],
+		}
+	}
+	return out
+}
+
 // forwardHidden returns the final hidden state given the keys and values of
 // earlier positions.
 func (m *model) forwardHidden(tokenID, posID int) []*Value {
 	tokEmb := m.state["wte"][tokenID]
 	posEmb := m.state["wpe"][posID]
-	x := make([]*Value, len(tokEmb))
-	for i := range tokEmb {
-		x[i] = tokEmb[i].Add(posEmb[i])
-	}
-	x = rmsnorm(x)
+	x := rmsnormAdd(tokEmb, posEmb)
 
 	for li := 0; li < m.cfg.NLayer; li++ {
 		p := fmt.Sprintf("layer%d.", li)
