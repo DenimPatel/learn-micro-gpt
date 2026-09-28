@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 147,
+    "experiments": 148,
     "keep": 86,
     "discard": 7,
-    "crash": 54
+    "crash": 55
   },
   "pareto": {
     "rust": [
@@ -2447,6 +2447,21 @@
       "reason": "",
       "description": "Share tape backing arrays across projection rows to reduce allocations",
       "measured": "2026-09-28T07:49:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0150",
+      "parent": "e26ae807aef1d87c585739aa3377da23c04ae9e7",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Add a zero-initialized vocabulary logit bias to learn token marginals directly",
+      "measured": "2026-09-28T07:52:56Z",
       "has_record": true
     }
   ],
