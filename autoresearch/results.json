@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 161,
+    "experiments": 162,
     "keep": 95,
     "discard": 7,
-    "crash": 59
+    "crash": 60
   },
   "pareto": {
     "rust": [
@@ -2654,6 +2654,21 @@
       "reason": "",
       "description": "Narrow the one-layer model to 12 dimensions with four 3-dimensional attention heads",
       "measured": "2026-09-28T08:28:01Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0164",
+      "parent": "b9bbce94ae0f988071f95ba3214ad2ff17c2babc",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use a 0.01 leaky ReLU in the fused MLP projection to retain negative-side gradients at negligible cost",
+      "measured": "2026-09-28T08:29:52Z",
       "has_record": true
     }
   ],

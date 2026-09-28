@@ -163,3 +163,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0161	da34eff47c965a845df1836a4c76bd2d2d3b42c4	go	2.258892	141.149660	+0.059257	+1.781245	0.999990	keep		Fuse token and position addition into first RMSNorm
 0162	4e0962e3df63fdf89b0555aecfcf569235a49ae4	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead
 0163	d28c6fcbac0d5aec5bcc7a91547600494f1e2ab6	go	2.284156	221.047812	+0.048735	+3.355576	0.999990	keep		Narrow the one-layer model to 12 dimensions with four 3-dimensional attention heads
+0164	b9bbce94ae0f988071f95ba3214ad2ff17c2babc	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a 0.01 leaky ReLU in the fused MLP projection to retain negative-side gradients at negligible cost
