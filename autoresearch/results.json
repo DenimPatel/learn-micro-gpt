@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "199e57397e9807c3a5e4580074814df64d761235789754cd19c01479381c3bf8",
+      "candidate_sha256": "876cde86a6323044706abeaa80e96e0d36e273198e1978206439a29805dbeac3",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0126",
-      "parent": "f75b786c2c8cc85548a5867861550bc180d711fb",
+      "run_id": "0129",
+      "parent": "93fb701408f6736730c84d9be5b4b0a2dfb57998",
       "track": "go",
-      "loss": 2.26196,
-      "steps_per_sec": 62.177145,
-      "loss_gain": 0.057979,
-      "speed_gain": 0.225153,
+      "loss": 2.261924,
+      "steps_per_sec": 77.41781,
+      "loss_gain": 0.057994,
+      "speed_gain": 0.525458,
       "grad_ratio": 0.999989,
       "status": "keep",
       "reason": "",
-      "description": "Use two attention heads of width eight instead of four heads of width four"
+      "description": "Use one full-width attention head instead of two half-width heads"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 126,
-    "keep": 78,
+    "experiments": 127,
+    "keep": 79,
     "discard": 6,
     "crash": 42
   },
@@ -188,8 +188,7 @@
       "0115",
       "0118",
       "0121",
-      "0122",
-      "0126"
+      "0129"
     ],
     "typescript": [
       "0105"
@@ -2129,6 +2128,21 @@
       "reason": "no axis improved materially: discarded: loss +5.2%, speed -34.0%; failing speed_material, speed_tolerance",
       "description": "Replace explicit attention softmax and weighted sums with exact direct Jacobian nodes",
       "measured": "2026-09-28T06:15:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0129",
+      "parent": "93fb701408f6736730c84d9be5b4b0a2dfb57998",
+      "track": "go",
+      "loss": 2.261924,
+      "steps_per_sec": 77.41781,
+      "loss_gain": 0.057994,
+      "speed_gain": 0.525458,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Use one full-width attention head instead of two half-width heads",
+      "measured": "2026-09-28T06:16:16Z",
       "has_record": true
     }
   ],
