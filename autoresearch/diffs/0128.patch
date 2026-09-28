@@ -1,0 +1,79 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -350,6 +350,55 @@ func dotScaled(x, y []*Value, scale float64) *Value {
+ 	}
+ }
+ 
++// attentionValues computes the softmax-weighted value reduction directly.
++// Each output node retains the complete softmax Jacobian with respect to every
++// logit, as well as the value operands, so the fused tape is exactly equivalent
++// to softmax followed by one dot product per output feature.
++func attentionValues(logits []*Value, values [][]*Value, offset, width int) []*Value {
++	maxVal := math.Inf(-1)
++	for _, v := range logits {
++		if v.Data > maxVal {
++			maxVal = v.Data
++		}
++	}
++
++	probabilities := make([]float64, len(logits))
++	totalData := 0.0
++	for i, v := range logits {
++		e := math.Exp(v.Data - maxVal)
++		probabilities[i] = e
++		totalData += e
++	}
++	inverseTotal := math.Pow(totalData, -1)
++	for i := range probabilities {
++		probabilities[i] *= inverseTotal
++	}
++
++	out := make([]*Value, width)
++	for j := 0; j < width; j++ {
++		acc := 0.0
++		children := make([]*Value, 0, 2*len(logits))
++		localGrads := make([]float64, 0, 2*len(logits))
++		for t, logit := range logits {
++			value := values[t][offset+j]
++			probability := probabilities[t]
++			acc += probability * value.Data
++			children = append(children, logit, value)
++			localGrads = append(localGrads,
++				probability*(1-probability)*value.Data,
++				probability,
++			)
++		}
++		out[j] = &Value{
++			Data:       acc,
++			Children:   children,
++			LocalGrads: localGrads,
++		}
++	}
++	return out
++}
++
+ // softmax subtracts the max before exponentiating. That is not a numerical nicety,
+ // it is what makes the function usable: `math.Exp` overflows above about 709, and
+ // subtracting a constant leaves the result exactly unchanged.
+@@ -473,19 +522,8 @@ func (m *model) forward(tokenID, posID int) []*Value {
+ 				kH := m.keys[li][t][hs : hs+m.cfg.HeadDim]
+ 				attnLogits[t] = dotScaled(qH, kH, 1/math.Sqrt(float64(m.cfg.HeadDim)))
+ 			}
+-			attnWeights := softmax(attnLogits)
+-
+-			// A convex combination of the values, so the output magnitude does not
+-			// grow with sequence length.
+-			headOut := make([]*Value, m.cfg.HeadDim)
+-			valueColumn := make([]*Value, len(m.values[li]))
+-			for j := 0; j < m.cfg.HeadDim; j++ {
+-				for t := range m.values[li] {
+-					valueColumn[t] = m.values[li][t][j]
+-				}
+-				headOut[j] = dot(attnWeights, valueColumn)
+-			}
++
++			// Fuse the convex value combination and its full softmax Jacobian.
++			headOut := attentionValues(attnLogits, m.values[li], hs, m.cfg.HeadDim)
+ 			xAttn = append(xAttn, headOut...)
+ 		}
+ 		x = linearResidual(xAttn, m.state[p+"attn_wo"], xResidual)

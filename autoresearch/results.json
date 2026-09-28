@@ -167,9 +167,9 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 125,
+    "experiments": 126,
     "keep": 78,
-    "discard": 5,
+    "discard": 6,
     "crash": 42
   },
   "pareto": {
@@ -2114,6 +2114,21 @@
       "reason": "the patch did not apply",
       "description": "Replace fused ReLU MLP projections with exact GELU while preserving the analytic tape node",
       "measured": "2026-09-28T06:09:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0128",
+      "parent": "99f2a7aefd7ea6f191c88248ce5fc270383a711f",
+      "track": "go",
+      "loss": 2.275756,
+      "steps_per_sec": 33.501453,
+      "loss_gain": 0.052234,
+      "speed_gain": -0.33988,
+      "grad_ratio": 1.00061,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +5.2%, speed -34.0%; failing speed_material, speed_tolerance",
+      "description": "Replace explicit attention softmax and weighted sums with exact direct Jacobian nodes",
+      "measured": "2026-09-28T06:15:03Z",
       "has_record": true
     }
   ],
