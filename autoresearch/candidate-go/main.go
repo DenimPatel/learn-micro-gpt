@@ -179,20 +179,38 @@ func (v *Value) ReLU() *Value {
 // document, every position, and every head, so its gradient has many
 // contributions to sum.
 func (v *Value) Backward() {
-	topo := make([]*Value, 0, 1024)
-	visited := make(map[*Value]bool, 1024)
+	// Temporarily truncate each node's child slice to mark it visited. This
+	// avoids allocating and hashing a map entry for every node in every step.
+	// All slices have the required capacity because they are made immediately
+	// before their children are appended.
+	topo := make([]*Value, 0, 16384)
+	visitedLeaf := make([]*Value, 0)
 	var buildTopo func(x *Value)
 	buildTopo = func(x *Value) {
-		if visited[x] {
-			return
-		}
-		visited[x] = true
-		for _, child := range x.Children {
-			buildTopo(child)
+		children := x.Children
+		if children == nil {
+			x.Children = visitedLeaf
+		} else {
+			if len(children) == 0 {
+				return
+			}
+			childCount := len(children)
+			x.Children = children[:0:childCount]
+			for _, child := range children {
+				buildTopo(child)
+			}
 		}
 		topo = append(topo, x)
 	}
 	buildTopo(v)
+	for _, node := range topo {
+		childCount := cap(node.Children)
+		if childCount == 0 {
+			node.Children = nil
+		} else {
+			node.Children = node.Children[:childCount]
+		}
+	}
 
 	v.Grad = 1
 	for i := len(topo) - 1; i >= 0; i-- {

@@ -1,6 +1,53 @@
 --- a/implementations/go/main.go
 +++ b/autoresearch/candidate-go/main.go
-@@ -307,13 +307,69 @@
+@@ -179,20 +179,38 @@
+ // document, every position, and every head, so its gradient has many
+ // contributions to sum.
+ func (v *Value) Backward() {
+-	topo := make([]*Value, 0, 1024)
+-	visited := make(map[*Value]bool, 1024)
++	// Temporarily truncate each node's child slice to mark it visited. This
++	// avoids allocating and hashing a map entry for every node in every step.
++	// All slices have the required capacity because they are made immediately
++	// before their children are appended.
++	topo := make([]*Value, 0, 16384)
++	visitedLeaf := make([]*Value, 0)
+ 	var buildTopo func(x *Value)
+ 	buildTopo = func(x *Value) {
+-		if visited[x] {
+-			return
+-		}
+-		visited[x] = true
+-		for _, child := range x.Children {
+-			buildTopo(child)
++		children := x.Children
++		if children == nil {
++			x.Children = visitedLeaf
++		} else {
++			if len(children) == 0 {
++				return
++			}
++			childCount := len(children)
++			x.Children = children[:0:childCount]
++			for _, child := range children {
++				buildTopo(child)
++			}
+ 		}
+ 		topo = append(topo, x)
+ 	}
+ 	buildTopo(v)
++	for _, node := range topo {
++		childCount := cap(node.Children)
++		if childCount == 0 {
++			node.Children = nil
++		} else {
++			node.Children = node.Children[:childCount]
++		}
++	}
+ 
+ 	v.Grad = 1
+ 	for i := len(topo) - 1; i >= 0; i-- {
+@@ -307,13 +325,69 @@
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
  	for _, row := range w {
@@ -74,7 +121,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,14 +383,34 @@
+@@ -327,14 +401,34 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -114,7 +161,7 @@
  	}
  	return out
  }
-@@ -390,37 +466,26 @@
+@@ -390,37 +484,26 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -160,7 +207,7 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -430,10 +495,7 @@
+@@ -430,10 +513,7 @@
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
  		xResidual = x
  		x = rmsnorm(x)
@@ -172,7 +219,7 @@
  		x = linear(x, m.state[p+"mlp_fc2"])
  		x = addAll(x, xResidual)
  	}
-@@ -593,13 +655,15 @@
+@@ -593,13 +673,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

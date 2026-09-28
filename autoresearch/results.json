@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "215dbc2dad4f45264326c7c101988aec0528ef6d4004c20524bf51177d0e1c8a",
+      "candidate_sha256": "bad6fa27b0c0c6f2a0ee7798a8a933f70df8a912f93201f6588f855b6c064ab1",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0110",
-      "parent": "e973898fb875793b98a7e99ade639ef66917b799",
+      "run_id": "0111",
+      "parent": "172e5ff26217aaa2462440d29aaae052bc630b42",
       "track": "go",
       "loss": 2.397624,
-      "steps_per_sec": 307.720227,
+      "steps_per_sec": 512.316133,
       "loss_gain": 0.00148,
-      "speed_gain": 5.063389,
+      "speed_gain": 9.094794,
       "grad_ratio": 1.127378,
       "status": "keep",
       "reason": "",
-      "description": "Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead"
+      "description": "Map-free topological marking with a 16K-node buffer"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 108,
-    "keep": 67,
+    "experiments": 109,
+    "keep": 68,
     "discard": 3,
     "crash": 38
   },
@@ -184,7 +184,7 @@
       "0102"
     ],
     "go": [
-      "0110"
+      "0111"
     ],
     "typescript": [
       "0105"
@@ -1854,6 +1854,21 @@
       "reason": "",
       "description": "Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead",
       "measured": "2026-09-28T05:13:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0111",
+      "parent": "172e5ff26217aaa2462440d29aaae052bc630b42",
+      "track": "go",
+      "loss": 2.397624,
+      "steps_per_sec": 512.316133,
+      "loss_gain": 0.00148,
+      "speed_gain": 9.094794,
+      "grad_ratio": 1.127378,
+      "status": "keep",
+      "reason": "",
+      "description": "Map-free topological marking with a 16K-node buffer",
+      "measured": "2026-09-28T05:16:54Z",
       "has_record": true
     }
   ],
