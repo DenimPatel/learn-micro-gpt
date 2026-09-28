@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "bad6fa27b0c0c6f2a0ee7798a8a933f70df8a912f93201f6588f855b6c064ab1",
+      "candidate_sha256": "f972fd466ee4e31329b51e4e0bc7eb94863f9507a883d67b42377d157dcb3308",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 110,
-    "keep": 68,
+    "experiments": 111,
+    "keep": 69,
     "discard": 3,
     "crash": 39
   },
@@ -1884,6 +1884,21 @@
       "reason": "the gradient check did not pass",
       "description": "Batch fused-node tape operands into shared backing arrays to cut allocation and garbage collection overhead without changing the graph",
       "measured": "2026-09-28T05:21:57Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0113",
+      "parent": "4a1dd5e8ec30d31bbd192c1d38792cd7cc9af7d0",
+      "track": "go",
+      "loss": 2.40721,
+      "steps_per_sec": 197.208659,
+      "loss_gain": -0.002512,
+      "speed_gain": 2.885844,
+      "grad_ratio": 1.127378,
+      "status": "keep",
+      "reason": "",
+      "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "measured": "2026-09-28T05:24:36Z",
       "has_record": true
     }
   ],

@@ -219,6 +219,15 @@
  		x = linear(x, m.state[p+"mlp_fc2"])
  		x = addAll(x, xResidual)
  	}
+@@ -545,7 +625,7 @@
+ 	const (
+ 		learningRate = 0.01
+ 		beta1        = 0.85
+-		beta2        = 0.99
++		beta2        = 0.98
+ 		epsAdam      = 1e-8
+ 	)
+ 	moments := make([]float64, len(params))
 @@ -593,13 +673,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.

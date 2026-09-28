@@ -625,7 +625,7 @@ func main() {
 	const (
 		learningRate = 0.01
 		beta1        = 0.85
-		beta2        = 0.99
+		beta2        = 0.98
 		epsAdam      = 1e-8
 	)
 	moments := make([]float64, len(params))
