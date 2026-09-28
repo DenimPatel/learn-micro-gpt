@@ -374,7 +374,7 @@
  	cfg := Config{
 -		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
 -		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
-+		NEmbd: 10, NHead: 1, NLayer: 1, BlockSize: 16,
++		NEmbd: 10, NHead: 1, NLayer: 2, BlockSize: 16,
 +		HeadDim: 10, VocabSize: bos + 1, Steps: *steps,
  	}
  	m := newModel(cfg, rng)

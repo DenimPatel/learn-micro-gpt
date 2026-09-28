@@ -145,3 +145,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0143	9af9d4014fb294eb58a902dc07928a63a912b47c	go	2.301260	265.781181	+0.041612	+4.237013	0.999982	keep		Halve the MLP hidden width from 2x to 1x embedding width
 0144	cbd3183021dcd9b0733eb8a4c68f4ef19f95712f	go	2.301022	220.008241	+0.041711	+3.335092	0.999982	keep		Narrow the embedding attention output and 1x MLP widths from 12 to 10
 0145	6732532ef1673166309f543efea1ebec39eda057	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	training run failed (exit 2)	Rebalance to embedding width 8 with a 2x-wide MLP to reduce projection work
+0146	ef0f9fef7ba1bca41aa0b9f3e1a1d0ac5da7d995	go	2.292828	197.605878	+0.045124	+2.893671	0.999982	keep		Add a second width-10 transformer layer

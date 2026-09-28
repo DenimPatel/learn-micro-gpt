@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "3df3ab10cba6bb6cb5df239ef06b8337b812132f5d91a5a812cd36f7dde3f40b",
+      "candidate_sha256": "906252092929dbc335bb195f544c4767341ee544b38de479e9e2c681cc7a3a05",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 143,
-    "keep": 84,
+    "experiments": 144,
+    "keep": 85,
     "discard": 7,
     "crash": 52
   },
@@ -2387,6 +2387,21 @@
       "reason": "training run failed (exit 2)",
       "description": "Rebalance to embedding width 8 with a 2x-wide MLP to reduce projection work",
       "measured": "2026-09-28T07:33:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0146",
+      "parent": "ef0f9fef7ba1bca41aa0b9f3e1a1d0ac5da7d995",
+      "track": "go",
+      "loss": 2.292828,
+      "steps_per_sec": 197.605878,
+      "loss_gain": 0.045124,
+      "speed_gain": 2.893671,
+      "grad_ratio": 0.999982,
+      "status": "keep",
+      "reason": "",
+      "description": "Add a second width-10 transformer layer",
+      "measured": "2026-09-28T07:37:12Z",
       "has_record": true
     }
   ],
