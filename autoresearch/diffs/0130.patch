@@ -1,0 +1,19 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -44,6 +44,7 @@ import (
+ 	"math"
+ 	"math/rand"
+ 	"os"
++	"runtime/debug"
+ 	"strings"
+ 	"sync"
+ 	"time"
+@@ -625,6 +626,8 @@ func writeJSON(w *os.File, payload map[string]any) {
+ // ─── Main ──────────────────────────────────────────────────────────────────
+ 
+ func main() {
++	debug.SetGCPercent(800)
++
+ 	var (
+ 		inputPath = flag.String("input", "../../data/input.txt", "path to the dataset, one document per line")
+ 		steps     = flag.Int("steps", 1000, "training steps")

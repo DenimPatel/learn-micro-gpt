@@ -167,9 +167,9 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 127,
+    "experiments": 128,
     "keep": 79,
-    "discard": 6,
+    "discard": 7,
     "crash": 42
   },
   "pareto": {
@@ -2143,6 +2143,21 @@
       "reason": "",
       "description": "Use one full-width attention head instead of two half-width heads",
       "measured": "2026-09-28T06:16:16Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0130",
+      "parent": "0c82f554189465c852701542c6a764085af95c86",
+      "track": "go",
+      "loss": 2.261924,
+      "steps_per_sec": 37.057786,
+      "loss_gain": 0.057994,
+      "speed_gain": -0.269805,
+      "grad_ratio": 0.999989,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +5.8%, speed -27.0%; failing speed_material, speed_tolerance",
+      "description": "Raise the Go garbage-collection target to 800 percent to reduce collection overhead without changing the loss",
+      "measured": "2026-09-28T06:20:03Z",
       "has_record": true
     }
   ],
