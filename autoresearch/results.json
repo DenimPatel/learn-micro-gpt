@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 164,
+    "experiments": 165,
     "keep": 97,
     "discard": 7,
-    "crash": 60
+    "crash": 61
   },
   "pareto": {
     "rust": [
@@ -2700,6 +2700,21 @@
       "reason": "",
       "description": "Halve the MLP width to reduce dominant projection work",
       "measured": "2026-09-28T08:32:38Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0167",
+      "parent": "522e3beb804a09200b39ec0bbb6ba2c40ca1dd76",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Raise the Go garbage-collection target to reduce autograd tape collection overhead",
+      "measured": "2026-09-28T08:38:16Z",
       "has_record": true
     }
   ],
