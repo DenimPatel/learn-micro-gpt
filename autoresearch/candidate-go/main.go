@@ -324,6 +324,35 @@ func linear(x []*Value, w Matrix) []*Value {
 	return out
 }
 
+// reluLinear applies a matrix projection followed by ReLU as one tape node.
+// This avoids allocating a separate ReLU node for every projected feature.
+func reluLinear(x []*Value, w Matrix) []*Value {
+	out := make([]*Value, 0, len(w))
+	for _, row := range w {
+		acc := 0.0
+		children := make([]*Value, 0, 2*len(x))
+		localGrads := make([]float64, 0, 2*len(x))
+		for i, xi := range x {
+			acc += row[i].Data * xi.Data
+			children = append(children, row[i], xi)
+			localGrads = append(localGrads, xi.Data, row[i].Data)
+		}
+		active := 0.0
+		if acc > 0 {
+			active = 1
+		}
+		for i := range localGrads {
+			localGrads[i] *= active
+		}
+		out = append(out, &Value{
+			Data:       math.Max(0, acc),
+			Children:   children,
+			LocalGrads: localGrads,
+		})
+	}
+	return out
+}
+
 // dot records a dot product as one node rather than a chain of scalar
 // multiplies and additions.
 func dot(x, y []*Value) *Value {
@@ -466,10 +495,7 @@ func (m *model) forward(tokenID, posID int) []*Value {
 		// 2) MLP block. The same four steps: save, normalise, transform, add.
 		xResidual = x
 		x = rmsnorm(x)
-		x = linear(x, m.state[p+"mlp_fc1"])
-		for i := range x {
-			x[i] = x[i].ReLU()
-		}
+		x = reluLinear(x, m.state[p+"mlp_fc1"])
 		x = linear(x, m.state[p+"mlp_fc2"])
 		x = addAll(x, xResidual)
 	}

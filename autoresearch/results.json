@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "0673eaf91f5efea2369ff1f928024e50d113b1bb32b7a21a70573e4dfdcd6db9",
+      "candidate_sha256": "215dbc2dad4f45264326c7c101988aec0528ef6d4004c20524bf51177d0e1c8a",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0109",
-      "parent": "39160a777a277c6956342c91ae4a3a107236f5e4",
+      "run_id": "0110",
+      "parent": "e973898fb875793b98a7e99ade639ef66917b799",
       "track": "go",
       "loss": 2.397624,
-      "steps_per_sec": 305.030087,
+      "steps_per_sec": 307.720227,
       "loss_gain": 0.00148,
-      "speed_gain": 5.010382,
+      "speed_gain": 5.063389,
       "grad_ratio": 1.127378,
       "status": "keep",
       "reason": "",
-      "description": "Fuse shifted exponentials normalization and division into fewer tape nodes"
+      "description": "Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 107,
-    "keep": 66,
+    "experiments": 108,
+    "keep": 67,
     "discard": 3,
     "crash": 38
   },
@@ -184,7 +184,7 @@
       "0102"
     ],
     "go": [
-      "0109"
+      "0110"
     ],
     "typescript": [
       "0105"
@@ -1839,6 +1839,21 @@
       "reason": "",
       "description": "Fuse shifted exponentials normalization and division into fewer tape nodes",
       "measured": "2026-09-28T05:12:27Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0110",
+      "parent": "e973898fb875793b98a7e99ade639ef66917b799",
+      "track": "go",
+      "loss": 2.397624,
+      "steps_per_sec": 307.720227,
+      "loss_gain": 0.00148,
+      "speed_gain": 5.063389,
+      "grad_ratio": 1.127378,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead",
+      "measured": "2026-09-28T05:13:49Z",
       "has_record": true
     }
   ],

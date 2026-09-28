@@ -109,3 +109,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0107	25a44ae6fcabc5e0acbb4cb0cbdc92a60c89a1c8	go	2.401178	212.632792	+0.000000	+3.189765	1.126874	keep		Fuse each linear dot product into one correctly differentiated tape node
 0108	9b327875158d78346ae6933117474cc7e942c94a	go	2.397624	253.728573	+0.001480	+3.999526	1.127378	keep		Fuse attention dot products and hoist Adam bias corrections to cut tape and scalar overhead
 0109	39160a777a277c6956342c91ae4a3a107236f5e4	go	2.397624	305.030087	+0.001480	+5.010382	1.127378	keep		Fuse shifted exponentials normalization and division into fewer tape nodes
+0110	e973898fb875793b98a7e99ade639ef66917b799	go	2.397624	307.720227	+0.001480	+5.063389	1.127378	keep		Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead
