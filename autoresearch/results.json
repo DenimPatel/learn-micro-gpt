@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 139,
+    "experiments": 140,
     "keep": 82,
     "discard": 7,
-    "crash": 50
+    "crash": 51
   },
   "pareto": {
     "rust": [
@@ -2325,6 +2325,21 @@
       "reason": "",
       "description": "Narrow embedding attention and output widths from 16 to 12",
       "measured": "2026-09-28T07:17:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0142",
+      "parent": "62faab71671a1703763388528f2808075fe9947b",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace per-row children and local-gradient slices with compact two-operand tape nodes",
+      "measured": "2026-09-28T07:22:07Z",
       "has_record": true
     }
   ],

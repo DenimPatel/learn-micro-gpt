@@ -141,3 +141,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0139	eb187dedc5c8b29bf6928bab3c01f41f3b92e4e3	go	2.264124	130.000803	+0.057078	+1.561565	0.999989	keep		Reuse the initial RMSNorm in the first layer instead of normalizing it again
 0140	0597c391dfb1a51ac182b9dcfb5da23609900002	go	2.267710	140.651305	+0.055584	+1.771425	0.999992	keep		Halve MLP hidden width from 4x to 2x embedding width
 0141	a675a53aaeaa8444b6e0d2972621e5f265ff39db	go	2.290196	218.041237	+0.046220	+3.296334	0.999992	keep		Narrow embedding attention and output widths from 16 to 12
+0142	62faab71671a1703763388528f2808075fe9947b	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-row children and local-gradient slices with compact two-operand tape nodes
