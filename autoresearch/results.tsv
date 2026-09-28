@@ -143,3 +143,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0141	a675a53aaeaa8444b6e0d2972621e5f265ff39db	go	2.290196	218.041237	+0.046220	+3.296334	0.999992	keep		Narrow embedding attention and output widths from 16 to 12
 0142	62faab71671a1703763388528f2808075fe9947b	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace per-row children and local-gradient slices with compact two-operand tape nodes
 0143	9af9d4014fb294eb58a902dc07928a63a912b47c	go	2.301260	265.781181	+0.041612	+4.237013	0.999982	keep		Halve the MLP hidden width from 2x to 1x embedding width
+0144	cbd3183021dcd9b0733eb8a4c68f4ef19f95712f	go	2.301022	220.008241	+0.041711	+3.335092	0.999982	keep		Narrow the embedding attention output and 1x MLP widths from 12 to 10

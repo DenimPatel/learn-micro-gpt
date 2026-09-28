@@ -1,0 +1,11 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -770,8 +770,8 @@ func main() {
+ 	cfg := Config{
+-		NEmbd: 12, NHead: 1, NLayer: 1, BlockSize: 16,
+-		HeadDim: 12, VocabSize: bos + 1, Steps: *steps,
++		NEmbd: 10, NHead: 1, NLayer: 1, BlockSize: 16,
++		HeadDim: 10, VocabSize: bos + 1, Steps: *steps,
+ 	}
+ 	m := newModel(cfg, rng)
+ 	params := m.params()
