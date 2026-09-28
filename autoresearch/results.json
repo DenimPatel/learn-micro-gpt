@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "d3ef435d4c8bfdbfacfa967c61f821bbf3b1108f4a0f0a14f6bd3c9f3f9e1579",
+      "candidate_sha256": "ca0ba434d1bae2fe1f0b014626fe1f86cde5898ea4df0a7b4bb393608bf3bdd9",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0129",
-      "parent": "93fb701408f6736730c84d9be5b4b0a2dfb57998",
+      "run_id": "0159",
+      "parent": "47153c0c39cccbd7628e442daf0c8d9e86f63642",
       "track": "go",
-      "loss": 2.261924,
-      "steps_per_sec": 77.41781,
-      "loss_gain": 0.057994,
-      "speed_gain": 0.525458,
-      "grad_ratio": 0.999989,
+      "loss": 2.258892,
+      "steps_per_sec": 148.4885,
+      "loss_gain": 0.059257,
+      "speed_gain": 1.925851,
+      "grad_ratio": 0.99999,
       "status": "keep",
       "reason": "",
-      "description": "Use one full-width attention head instead of two half-width heads"
+      "description": "Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 156,
-    "keep": 92,
+    "experiments": 157,
+    "keep": 93,
     "discard": 7,
     "crash": 57
   },
@@ -186,12 +186,10 @@
     "go": [
       "0111",
       "0118",
-      "0129",
-      "0139",
-      "0140",
       "0141",
       "0151",
-      "0155"
+      "0155",
+      "0159"
     ],
     "typescript": [
       "0105"
@@ -2581,6 +2579,21 @@
       "reason": "the patch did not apply",
       "description": "Batch hot-path Value records in contiguous arrays to reduce allocation and GC overhead",
       "measured": "2026-09-28T08:15:42Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0159",
+      "parent": "47153c0c39cccbd7628e442daf0c8d9e86f63642",
+      "track": "go",
+      "loss": 2.258892,
+      "steps_per_sec": 148.4885,
+      "loss_gain": 0.059257,
+      "speed_gain": 1.925851,
+      "grad_ratio": 0.99999,
+      "status": "keep",
+      "reason": "",
+      "description": "Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices",
+      "measured": "2026-09-28T08:18:13Z",
       "has_record": true
     }
   ],

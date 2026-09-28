@@ -293,6 +293,7 @@ func newMatrix(rng *rand.Rand, nout, nin int, std float64) Matrix {
 func newModel(cfg Config, rng *rand.Rand) *model {
 	m := &model{cfg: cfg, state: make(map[string]Matrix)}
 	std := 0.08
+	mlpWidth := 4 * cfg.NEmbd
 	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
 	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
 	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
@@ -302,8 +303,8 @@ func newModel(cfg Config, rng *rand.Rand) *model {
 		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
-		m.state[p+"mlp_fc1"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
-		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
+		m.state[p+"mlp_fc1"] = newMatrix(rng, mlpWidth, cfg.NEmbd, std)
+		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, mlpWidth, std)
 	}
 	m.resetCache()
 	return m
@@ -844,8 +845,8 @@ func main() {
 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
 
 	cfg := Config{
-		NEmbd: 10, NHead: 1, NLayer: 1, BlockSize: 16,
-		HeadDim: 10, VocabSize: bos + 1, Steps: *steps,
+		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
+		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
 	}
 	m := newModel(cfg, rng)
 	params := m.params()

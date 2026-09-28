@@ -71,18 +71,26 @@
  }
  
  // DivScalar is `x / n` for a plain Go float, as a *scalar* division so that the
-@@ -276,8 +302,8 @@
+@@ -267,6 +293,7 @@
+ func newModel(cfg Config, rng *rand.Rand) *model {
+ 	m := &model{cfg: cfg, state: make(map[string]Matrix)}
+ 	std := 0.08
++	mlpWidth := 4 * cfg.NEmbd
+ 	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+ 	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
+ 	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+@@ -276,8 +303,8 @@
  		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
 -		m.state[p+"mlp_fc1"] = newMatrix(rng, 4*cfg.NEmbd, cfg.NEmbd, std)
 -		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, 4*cfg.NEmbd, std)
-+		m.state[p+"mlp_fc1"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
-+		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
++		m.state[p+"mlp_fc1"] = newMatrix(rng, mlpWidth, cfg.NEmbd, std)
++		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, mlpWidth, std)
  	}
  	m.resetCache()
  	return m
-@@ -306,12 +332,181 @@
+@@ -306,12 +333,181 @@
  // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
@@ -269,7 +277,7 @@
  	}
  	return out
  }
-@@ -327,16 +522,130 @@
+@@ -327,16 +523,130 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -405,7 +413,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,24 +657,48 @@
+@@ -348,24 +658,48 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -464,7 +472,7 @@
  	tokEmb := m.state["wte"][tokenID]
  	posEmb := m.state["wpe"][posID]
  	x := make([]*Value, len(tokEmb))
-@@ -379,7 +712,9 @@
+@@ -379,7 +713,9 @@
  
  		// 1) Multi-head attention block
  		xResidual := x
@@ -475,7 +483,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,55 +725,35 @@
+@@ -390,55 +726,35 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -551,18 +559,7 @@
  }
  
  func addAll(a, b []*Value) []*Value {
-@@ -529,8 +844,8 @@
- 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
- 
- 	cfg := Config{
--		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
--		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
-+		NEmbd: 10, NHead: 1, NLayer: 1, BlockSize: 16,
-+		HeadDim: 10, VocabSize: bos + 1, Steps: *steps,
- 	}
- 	m := newModel(cfg, rng)
- 	params := m.params()
-@@ -545,7 +860,7 @@
+@@ -545,7 +861,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -571,7 +568,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +884,33 @@
+@@ -569,23 +885,33 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -622,7 +619,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +918,15 @@
+@@ -593,13 +919,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))
