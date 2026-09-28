@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "ea7ec30360ca3e2be91f458ceef6e2bd0904d741dbc42e7d933d09dcad72bde4",
+      "candidate_sha256": "e768c608ad5c411a98f967a25fbc9c8da5df65631545107d8a45c8b89f4f1845",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0166",
-      "parent": "b2dca219997b5397a459101a38fa6c6085a96a64",
+      "run_id": "0168",
+      "parent": "9771ae257cafe3e912209182b1b482a18e57d21d",
       "track": "go",
-      "loss": 2.234642,
-      "steps_per_sec": 106.088639,
-      "loss_gain": 0.069356,
-      "speed_gain": 1.090395,
+      "loss": 2.230962,
+      "steps_per_sec": 60.288232,
+      "loss_gain": 0.070889,
+      "speed_gain": 0.187933,
       "grad_ratio": 0.999993,
       "status": "keep",
       "reason": "",
-      "description": "Halve the MLP width to reduce dominant projection work"
+      "description": "Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 165,
-    "keep": 97,
+    "experiments": 166,
+    "keep": 98,
     "discard": 7,
     "crash": 61
   },
@@ -190,7 +190,8 @@
       "0155",
       "0159",
       "0163",
-      "0166"
+      "0166",
+      "0168"
     ],
     "typescript": [
       "0105"
@@ -2715,6 +2716,21 @@
       "reason": "the patch did not apply",
       "description": "Raise the Go garbage-collection target to reduce autograd tape collection overhead",
       "measured": "2026-09-28T08:38:16Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0168",
+      "parent": "9771ae257cafe3e912209182b1b482a18e57d21d",
+      "track": "go",
+      "loss": 2.230962,
+      "steps_per_sec": 60.288232,
+      "loss_gain": 0.070889,
+      "speed_gain": 0.187933,
+      "grad_ratio": 0.999993,
+      "status": "keep",
+      "reason": "",
+      "description": "Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads",
+      "measured": "2026-09-28T08:41:09Z",
       "has_record": true
     }
   ],

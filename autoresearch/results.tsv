@@ -167,3 +167,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0165	b02263182311345b9df34c2585edaf4bf9c24f67	go	2.239856	81.572534	+0.067185	+0.607324	0.999990	keep		Widen the one-layer model to 24 dimensions with four 6-dimensional heads
 0166	b2dca219997b5397a459101a38fa6c6085a96a64	go	2.234642	106.088639	+0.069356	+1.090395	0.999993	keep		Halve the MLP width to reduce dominant projection work
 0167	522e3beb804a09200b39ec0bbb6ba2c40ca1dd76	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Raise the Go garbage-collection target to reduce autograd tape collection overhead
+0168	9771ae257cafe3e912209182b1b482a18e57d21d	go	2.230962	60.288232	+0.070889	+0.187933	0.999993	keep		Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads
