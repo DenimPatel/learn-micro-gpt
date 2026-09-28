@@ -159,3 +159,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0157	41d95f6014a5410fd83e5983da4dd7419d5bce87	go	2.301022	373.030800	+0.041711	+6.350284	0.999984	keep		Fuse attention mixing and vocabulary cross-entropy to cut tape nodes and allocations
 0158	d39609621b7368bf6034d6f98d1f807d796f7078	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch hot-path Value records in contiguous arrays to reduce allocation and GC overhead
 0159	47153c0c39cccbd7628e442daf0c8d9e86f63642	go	2.258892	148.488500	+0.059257	+1.925851	0.999990	keep		Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices
+0160	69db35be22f1981cf40f8174a61903bd6bc7a92f	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a 0.01 leaky-ReLU MLP activation to preserve gradients for negative preactivations
