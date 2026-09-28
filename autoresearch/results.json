@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 124,
+    "experiments": 125,
     "keep": 78,
     "discard": 5,
-    "crash": 41
+    "crash": 42
   },
   "pareto": {
     "rust": [
@@ -2099,6 +2099,21 @@
       "reason": "",
       "description": "Use two attention heads of width eight instead of four heads of width four",
       "measured": "2026-09-28T06:05:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0127",
+      "parent": "bf6960d8ce5f82212f5cbce95b7a6b2dc7f9e5fe",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace fused ReLU MLP projections with exact GELU while preserving the analytic tape node",
+      "measured": "2026-09-28T06:09:49Z",
       "has_record": true
     }
   ],

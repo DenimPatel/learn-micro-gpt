@@ -126,3 +126,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0124	dced13289fc381c42fb1f13ee1740f0b253b4e2c	go	2.274310	47.719359	+0.052836	-0.059727	0.999989	discard	no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance	Reduce the training minibatch from eight documents to four
 0125	517c9f025ab1f82bf079ccb046120666cc749b39	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	go build failed	Batch fused projection and softmax tape operands into disjoint fixed-capacity backing arrays
 0126	f75b786c2c8cc85548a5867861550bc180d711fb	go	2.261960	62.177145	+0.057979	+0.225153	0.999989	keep		Use two attention heads of width eight instead of four heads of width four
+0127	bf6960d8ce5f82212f5cbce95b7a6b2dc7f9e5fe	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace fused ReLU MLP projections with exact GELU while preserving the analytic tape node
