@@ -1,30 +1,9 @@
---- a/implementations/go/main.go
+--- a/autoresearch/candidate-go/main.go
 +++ b/autoresearch/candidate-go/main.go
-@@ -307,13 +307,40 @@
- func linear(x []*Value, w Matrix) []*Value {
- 	out := make([]*Value, 0, len(w))
- 	for _, row := range w {
--		acc := New(0)
-+		acc := 0.0
-+		children := make([]*Value, 0, 2*len(x))
-+		localGrads := make([]float64, 0, 2*len(x))
- 		for i, xi := range x {
--			acc = acc.Add(row[i].Mul(xi))
--		}
--		out = append(out, acc)
-+			acc += row[i].Data * xi.Data
-+			children = append(children, row[i], xi)
-+			localGrads = append(localGrads, xi.Data, row[i].Data)
-+		}
-+		out = append(out, &Value{
-+			Data:       acc,
-+			Children:   children,
-+			LocalGrads: localGrads,
-+		})
- 	}
+@@ -305,6 +305,24 @@ func linear(x []*Value, w Matrix) []*Value {
  	return out
-+}
-+
+ }
+ 
 +// dot records a dot product as one node rather than a chain of scalar
 +// multiplies and additions.
 +func dot(x, y []*Value) *Value {
@@ -42,12 +21,12 @@
 +		Children:   children,
 +		LocalGrads: localGrads,
 +	}
- }
- 
++}
++
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -390,37 +417,26 @@
- 		for h := 0; h < m.cfg.NHead; h++ {
- 			hs := h * m.cfg.HeadDim
+ // it is what makes the function usable: `math.Exp` overflows above about 709, and
+ // subtracting a constant leaves the result exactly unchanged.
+@@ -390,24 +408,20 @@ func (m *model) forward(tokenID, posID int) []*Value {
  			qH := q[hs : hs+m.cfg.HeadDim]
 -			kH := make([][]*Value, len(m.keys[li]))
 -			for i, ki := range m.keys[li] {
@@ -91,7 +70,8 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -593,13 +609,15 @@
+@@ -596,17 +610,19 @@ func main() {
+ 
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

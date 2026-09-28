@@ -324,6 +324,25 @@ func linear(x []*Value, w Matrix) []*Value {
 	return out
 }
 
+// dot records a dot product as one node rather than a chain of scalar
+// multiplies and additions.
+func dot(x, y []*Value) *Value {
+	acc := 0.0
+	children := make([]*Value, 0, 2*len(x))
+	localGrads := make([]float64, 0, 2*len(x))
+	for i, xi := range x {
+		yi := y[i]
+		acc += xi.Data * yi.Data
+		children = append(children, xi, yi)
+		localGrads = append(localGrads, yi.Data, xi.Data)
+	}
+	return &Value{
+		Data:       acc,
+		Children:   children,
+		LocalGrads: localGrads,
+	}
+}
+
 // softmax subtracts the max before exponentiating. That is not a numerical nicety,
 // it is what makes the function usable: `math.Exp` overflows above about 709, and
 // subtracting a constant leaves the result exactly unchanged.
@@ -398,37 +417,26 @@ func (m *model) forward(tokenID, posID int) []*Value {
 		for h := 0; h < m.cfg.NHead; h++ {
 			hs := h * m.cfg.HeadDim
 			qH := q[hs : hs+m.cfg.HeadDim]
-			kH := make([][]*Value, len(m.keys[li]))
-			for i, ki := range m.keys[li] {
-				kH[i] = ki[hs : hs+m.cfg.HeadDim]
-			}
-			vH := make([][]*Value, len(m.values[li]))
-			for i, vi := range m.values[li] {
-				vH[i] = vi[hs : hs+m.cfg.HeadDim]
-			}
 
 			// The division by sqrt(head_dim) is not optional: a dot product grows
 			// like sqrt(d), and without it softmax saturates to a hard argmax and
 			// most dimensions receive no gradient.
-			attnLogits := make([]*Value, len(kH))
-			for t := range kH {
-				acc := New(0)
-				for j := 0; j < m.cfg.HeadDim; j++ {
-					acc = acc.Add(qH[j].Mul(kH[t][j]))
-				}
-				attnLogits[t] = acc.DivScalar(math.Sqrt(float64(m.cfg.HeadDim)))
+			attnLogits := make([]*Value, len(m.keys[li]))
+			for t := range m.keys[li] {
+				kH := m.keys[li][t][hs : hs+m.cfg.HeadDim]
+				attnLogits[t] = dot(qH, kH).DivScalar(math.Sqrt(float64(m.cfg.HeadDim)))
 			}
 			attnWeights := softmax(attnLogits)
 
 			// A convex combination of the values, so the output magnitude does not
 			// grow with sequence length.
 			headOut := make([]*Value, m.cfg.HeadDim)
+			valueColumn := make([]*Value, len(m.values[li]))
 			for j := 0; j < m.cfg.HeadDim; j++ {
-				acc := New(0)
-				for t := range vH {
-					acc = acc.Add(attnWeights[t].Mul(vH[t][j]))
+				for t := range m.values[li] {
+					valueColumn[t] = m.values[li][t][j]
 				}
-				headOut[j] = acc
+				headOut[j] = dot(attnWeights, valueColumn)
 			}
 			xAttn = append(xAttn, headOut...)
 		}
@@ -601,13 +609,15 @@ func main() {
 		// Linear decay to zero, so the run settles into a minimum rather than
 		// bouncing around it.
 		lrT := learningRate * (1 - float64(step)/float64(*steps))
+		biasCorrection1 := 1 - math.Pow(beta1, float64(step+1))
+		biasCorrection2 := 1 - math.Pow(beta2, float64(step+1))
 		for i, p := range params {
 			moments[i] = beta1*moments[i] + (1-beta1)*p.Grad
 			velocities[i] = beta2*velocities[i] + (1-beta2)*p.Grad*p.Grad
 			// Bias correction, without which the first step is 1/(1-beta1) times
 			// too small and training looks like it has a learning-rate bug.
-			mHat := moments[i] / (1 - math.Pow(beta1, float64(step+1)))
-			vHat := velocities[i] / (1 - math.Pow(beta2, float64(step+1)))
+			mHat := moments[i] / biasCorrection1
+			vHat := velocities[i] / biasCorrection2
 			p.Data -= lrT * mHat / (math.Sqrt(vHat) + epsAdam)
 			p.Grad = 0
 		}
