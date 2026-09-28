@@ -121,7 +121,7 @@
  }
  
  // softmax subtracts the max before exponentiating. That is not a numerical nicety,
-@@ -327,14 +401,34 @@
+@@ -327,16 +401,67 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -160,8 +160,41 @@
 +		}
  	}
  	return out
++}
++
++// softmaxCrossEntropy computes -log(softmax(logits)[target]) as one tape
++// node. The max subtraction remains detached, matching softmax above.
++func softmaxCrossEntropy(logits []*Value, target int) *Value {
++	maxVal := math.Inf(-1)
++	for _, v := range logits {
++		if v.Data > maxVal {
++			maxVal = v.Data
++		}
++	}
++	expData := make([]float64, len(logits))
++	totalData := 0.0
++	for i, v := range logits {
++		e := math.Exp(v.Data - maxVal)
++		expData[i] = e
++		totalData += e
++	}
++	inverseTotal := math.Pow(totalData, -1)
++	children := make([]*Value, len(logits))
++	localGrads := make([]float64, len(logits))
++	for i, v := range logits {
++		children[i] = v
++		localGrads[i] = expData[i] * inverseTotal
++	}
++	localGrads[target] -= 1
++	return &Value{
++		Data:       -math.Log(expData[target] * inverseTotal),
++		Children:   children,
++		LocalGrads: localGrads,
++	}
  }
-@@ -390,37 +484,26 @@
+ 
+ // SubScalar is `val - m` for a plain Go float, recorded as a node so the
+@@ -390,37 +515,26 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -207,7 +240,7 @@
  			}
  			xAttn = append(xAttn, headOut...)
  		}
-@@ -430,10 +513,7 @@
+@@ -430,10 +544,7 @@
  		// 2) MLP block. The same four steps: save, normalise, transform, add.
  		xResidual = x
  		x = rmsnorm(x)
@@ -219,7 +252,7 @@
  		x = linear(x, m.state[p+"mlp_fc2"])
  		x = addAll(x, xResidual)
  	}
-@@ -545,7 +625,7 @@
+@@ -545,7 +656,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -228,7 +261,21 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -593,13 +673,15 @@
+@@ -580,12 +691,7 @@
+ 		losses := make([]*Value, 0, n)
+ 		for posID := 0; posID < n; posID++ {
+ 			logits := m.forward(tokens[posID], posID)
+-			probs := softmax(logits)
+-			// Log FIRST, then negate: `-probs[target].log()`. The order matters,
+-			// and getting it backwards gives `log(-p)` and therefore NaN from the
+-			// very first step. Which is at least a loud failure rather than a
+-			// quietly wrong loss.
+-			losses = append(losses, probs[tokens[posID+1]].Log().Neg())
++			losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
+ 		}
+ 		loss := Mean(losses)
+ 		loss.Backward()
+@@ -593,13 +699,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

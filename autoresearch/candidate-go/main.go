@@ -433,6 +433,37 @@ func softmax(logits []*Value) []*Value {
 	return out
 }
 
+// softmaxCrossEntropy computes -log(softmax(logits)[target]) as one tape
+// node. The max subtraction remains detached, matching softmax above.
+func softmaxCrossEntropy(logits []*Value, target int) *Value {
+	maxVal := math.Inf(-1)
+	for _, v := range logits {
+		if v.Data > maxVal {
+			maxVal = v.Data
+		}
+	}
+	expData := make([]float64, len(logits))
+	totalData := 0.0
+	for i, v := range logits {
+		e := math.Exp(v.Data - maxVal)
+		expData[i] = e
+		totalData += e
+	}
+	inverseTotal := math.Pow(totalData, -1)
+	children := make([]*Value, len(logits))
+	localGrads := make([]float64, len(logits))
+	for i, v := range logits {
+		children[i] = v
+		localGrads[i] = expData[i] * inverseTotal
+	}
+	localGrads[target] -= 1
+	return &Value{
+		Data:       -math.Log(expData[target] * inverseTotal),
+		Children:   children,
+		LocalGrads: localGrads,
+	}
+}
+
 // SubScalar is `val - m` for a plain Go float, recorded as a node so the
 // subtraction is part of the graph.
 func (v *Value) SubScalar(other float64) *Value {
@@ -660,12 +691,7 @@ func main() {
 		losses := make([]*Value, 0, n)
 		for posID := 0; posID < n; posID++ {
 			logits := m.forward(tokens[posID], posID)
-			probs := softmax(logits)
-			// Log FIRST, then negate: `-probs[target].log()`. The order matters,
-			// and getting it backwards gives `log(-p)` and therefore NaN from the
-			// very first step. Which is at least a loud failure rather than a
-			// quietly wrong loss.
-			losses = append(losses, probs[tokens[posID+1]].Log().Neg())
+			losses = append(losses, softmaxCrossEntropy(logits, tokens[posID+1]))
 		}
 		loss := Mean(losses)
 		loss.Backward()
