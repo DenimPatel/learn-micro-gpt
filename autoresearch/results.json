@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "b4f17b0f0732325738d755056fc47015be3a2f52cf648759aaac5a87696926ff",
+      "candidate_sha256": "de0059cd8af9492fa4dc1d5cc332f59fde43d889a04c43bd357aeeb5ff26c45e",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -152,23 +152,23 @@
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
     },
     "go": {
-      "run_id": "0159",
-      "parent": "47153c0c39cccbd7628e442daf0c8d9e86f63642",
+      "run_id": "0165",
+      "parent": "b02263182311345b9df34c2585edaf4bf9c24f67",
       "track": "go",
-      "loss": 2.258892,
-      "steps_per_sec": 148.4885,
-      "loss_gain": 0.059257,
-      "speed_gain": 1.925851,
+      "loss": 2.239856,
+      "steps_per_sec": 81.572534,
+      "loss_gain": 0.067185,
+      "speed_gain": 0.607324,
       "grad_ratio": 0.99999,
       "status": "keep",
       "reason": "",
-      "description": "Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices"
+      "description": "Widen the one-layer model to 24 dimensions with four 6-dimensional heads"
     },
     "typescript": null
   },
   "counts": {
-    "experiments": 162,
-    "keep": 95,
+    "experiments": 163,
+    "keep": 96,
     "discard": 7,
     "crash": 60
   },
@@ -189,7 +189,8 @@
       "0151",
       "0155",
       "0159",
-      "0163"
+      "0163",
+      "0165"
     ],
     "typescript": [
       "0105"
@@ -2669,6 +2670,21 @@
       "reason": "the patch did not apply",
       "description": "Use a 0.01 leaky ReLU in the fused MLP projection to retain negative-side gradients at negligible cost",
       "measured": "2026-09-28T08:29:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0165",
+      "parent": "b02263182311345b9df34c2585edaf4bf9c24f67",
+      "track": "go",
+      "loss": 2.239856,
+      "steps_per_sec": 81.572534,
+      "loss_gain": 0.067185,
+      "speed_gain": 0.607324,
+      "grad_ratio": 0.99999,
+      "status": "keep",
+      "reason": "",
+      "description": "Widen the one-layer model to 24 dimensions with four 6-dimensional heads",
+      "measured": "2026-09-28T08:31:37Z",
       "has_record": true
     }
   ],

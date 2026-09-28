@@ -164,3 +164,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0162	4e0962e3df63fdf89b0555aecfcf569235a49ae4	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead
 0163	d28c6fcbac0d5aec5bcc7a91547600494f1e2ab6	go	2.284156	221.047812	+0.048735	+3.355576	0.999990	keep		Narrow the one-layer model to 12 dimensions with four 3-dimensional attention heads
 0164	b9bbce94ae0f988071f95ba3214ad2ff17c2babc	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a 0.01 leaky ReLU in the fused MLP projection to retain negative-side gradients at negligible cost
+0165	b02263182311345b9df34c2585edaf4bf9c24f67	go	2.239856	81.572534	+0.067185	+0.607324	0.999990	keep		Widen the one-layer model to 24 dimensions with four 6-dimensional heads
