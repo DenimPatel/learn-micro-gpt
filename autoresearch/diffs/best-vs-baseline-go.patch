@@ -282,7 +282,18 @@
  	}
  	return out
  }
-@@ -390,52 +575,36 @@
+@@ -379,7 +564,9 @@
+ 
+ 		// 1) Multi-head attention block
+ 		xResidual := x
+-		x = rmsnorm(x)
++		if li > 0 {
++			x = rmsnorm(x)
++		}
+ 		q := linear(x, m.state[p+"attn_wq"])
+ 		k := linear(x, m.state[p+"attn_wk"])
+ 		v := linear(x, m.state[p+"attn_wv"])
+@@ -390,52 +577,36 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -346,7 +357,7 @@
  	}
  
  	return linear(x, m.state["lm_head"])
-@@ -529,8 +698,8 @@
+@@ -529,8 +700,8 @@
  	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
  
  	cfg := Config{
@@ -357,7 +368,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +714,7 @@
+@@ -545,7 +716,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -366,7 +377,7 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +738,34 @@
+@@ -569,23 +740,34 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
@@ -418,7 +429,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +773,15 @@
+@@ -593,13 +775,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))

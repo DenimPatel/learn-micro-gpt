@@ -564,7 +564,9 @@ func (m *model) forward(tokenID, posID int) []*Value {
 
 		// 1) Multi-head attention block
 		xResidual := x
-		x = rmsnorm(x)
+		if li > 0 {
+			x = rmsnorm(x)
+		}
 		q := linear(x, m.state[p+"attn_wq"])
 		k := linear(x, m.state[p+"attn_wk"])
 		v := linear(x, m.state[p+"attn_wv"])

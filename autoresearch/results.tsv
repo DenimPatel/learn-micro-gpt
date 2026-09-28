@@ -138,3 +138,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0136	4349006c62b4048572897a0fa6a108e1d747d233	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch projection tape operands into bounded backing arrays
 0137	f8e53a53dca608ea2ea358aae2136a6363245ec3	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse vocabulary projection and cross entropy into one tape node
 0138	d7c7a349b4ecc910acd8cb47a1849109e54d51ca	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0139	eb187dedc5c8b29bf6928bab3c01f41f3b92e4e3	go	2.264124	130.000803	+0.057078	+1.561565	0.999989	keep		Reuse the initial RMSNorm in the first layer instead of normalizing it again

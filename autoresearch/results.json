@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "876cde86a6323044706abeaa80e96e0d36e273198e1978206439a29805dbeac3",
+      "candidate_sha256": "6af81d654dfe74dc6295caf3606b38838a846e1b82d7da96ee42b7e36b610fa0",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 136,
-    "keep": 79,
+    "experiments": 137,
+    "keep": 80,
     "discard": 7,
     "crash": 50
   },
@@ -187,8 +187,8 @@
       "0111",
       "0115",
       "0118",
-      "0121",
-      "0129"
+      "0129",
+      "0139"
     ],
     "typescript": [
       "0105"
@@ -2278,6 +2278,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-28T07:04:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0139",
+      "parent": "eb187dedc5c8b29bf6928bab3c01f41f3b92e4e3",
+      "track": "go",
+      "loss": 2.264124,
+      "steps_per_sec": 130.000803,
+      "loss_gain": 0.057078,
+      "speed_gain": 1.561565,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Reuse the initial RMSNorm in the first layer instead of normalizing it again",
+      "measured": "2026-09-28T07:06:36Z",
       "has_record": true
     }
   ],
