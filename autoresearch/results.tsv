@@ -118,3 +118,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0116	79817d1e2619b595be44d11fe54e1a964b8e8927	go	2.387866	407.434076	+0.005544	+7.028174	0.999989	keep		Remove the second transformer block for a large speedup with minimal additional loss
 0117	cbd0814fd3b815dc392dd57280616c9d82f5c69d	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse attention scaling and weighted value reduction into analytic tape nodes
 0118	444ab6cd42e38931b77965f16a2695b7c8cb8b2f	go	2.387866	472.005093	+0.005544	+8.300496	0.999989	keep		Fold attention scaling into dot products to remove scalar tape nodes
+0119	71a98c129a5a02da88ee0d2595a78cdfdd7b2abb	go	2.392314	39.366665	+0.003692	-0.224310	0.999989	discard	no axis improved materially: discarded: loss +0.4%, speed -22.4%; failing loss_material, speed_material, speed_tolerance	Restore beta2 0.99 and deepen the residual stack to four blocks

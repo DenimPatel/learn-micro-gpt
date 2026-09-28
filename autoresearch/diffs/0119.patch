@@ -1,0 +1,18 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -766,7 +766,7 @@
+ 	cfg := Config{
+-		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
++		NEmbd: 16, NHead: 4, NLayer: 4, BlockSize: 16,
+ 		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
+ 	}
+ 	m := newModel(cfg, rng)
+@@ -778,7 +778,7 @@
+ 	const (
+ 		learningRate = 0.01
+ 		beta1        = 0.85
+-		beta2        = 0.98
++		beta2        = 0.99
+ 		epsAdam      = 1e-8
+ 	)
+ 	moments := make([]float64, len(params))

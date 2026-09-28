@@ -167,9 +167,9 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 116,
+    "experiments": 117,
     "keep": 73,
-    "discard": 3,
+    "discard": 4,
     "crash": 40
   },
   "pareto": {
@@ -1976,6 +1976,21 @@
       "reason": "",
       "description": "Fold attention scaling into dot products to remove scalar tape nodes",
       "measured": "2026-09-28T05:36:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0119",
+      "parent": "71a98c129a5a02da88ee0d2595a78cdfdd7b2abb",
+      "track": "go",
+      "loss": 2.392314,
+      "steps_per_sec": 39.366665,
+      "loss_gain": 0.003692,
+      "speed_gain": -0.22431,
+      "grad_ratio": 0.999989,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.4%, speed -22.4%; failing loss_material, speed_material, speed_tolerance",
+      "description": "Restore beta2 0.99 and deepen the residual stack to four blocks",
+      "measured": "2026-09-28T05:41:35Z",
       "has_record": true
     }
   ],
