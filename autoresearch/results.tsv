@@ -116,3 +116,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0114	b1f78065405f008e36586f3ebaceeddb40661452	go	2.407210	437.980437	-0.002512	+7.630066	1.127378	keep		Fuse final softmax cross entropy into one tape node
 0115	7f9312905abd7956a2eec52eeeeee15f15ee5e6e	go	2.380292	363.537410	+0.008698	+6.163224	0.999989	keep		Differentiate the shared RMSNorm scale and add a second transformer block to lower loss
 0116	79817d1e2619b595be44d11fe54e1a964b8e8927	go	2.387866	407.434076	+0.005544	+7.028174	0.999989	keep		Remove the second transformer block for a large speedup with minimal additional loss
+0117	cbd0814fd3b815dc392dd57280616c9d82f5c69d	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse attention scaling and weighted value reduction into analytic tape nodes
