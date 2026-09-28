@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "eefacf21894ea53581354d16815133d1454858a0ac8e16d034951a8b6dc9fa49",
+      "candidate_sha256": "b7aff03f4077b3e02a80a6733d6a492dd18945d847c2944f793a663251352fac",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 138,
-    "keep": 81,
+    "experiments": 139,
+    "keep": 82,
     "discard": 7,
     "crash": 50
   },
@@ -189,7 +189,8 @@
       "0118",
       "0129",
       "0139",
-      "0140"
+      "0140",
+      "0141"
     ],
     "typescript": [
       "0105"
@@ -2309,6 +2310,21 @@
       "reason": "",
       "description": "Halve MLP hidden width from 4x to 2x embedding width",
       "measured": "2026-09-28T07:12:28Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0141",
+      "parent": "a675a53aaeaa8444b6e0d2972621e5f265ff39db",
+      "track": "go",
+      "loss": 2.290196,
+      "steps_per_sec": 218.041237,
+      "loss_gain": 0.04622,
+      "speed_gain": 3.296334,
+      "grad_ratio": 0.999992,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow embedding attention and output widths from 16 to 12",
+      "measured": "2026-09-28T07:17:00Z",
       "has_record": true
     }
   ],

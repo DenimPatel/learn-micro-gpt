@@ -1,0 +1,13 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -783,8 +783,8 @@
+ 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
+ 
+ 	cfg := Config{
+-		NEmbd: 16, NHead: 1, NLayer: 1, BlockSize: 16,
+-		HeadDim: 16, VocabSize: bos + 1, Steps: *steps,
++		NEmbd: 12, NHead: 1, NLayer: 1, BlockSize: 16,
++		HeadDim: 12, VocabSize: bos + 1, Steps: *steps,
+ 	}
+ 	m := newModel(cfg, rng)
+ 	params := m.params()
