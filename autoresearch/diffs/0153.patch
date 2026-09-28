@@ -1,0 +1,11 @@
+--- a/autoresearch/candidate-go/main.go
++++ b/autoresearch/candidate-go/main.go
+@@ -251,8 +251,7 @@
+ 	std := 0.08
+ 	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+ 	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
+-	// Preserve the original draw sequence so this experiment isolates sharing.
+-	_ = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+-	m.state["lm_head"] = m.state["wte"]
++	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
+ 	for i := 0; i < cfg.NLayer; i++ {
