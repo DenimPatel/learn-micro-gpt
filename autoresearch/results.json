@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 109,
+    "experiments": 110,
     "keep": 68,
     "discard": 3,
-    "crash": 38
+    "crash": 39
   },
   "pareto": {
     "rust": [
@@ -1869,6 +1869,21 @@
       "reason": "",
       "description": "Map-free topological marking with a 16K-node buffer",
       "measured": "2026-09-28T05:16:54Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0112",
+      "parent": "c64def4a07fd9e0dacdb1d666e628999c2fb0f3e",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Batch fused-node tape operands into shared backing arrays to cut allocation and garbage collection overhead without changing the graph",
+      "measured": "2026-09-28T05:21:57Z",
       "has_record": true
     }
   ],

@@ -111,3 +111,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0109	39160a777a277c6956342c91ae4a3a107236f5e4	go	2.397624	305.030087	+0.001480	+5.010382	1.127378	keep		Fuse shifted exponentials normalization and division into fewer tape nodes
 0110	e973898fb875793b98a7e99ade639ef66917b799	go	2.397624	307.720227	+0.001480	+5.063389	1.127378	keep		Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead
 0111	172e5ff26217aaa2462440d29aaae052bc630b42	go	2.397624	512.316133	+0.001480	+9.094794	1.127378	keep		Map-free topological marking with a 16K-node buffer
+0112	c64def4a07fd9e0dacdb1d666e628999c2fb0f3e	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Batch fused-node tape operands into shared backing arrays to cut allocation and garbage collection overhead without changing the graph
