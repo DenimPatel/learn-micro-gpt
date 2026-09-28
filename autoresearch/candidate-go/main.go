@@ -654,7 +654,7 @@ func main() {
 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
 
 	cfg := Config{
-		NEmbd: 16, NHead: 4, NLayer: 2, BlockSize: 16,
+		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
 		HeadDim: 4, VocabSize: bos + 1, Steps: *steps,
 	}
 	m := newModel(cfg, rng)

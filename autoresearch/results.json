@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "3f3de2d9d641445460b88b02c2123a765f00153a83c35f044615293584b3f64d",
+      "candidate_sha256": "529b69c96caed7f1736b84d415d671c8753af7f86d1782085e9543a773dcd938",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 113,
-    "keep": 71,
+    "experiments": 114,
+    "keep": 72,
     "discard": 3,
     "crash": 39
   },
@@ -185,7 +185,8 @@
     ],
     "go": [
       "0111",
-      "0115"
+      "0115",
+      "0116"
     ],
     "typescript": [
       "0105"
@@ -1930,6 +1931,21 @@
       "reason": "",
       "description": "Differentiate the shared RMSNorm scale and add a second transformer block to lower loss",
       "measured": "2026-09-28T05:31:33Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0116",
+      "parent": "79817d1e2619b595be44d11fe54e1a964b8e8927",
+      "track": "go",
+      "loss": 2.387866,
+      "steps_per_sec": 407.434076,
+      "loss_gain": 0.005544,
+      "speed_gain": 7.028174,
+      "grad_ratio": 0.999989,
+      "status": "keep",
+      "reason": "",
+      "description": "Remove the second transformer block for a large speedup with minimal additional loss",
+      "measured": "2026-09-28T05:32:08Z",
       "has_record": true
     }
   ],
