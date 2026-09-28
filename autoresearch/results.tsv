@@ -157,3 +157,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0155	e2032df4b828990ee1826cb03fd654ee604ce357	go	2.301022	398.825048	+0.041711	+6.858540	0.999982	keep		Remove the second transformer layer to gain speed with negligible loss regression
 0156	5d2b84e8ac9f8cd8b0e978e4ff968d29e84940a1	go	2.301022	391.652936	+0.041711	+6.717219	0.999982	keep		Collapse the mean tape into one node to remove 127 add nodes and their allocations per step
 0157	41d95f6014a5410fd83e5983da4dd7419d5bce87	go	2.301022	373.030800	+0.041711	+6.350284	0.999984	keep		Fuse attention mixing and vocabulary cross-entropy to cut tape nodes and allocations
+0158	d39609621b7368bf6034d6f98d1f807d796f7078	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Batch hot-path Value records in contiguous arrays to reduce allocation and GC overhead

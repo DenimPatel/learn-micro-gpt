@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 155,
+    "experiments": 156,
     "keep": 92,
     "discard": 7,
-    "crash": 56
+    "crash": 57
   },
   "pareto": {
     "rust": [
@@ -2566,6 +2566,21 @@
       "reason": "",
       "description": "Fuse attention mixing and vocabulary cross-entropy to cut tape nodes and allocations",
       "measured": "2026-09-28T08:14:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0158",
+      "parent": "d39609621b7368bf6034d6f98d1f807d796f7078",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Batch hot-path Value records in contiguous arrays to reduce allocation and GC overhead",
+      "measured": "2026-09-28T08:15:42Z",
       "has_record": true
     }
   ],
