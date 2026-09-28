@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 135,
+    "experiments": 136,
     "keep": 79,
     "discard": 7,
-    "crash": 49
+    "crash": 50
   },
   "pareto": {
     "rust": [
@@ -2263,6 +2263,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse vocabulary projection and cross entropy into one tape node",
       "measured": "2026-09-28T06:56:44Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0138",
+      "parent": "d7c7a349b4ecc910acd8cb47a1849109e54d51ca",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-28T07:04:19Z",
       "has_record": true
     }
   ],
