@@ -153,3 +153,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0151	f29bb2dc15c44c1ac1f5cc21206a7ee47a65d2ed	go	2.292828	253.224612	+0.045124	+3.989595	0.999982	keep		Batch RMSNorm and softmax tape operands into bounded backing arrays
 0152	373d52da75195e4060e27e341d0fd85262eeacff	go	2.362714	222.967827	+0.016019	+3.393409	0.999946	keep		Tie token embeddings to the vocabulary projection while preserving the initialization draw sequence
 0153	ee9cba73412fe9ab21cab8967ebbdff133342680	go	2.292828	246.903115	+0.045124	+3.865035	0.999982	keep		Restore the independent vocabulary projection matrix
+0154	00f7336970586dc293816692a2ae031936fe333a	go	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Scale the two-layer model to 16-wide four-head attention with a 2x MLP

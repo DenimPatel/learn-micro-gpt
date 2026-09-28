@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 151,
+    "experiments": 152,
     "keep": 89,
     "discard": 7,
-    "crash": 55
+    "crash": 56
   },
   "pareto": {
     "rust": [
@@ -2507,6 +2507,21 @@
       "reason": "",
       "description": "Restore the independent vocabulary projection matrix",
       "measured": "2026-09-28T08:00:18Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0154",
+      "parent": "00f7336970586dc293816692a2ae031936fe333a",
+      "track": "go",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Scale the two-layer model to 16-wide four-head attention with a 2x MLP",
+      "measured": "2026-09-28T08:04:44Z",
       "has_record": true
     }
   ],
