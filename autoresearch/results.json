@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "6af81d654dfe74dc6295caf3606b38838a846e1b82d7da96ee42b7e36b610fa0",
+      "candidate_sha256": "eefacf21894ea53581354d16815133d1454858a0ac8e16d034951a8b6dc9fa49",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 137,
-    "keep": 80,
+    "experiments": 138,
+    "keep": 81,
     "discard": 7,
     "crash": 50
   },
@@ -188,7 +188,8 @@
       "0115",
       "0118",
       "0129",
-      "0139"
+      "0139",
+      "0140"
     ],
     "typescript": [
       "0105"
@@ -2293,6 +2294,21 @@
       "reason": "",
       "description": "Reuse the initial RMSNorm in the first layer instead of normalizing it again",
       "measured": "2026-09-28T07:06:36Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0140",
+      "parent": "0597c391dfb1a51ac182b9dcfb5da23609900002",
+      "track": "go",
+      "loss": 2.26771,
+      "steps_per_sec": 140.651305,
+      "loss_gain": 0.055584,
+      "speed_gain": 1.771425,
+      "grad_ratio": 0.999992,
+      "status": "keep",
+      "reason": "",
+      "description": "Halve MLP hidden width from 4x to 2x embedding width",
+      "measured": "2026-09-28T07:12:28Z",
       "has_record": true
     }
   ],

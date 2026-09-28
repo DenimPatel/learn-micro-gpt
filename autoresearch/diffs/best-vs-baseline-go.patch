@@ -55,6 +55,17 @@
  
  	v.Grad = 1
  	for i := len(topo) - 1; i >= 0; i-- {
+@@ -276,8 +295,8 @@
+ 		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
+ 		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
+ 		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
+-		m.state[p+"mlp_fc1"] = newMatrix(rng, 4*cfg.NEmbd, cfg.NEmbd, std)
+-		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, 4*cfg.NEmbd, std)
++		m.state[p+"mlp_fc1"] = newMatrix(rng, 2*cfg.NEmbd, cfg.NEmbd, std)
++		m.state[p+"mlp_fc2"] = newMatrix(rng, cfg.NEmbd, 2*cfg.NEmbd, std)
+ 	}
+ 	m.resetCache()
+ 	return m
 @@ -307,13 +326,114 @@
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
