@@ -38,7 +38,7 @@
       "baseline_source": "implementations/go/main.go",
       "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "52ae4b78c3b372085ec17b51d334c1b1d62a8b2b88f3c941d6110ed3c7eefb9e",
+      "candidate_sha256": "b4f17b0f0732325738d755056fc47015be3a2f52cf648759aaac5a87696926ff",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
@@ -167,8 +167,8 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 160,
-    "keep": 94,
+    "experiments": 161,
+    "keep": 95,
     "discard": 7,
     "crash": 59
   },
@@ -186,10 +186,10 @@
     "go": [
       "0111",
       "0118",
-      "0141",
       "0151",
       "0155",
-      "0159"
+      "0159",
+      "0163"
     ],
     "typescript": [
       "0105"
@@ -2639,6 +2639,21 @@
       "reason": "the patch did not apply",
       "description": "Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead",
       "measured": "2026-09-28T08:24:50Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0163",
+      "parent": "d28c6fcbac0d5aec5bcc7a91547600494f1e2ab6",
+      "track": "go",
+      "loss": 2.284156,
+      "steps_per_sec": 221.047812,
+      "loss_gain": 0.048735,
+      "speed_gain": 3.355576,
+      "grad_ratio": 0.99999,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow the one-layer model to 12 dimensions with four 3-dimensional attention heads",
+      "measured": "2026-09-28T08:28:01Z",
       "has_record": true
     }
   ],
