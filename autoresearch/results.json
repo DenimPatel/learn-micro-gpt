@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 215,
+    "experiments": 216,
     "keep": 100,
     "discard": 7,
-    "crash": 108
+    "crash": 109
   },
   "pareto": {
     "rust": [
@@ -3467,6 +3467,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-29T02:38:11Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0218",
+      "parent": "2386706742a751edc157812b7fb3ab8b19b98e7e",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Make RMSNorm mean square and reciprocal scale differentiable",
+      "measured": "2026-09-29T02:40:08Z",
       "has_record": true
     }
   ],

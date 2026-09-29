@@ -217,3 +217,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0215	bdd702d2fb19e2d8e02a08fb77f65ed7d2ca96e6	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear and attention reductions into exact nary Value nodes
 0216	d75dc24bca71206244e807bbe2c48379adcd8259	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse each RMSNorm scale into one exact shared n-ary Value node
 0217	224d4c1c7915b69f0ad6df82a7638bd8feac3614	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0218	2386706742a751edc157812b7fb3ab8b19b98e7e	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm mean square and reciprocal scale differentiable
