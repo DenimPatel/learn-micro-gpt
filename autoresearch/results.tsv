@@ -224,3 +224,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0222	12bd171268ff229004ea75c202172aa1269ab70f	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm mean-square scaling with shared Value operations
 0223	8aa85d4a23ebf96e5723aac19efae5baf1c1e507	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear rows into exact ordered n-ary product-sum autograd nodes for speed
 0224	3fd9d12d0b35d77aae3bdbdff940c9ee9d01b012	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse each linear row into one reverse-ordered exact n-ary autograd node
+0225	eba9743c4a07aa59814440beb009e34c4f8d42be	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable

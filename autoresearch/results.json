@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 222,
+    "experiments": 223,
     "keep": 100,
     "discard": 7,
-    "crash": 115
+    "crash": 116
   },
   "pareto": {
     "rust": [
@@ -3572,6 +3572,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse each linear row into one reverse-ordered exact n-ary autograd node",
       "measured": "2026-09-29T03:04:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0225",
+      "parent": "eba9743c4a07aa59814440beb009e34c4f8d42be",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-29T03:04:04Z",
       "has_record": true
     }
   ],
