@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 178,
+    "experiments": 179,
     "keep": 100,
     "discard": 7,
-    "crash": 71
+    "crash": 72
   },
   "pareto": {
     "rust": [
@@ -2912,6 +2912,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear dot products into exact product-rule tape nodes",
       "measured": "2026-09-29T01:17:42Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0181",
+      "parent": "b50c696e0452fc0bd422abc50fb2c20bb9ccedd0",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fused exact multiply-add graph nodes and unary scalar nodes for a large speed gain",
+      "measured": "2026-09-29T01:22:44Z",
       "has_record": true
     }
   ],
