@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 175,
+    "experiments": 176,
     "keep": 100,
     "discard": 7,
-    "crash": 68
+    "crash": 69
   },
   "pareto": {
     "rust": [
@@ -2867,6 +2867,21 @@
       "reason": "the patch did not apply",
       "description": "Collapse constant operands and zero seeds in hot autograd accumulators",
       "measured": "2026-09-29T01:07:06Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0178",
+      "parent": "5533b5eb6130567a2174965e2da1fed96120da64",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-29T01:11:51Z",
       "has_record": true
     }
   ],
