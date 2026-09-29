@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 189,
+    "experiments": 190,
     "keep": 100,
     "discard": 7,
-    "crash": 82
+    "crash": 83
   },
   "pareto": {
     "rust": [
@@ -3076,6 +3076,21 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse sums into exact n-ary autograd nodes",
+      "measured": "2026-09-29T01:43:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0192",
+      "parent": "43a5ff60a28c28775b74c3c881f1642531025a0b",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
       "measured": "2026-09-29T01:43:21Z",
       "has_record": true
     }
