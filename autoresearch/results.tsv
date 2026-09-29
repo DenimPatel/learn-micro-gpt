@@ -219,3 +219,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0217	224d4c1c7915b69f0ad6df82a7638bd8feac3614	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0218	2386706742a751edc157812b7fb3ab8b19b98e7e	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm mean square and reciprocal scale differentiable
 0219	b306f3ff7b82f6770f0794174be42b5523069739	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm mean-square and reciprocal scaling
+0220	e8bd797d9bf5e6a37f93addebf200e6848efb1a3	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm mean-square and reciprocal scale differentiable with existing Value operations
