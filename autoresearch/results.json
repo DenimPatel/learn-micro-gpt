@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 212,
+    "experiments": 213,
     "keep": 100,
     "discard": 7,
-    "crash": 105
+    "crash": 106
   },
   "pareto": {
     "rust": [
@@ -3422,6 +3422,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-29T02:25:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0215",
+      "parent": "bdd702d2fb19e2d8e02a08fb77f65ed7d2ca96e6",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse linear and attention reductions into exact nary Value nodes",
+      "measured": "2026-09-29T02:28:13Z",
       "has_record": true
     }
   ],
