@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 220,
+    "experiments": 221,
     "keep": 100,
     "discard": 7,
-    "crash": 113
+    "crash": 114
   },
   "pareto": {
     "rust": [
@@ -3542,6 +3542,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm mean-square scaling with shared Value operations",
       "measured": "2026-09-29T02:55:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0223",
+      "parent": "8aa85d4a23ebf96e5723aac19efae5baf1c1e507",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse linear rows into exact ordered n-ary product-sum autograd nodes for speed",
+      "measured": "2026-09-29T02:59:52Z",
       "has_record": true
     }
   ],
