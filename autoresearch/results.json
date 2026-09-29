@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 209,
+    "experiments": 210,
     "keep": 100,
     "discard": 7,
-    "crash": 102
+    "crash": 103
   },
   "pareto": {
     "rust": [
@@ -3377,6 +3377,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm statistics and scaling differentiable using the existing Value tape",
       "measured": "2026-09-29T02:22:09Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0212",
+      "parent": "2cd6a50d76fc279e4e282e31b004d3bc108aa9c2",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse hot fixed-scalar operations into unary autograd nodes for an unchanged loss curve",
+      "measured": "2026-09-29T02:23:32Z",
       "has_record": true
     }
   ],
