@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 171,
+    "experiments": 172,
     "keep": 100,
     "discard": 7,
-    "crash": 64
+    "crash": 65
   },
   "pareto": {
     "rust": [
@@ -2807,6 +2807,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Differentiate the shared RMSNorm scale node on the autograd tape",
       "measured": "2026-09-29T00:55:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0174",
+      "parent": "d52aa76a730fe9fea3dc011b31c9c739c6e75bf9",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Compact exact RMSNorm backward without tape expansion",
+      "measured": "2026-09-29T00:57:15Z",
       "has_record": true
     }
   ],

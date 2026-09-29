@@ -173,3 +173,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0171	224a57b4709116ffc1f5d77f35e2cbd302d9b68d	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math
 0172	3ff8f3b5a4b6bb2cc250f63df54b95e474fb3933	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0173	2b83f4329e900168b5ada719dd5698b869ffe2b0	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Differentiate the shared RMSNorm scale node on the autograd tape
+0174	d52aa76a730fe9fea3dc011b31c9c739c6e75bf9	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Compact exact RMSNorm backward without tape expansion
