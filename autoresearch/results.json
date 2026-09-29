@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 219,
+    "experiments": 220,
     "keep": 100,
     "discard": 7,
-    "crash": 112
+    "crash": 113
   },
   "pareto": {
     "rust": [
@@ -3527,6 +3527,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Cut autograd allocation and traversal overhead plus redundant Adam power calculations with an unchanged loss curve",
       "measured": "2026-09-29T02:52:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0222",
+      "parent": "12bd171268ff229004ea75c202172aa1269ab70f",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Restore differentiable RMSNorm mean-square scaling with shared Value operations",
+      "measured": "2026-09-29T02:55:39Z",
       "has_record": true
     }
   ],
