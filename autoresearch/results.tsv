@@ -203,3 +203,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0201	99f2d4d09fc823299a48515de543df50e7928db2	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Differentiate RMSNorm through its mean square and fuse linear and softmax sums into exact n-ary Value nodes
 0202	265963e5822873bada2cd2bf918dc87040e2c109	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Replace Set topo visitation with per-Value epochs and compute Adam bias corrections once per step
 0203	587f8815321e78b341ab8de2bb58419c57848e1a	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm normalization statistics
+0204	0785e4d2303c7cf7268a68c71e70485cd3f5ba50	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm mean-square scaling

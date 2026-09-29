@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 201,
+    "experiments": 202,
     "keep": 100,
     "discard": 7,
-    "crash": 94
+    "crash": 95
   },
   "pareto": {
     "rust": [
@@ -3257,6 +3257,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm normalization statistics",
       "measured": "2026-09-29T02:09:41Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0204",
+      "parent": "0785e4d2303c7cf7268a68c71e70485cd3f5ba50",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Restore differentiable RMSNorm mean-square scaling",
+      "measured": "2026-09-29T02:12:05Z",
       "has_record": true
     }
   ],
