@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 228,
+    "experiments": 229,
     "keep": 100,
     "discard": 7,
-    "crash": 121
+    "crash": 122
   },
   "pareto": {
     "rust": [
@@ -3662,6 +3662,21 @@
       "reason": "the patch did not apply",
       "description": "Keep Adam at a constant 0.01 learning rate",
       "measured": "2026-09-29T03:19:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0231",
+      "parent": "c33b9d4606f6d0cd816e0db0de5be81658c7b620",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse each linear row into one exact ordered product-sum autograd node",
+      "measured": "2026-09-29T03:23:25Z",
       "has_record": true
     }
   ],
