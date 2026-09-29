@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 194,
+    "experiments": 195,
     "keep": 100,
     "discard": 7,
-    "crash": 87
+    "crash": 88
   },
   "pareto": {
     "rust": [
@@ -3152,6 +3152,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse hot accumulations into copied-child n-ary sum nodes",
       "measured": "2026-09-29T01:48:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0197",
+      "parent": "c529b22d763bb7f70d0c6c7e1322f0a24b1543ce",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse linear reductions into exact n-ary autograd sums",
+      "measured": "2026-09-29T01:50:51Z",
       "has_record": true
     }
   ],

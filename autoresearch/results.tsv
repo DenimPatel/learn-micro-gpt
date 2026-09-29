@@ -196,3 +196,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0194	d49698fb2702c11c3faaadd478957fe3f4c2872e	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0195	e51684ab89ba1294797f9a2250e5cceed52851c6	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Lower Adam beta2 from 0.99 to 0.98 for faster late-run gradient adaptation
 0196	0e50da92910db29f1b7e140f27ad69bfda6d1661	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse hot accumulations into copied-child n-ary sum nodes
+0197	c529b22d763bb7f70d0c6c7e1322f0a24b1543ce	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse linear reductions into exact n-ary autograd sums
