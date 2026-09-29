@@ -212,3 +212,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0210	7fcee3cde775c98d65a0961462db7794bbeb0474	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse hot linear and attention reductions into ordered exact n-ary sum nodes
 0211	22bcf1651c32d43f749d2968cf4e8bd8e39ed89c	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm statistics and scaling differentiable using the existing Value tape
 0212	2cd6a50d76fc279e4e282e31b004d3bc108aa9c2	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse hot fixed-scalar operations into unary autograd nodes for an unchanged loss curve
+0213	70809b6c59a647877781f1de664bee23f5c3aa48	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm mean-square scaling
