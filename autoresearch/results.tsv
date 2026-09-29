@@ -194,3 +194,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0192	43a5ff60a28c28775b74c3c881f1642531025a0b	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0193	8e8ed952a163247ebf16b9861454c45c72ad9183	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0194	d49698fb2702c11c3faaadd478957fe3f4c2872e	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0195	e51684ab89ba1294797f9a2250e5cceed52851c6	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Lower Adam beta2 from 0.99 to 0.98 for faster late-run gradient adaptation
