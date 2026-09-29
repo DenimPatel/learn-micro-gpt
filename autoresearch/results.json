@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 195,
+    "experiments": 196,
     "keep": 100,
     "discard": 7,
-    "crash": 88
+    "crash": 89
   },
   "pareto": {
     "rust": [
@@ -3167,6 +3167,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse linear reductions into exact n-ary autograd sums",
       "measured": "2026-09-29T01:50:51Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0198",
+      "parent": "a3938fdc58b0d12ac5bf6b71b1600ee275915d4b",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cut redundant tape nodes identity hashing and repeated optimizer work from the hot loop",
+      "measured": "2026-09-29T01:54:54Z",
       "has_record": true
     }
   ],
