@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 179,
+    "experiments": 180,
     "keep": 100,
     "discard": 7,
-    "crash": 72
+    "crash": 73
   },
   "pareto": {
     "rust": [
@@ -2927,6 +2927,21 @@
       "reason": "the patch did not apply",
       "description": "Fused exact multiply-add graph nodes and unary scalar nodes for a large speed gain",
       "measured": "2026-09-29T01:22:44Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0182",
+      "parent": "c842776cc5a0bf6ab54c1f044b8192be75f011ea",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Shared differentiable RMSNorm scale with exact local derivatives",
+      "measured": "2026-09-29T01:25:04Z",
       "has_record": true
     }
   ],
