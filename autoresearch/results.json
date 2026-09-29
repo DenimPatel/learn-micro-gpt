@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 224,
+    "experiments": 225,
     "keep": 100,
     "discard": 7,
-    "crash": 117
+    "crash": 118
   },
   "pareto": {
     "rust": [
@@ -3602,6 +3602,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Add a zero-initialized vocabulary logit bias",
       "measured": "2026-09-29T03:06:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0227",
+      "parent": "59fd1a1fa182625e89842be4b62f6b5f768a2cb4",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Lower Adam beta2 from 0.99 to 0.98",
+      "measured": "2026-09-29T03:09:09Z",
       "has_record": true
     }
   ],

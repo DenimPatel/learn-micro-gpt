@@ -226,3 +226,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0224	3fd9d12d0b35d77aae3bdbdff940c9ee9d01b012	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse each linear row into one reverse-ordered exact n-ary autograd node
 0225	eba9743c4a07aa59814440beb009e34c4f8d42be	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0226	53a7666d1af4141fe72a2b91cbeb7fffe14fe1e3	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Add a zero-initialized vocabulary logit bias
+0227	59fd1a1fa182625e89842be4b62f6b5f768a2cb4	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Lower Adam beta2 from 0.99 to 0.98
