@@ -192,3 +192,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0190	45c8e21833fd326c6d8dfa00b6ff0b799adda419	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm differentiable with exact square mean scale gradients
 0191	c1205f772e58d491a70180b0c030cb061959e540	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse sums into exact n-ary autograd nodes
 0192	43a5ff60a28c28775b74c3c881f1642531025a0b	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0193	8e8ed952a163247ebf16b9861454c45c72ad9183	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
