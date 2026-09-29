@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 214,
+    "experiments": 215,
     "keep": 100,
     "discard": 7,
-    "crash": 107
+    "crash": 108
   },
   "pareto": {
     "rust": [
@@ -3452,6 +3452,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse each RMSNorm scale into one exact shared n-ary Value node",
       "measured": "2026-09-29T02:29:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0217",
+      "parent": "224d4c1c7915b69f0ad6df82a7638bd8feac3614",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-29T02:38:11Z",
       "has_record": true
     }
   ],
