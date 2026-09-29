@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 181,
+    "experiments": 182,
     "keep": 100,
     "discard": 7,
-    "crash": 74
+    "crash": 75
   },
   "pareto": {
     "rust": [
@@ -2957,6 +2957,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-29T01:25:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0184",
+      "parent": "f64720b376342763c624fc26f48785c0dfb27e5b",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use direct scalar nodes and fan-in sums to shrink the exact autograd tape",
+      "measured": "2026-09-29T01:28:10Z",
       "has_record": true
     }
   ],
