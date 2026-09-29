@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 184,
+    "experiments": 185,
     "keep": 100,
     "discard": 7,
-    "crash": 77
+    "crash": 78
   },
   "pareto": {
     "rust": [
@@ -3002,6 +3002,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear-layer sums into exact n-ary autograd nodes",
       "measured": "2026-09-29T01:33:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0187",
+      "parent": "b5a93cd90f7db11dfc9c146be3e229ac49e916e5",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse only the RMSNorm mean-square onto the tape with its exact 2x/n local derivative",
+      "measured": "2026-09-29T01:36:19Z",
       "has_record": true
     }
   ],
