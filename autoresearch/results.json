@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 213,
+    "experiments": 214,
     "keep": 100,
     "discard": 7,
-    "crash": 106
+    "crash": 107
   },
   "pareto": {
     "rust": [
@@ -3437,6 +3437,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear and attention reductions into exact nary Value nodes",
       "measured": "2026-09-29T02:28:13Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0216",
+      "parent": "d75dc24bca71206244e807bbe2c48379adcd8259",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse each RMSNorm scale into one exact shared n-ary Value node",
+      "measured": "2026-09-29T02:29:17Z",
       "has_record": true
     }
   ],
