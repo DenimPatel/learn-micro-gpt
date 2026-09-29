@@ -229,3 +229,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0227	59fd1a1fa182625e89842be4b62f6b5f768a2cb4	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Lower Adam beta2 from 0.99 to 0.98
 0228	9efcbe89f88bea52bcee313a62ee53da31051b5a	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm using an exact fused mean-square autograd node
 0229	78010ba87d739ab9aba6f8fe9c275eb7f7134ee4	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse each linear row into one exact product-sum autograd node
+0230	14d36c3dd9c0afdb0aad6655119a053368102255	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Keep Adam at a constant 0.01 learning rate
