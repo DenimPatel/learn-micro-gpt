@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 186,
+    "experiments": 187,
     "keep": 100,
     "discard": 7,
-    "crash": 79
+    "crash": 80
   },
   "pareto": {
     "rust": [
@@ -3032,6 +3032,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse hot dot products and reductions into exact nary autograd sums",
       "measured": "2026-09-29T01:40:13Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0189",
+      "parent": "c3a28c948ee0bcd2e4a959b1980ce0f02a460727",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Added reference AdamW decoupled weight decay with betaW 0.1",
+      "measured": "2026-09-29T01:41:24Z",
       "has_record": true
     }
   ],
