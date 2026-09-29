@@ -178,3 +178,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0176	7ea330c0c75a170d13963e423afa2e1d7c18682a	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Exact tape compaction and hoisted Adam bias correction
 0177	444c85f77b128db24c8ffb0c6dc884a8ae6e5ce7	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse constant operands and zero seeds in hot autograd accumulators
 0178	5533b5eb6130567a2174965e2da1fed96120da64	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0179	db18e40d326e5bb07cf9078609da080f043d3880	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Restore differentiable RMSNorm through a shared scale node
