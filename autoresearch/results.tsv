@@ -182,3 +182,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0180	c4e52f491ffa5899e3b85cbcf234d11b93581efd	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear dot products into exact product-rule tape nodes
 0181	b50c696e0452fc0bd422abc50fb2c20bb9ccedd0	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fused exact multiply-add graph nodes and unary scalar nodes for a large speed gain
 0182	c842776cc5a0bf6ab54c1f044b8192be75f011ea	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Shared differentiable RMSNorm scale with exact local derivatives
+0183	9e5e26952305907a0ec4e2fd0399322bcf7d2daf	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable

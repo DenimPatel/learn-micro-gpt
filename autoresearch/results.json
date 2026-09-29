@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 180,
+    "experiments": 181,
     "keep": 100,
     "discard": 7,
-    "crash": 73
+    "crash": 74
   },
   "pareto": {
     "rust": [
@@ -2941,6 +2941,21 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Shared differentiable RMSNorm scale with exact local derivatives",
+      "measured": "2026-09-29T01:25:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0183",
+      "parent": "9e5e26952305907a0ec4e2fd0399322bcf7d2daf",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
       "measured": "2026-09-29T01:25:04Z",
       "has_record": true
     }
