@@ -3,7 +3,10 @@ import { expect, test } from '@playwright/test'
 /**
  * `#/research`, against a production build served from a subpath.
  *
- * The unit tests in `tests/research.test.ts` cover the arithmetic. This file
+ * The unit tests in `tests/research.test.ts` cover the arithmetic, and
+ * `tests/research-empty-state.test.tsx` covers the empty states -- which cannot
+ * be reached from here, because this file runs against the real
+ * `autoresearch/results.json` and every track in it has been run on. This file
  * covers the three things only a browser can tell you:
  *
  *  1. The page renders with no console or page errors. A `?raw` import that
@@ -138,26 +141,118 @@ test.describe('the research page', () => {
     await expect(page.locator('.research')).not.toContainText('main.go')
   })
 
-  test('says so when a track has no experiments, instead of showing a bare zero', async ({
+  test('a track with experiments renders its ledger statistics, not an empty state', async ({
     page,
   }) => {
-    // Go and TypeScript have never been run. The page must not render them as a
-    // chart with one point and no caption, which is what a fast model looks like
-    // and is not what an unmeasured track is.
+    // Every track in the ledger has been run on, and the loop below asserts it
+    // per track rather than assuming it. (The test this replaces carried the
+    // comment "Go and TypeScript have never been run", which was the premise of
+    // the whole test and was already false when it was written -- Go had been
+    // kept from run 0107. Restating a fact about the ledger in prose is a
+    // maintenance burden that fails silently; asserting it costs one line and
+    // goes red the moment the ledger moves, which is what should have happened
+    // here instead.)
+    //
+    // Why this is scoped and the test it replaces was not. That test clicked the
+    // Go button and then matched a regex against `.research`'s inner text --
+    // the text of the whole article, which *includes the switcher*. Every button
+    // in the switcher is labelled `{language}` plus `{N} kept`, so
+    // `/no experiment|0 kept|experiments\s*0/i` could be satisfied by any track's
+    // control and never by the track under test. It passed for as long as
+    // TypeScript had zero keeps, recorded nothing about why, and went red on run
+    // 0232 when TypeScript recorded its first -- not because the page changed
+    // behaviour, but because a *different* track's label stopped matching. A
+    // regex over a container that holds the control you are not testing measures
+    // the control.
+    //
+    // So the fix is scope, in both directions:
+    //
+    //  - `.research > dl.stats` is the ledger's own definition list and a direct
+    //    child of the article. Each chart carries a `<dl class="stats">` of its
+    //    own, nested inside a `<figure>`, so the child combinator picks the
+    //    ledger and only the ledger. It is the element the prose at
+    //    `ResearchPage.tsx:1090` describes, so it moves if and when the ledger
+    //    moves rather than needing this test to be edited alongside it.
+    //  - `p.research__empty` is the empty state's own class and appears nowhere
+    //    in the switcher, so "no empty state" cannot be satisfied by a sibling
+    //    track's label either.
     await page.goto('#/research')
-    await page.locator('.research__track').filter({ hasText: 'Go' }).click()
-    const text = await page.locator('.research').innerText()
-    expect(text).toMatch(/no experiment|0 kept|experiments\s*0/i)
+    for (const label of ['Rust', 'Go', 'TypeScript']) {
+      const button = page.locator('.research__track').filter({ hasText: label })
+      await button.click()
+      await expect(button).toHaveAttribute('aria-pressed', 'true')
+
+      const ledger = page.locator('article.research > dl.stats')
+      // All four figures, and their order, rather than just the one under test:
+      // a `<dt>` that went missing is a page that lost a number, and checking
+      // the list catches that without a separate assertion per figure.
+      await expect(ledger.locator('dt')).toHaveText(['experiments', 'kept', 'discarded', 'crashed'])
+      const experiments = Number(
+        await ledger.locator('div', { hasText: 'experiments' }).locator('dd').innerText(),
+      )
+      expect(experiments, `${label} has experiments in the ledger`).toBeGreaterThan(0)
+
+      // Cross-checked against this track's table, not hard-coded, and not the
+      // ledger-wide total: the figures come from `trackRows(track)`, so a
+      // mismatch would mean the heading and the table below it were describing
+      // two different tracks.
+      const experimentRows = page.locator(
+        '.research__ledger tbody tr:not(.research__row--baseline)',
+      )
+      expect(await experimentRows.count(), `${label} ledger rows`).toBe(experiments)
+
+      // The property, negatively: a track with measurements must not tell the
+      // reader there are none.
+      await expect(page.locator('article.research p.research__empty')).toHaveCount(0)
+    }
   })
 
-  test('the empty state names the command, rather than showing a bare zero', async ({ page }) => {
-    // When nothing has been kept, the page must say so and say what to do. A
-    // chart with one point and no caption looks like a broken chart.
+  test('the switcher and the ledger count the same track, not the whole ledger', async ({
+    page,
+  }) => {
+    // This replaces a test that read `make autoresearch-rust` out of the page if
+    // and only if the article matched /experiments[\s\S]{0,40}0/. That condition
+    // had been false since the first keep, so the test had been passing
+    // vacuously, and it was reading the same article-wide inner text that made
+    // the empty-state test beside it meaningless. The empty state itself is now
+    // covered where it can actually be reached -- a fixture ledger, in
+    // `tests/research-empty-state.test.tsx` -- because no real ledger has a track
+    // with nothing on it.
+    //
+    // What *is* reachable here, with the real data, is the mistake the switcher's
+    // own comment warns about: `research.counts` is the ledger-wide total, and
+    // reading it would put a Rust keep count next to a Go chart. Both figures on
+    // screen are derived from `trackRows(track)`, so switching must change both
+    // of them together -- and the last assertion is what keeps the pair of
+    // checks from being a tautology: TypeScript has one keep and Rust has
+    // dozens, so a ledger-wide number leaking into either would show up as the
+    // two agreeing with each other and disagreeing with the table.
     await page.goto('#/research')
-    const text = await page.locator('.research').innerText()
-    if (/experiments[\s\S]{0,40}0/.test(text)) {
-      expect(text).toContain('make autoresearch-rust')
+    const kept = async (label: string) => {
+      const button = page.locator('.research__track').filter({ hasText: label })
+      await button.click()
+      await expect(button).toHaveAttribute('aria-pressed', 'true')
+      const inLedger = Number(
+        await page
+          .locator('article.research > dl.stats')
+          .locator('div', { hasText: 'kept' })
+          .locator('dd')
+          .innerText(),
+      )
+      const inSwitcher = Number(
+        (await button.locator('.research__track-note').innerText()).replace(/[^\d]/g, ''),
+      )
+      expect(inSwitcher, `${label} keep count in the switcher`).toBe(inLedger)
+      return inLedger
     }
+
+    const rust = await kept('Rust')
+    const go = await kept('Go')
+    const typescript = await kept('TypeScript')
+    // The tracks are nowhere near each other, which is the point: these three
+    // numbers being different is what makes the agreement above mean something.
+    expect(typescript).toBeLessThan(go)
+    expect(go).toBeLessThan(rust)
   })
 })
 
