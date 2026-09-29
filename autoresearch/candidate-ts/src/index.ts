@@ -246,9 +246,20 @@ export class Model {
   /** `linear(x, w)` -- the only place a weight matrix is used, and most of the arithmetic in the model. */
   static linear(x: Value[], w: Matrix): Value[] {
     return w.map((row) => {
-      let acc = new Value(0)
-      for (let i = 0; i < row.length; i++) acc = acc.add(row[i]!.mul(x[i]!))
-      return acc
+      const children = new Array<Value>(row.length * 2)
+      const localGrads = new Array<number>(row.length * 2)
+      let data = 0
+      for (let i = 0; i < row.length; i++) {
+        const weight = row[i]!
+        const input = x[i]!
+        const childIndex = i * 2
+        children[childIndex] = weight
+        children[childIndex + 1] = input
+        localGrads[childIndex] = input.data
+        localGrads[childIndex + 1] = weight.data
+        data += weight.data * input.data
+      }
+      return new Value(data, children, localGrads)
     })
   }
 

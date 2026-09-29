@@ -46,7 +46,7 @@
       "baseline_source": "implementations/typescript/src/index.ts",
       "baseline_sha256": "3b5c7db87afbfb0873b7a5da0604ba587392ea93063555c0fe850b02ce16a658",
       "candidate_source": "autoresearch/candidate-ts/src/index.ts",
-      "candidate_sha256": "3b5c7db87afbfb0873b7a5da0604ba587392ea93063555c0fe850b02ce16a658",
+      "candidate_sha256": "e6749a41c5fed34dfdcdfe3eec6f039e1b9f24840a12ff1f278e24927a4ad62c",
       "gradient_probe": "autoresearch/candidate-ts/src/probe.ts",
       "gradient_probe_sha256": "5c16a817ee3e391d29d0aefc1e1f67b008ad028be70a2521db582197e1084441"
     }
@@ -164,11 +164,23 @@
       "reason": "",
       "description": "Halve the one-layer MLP width from 64 to 32"
     },
-    "typescript": null
+    "typescript": {
+      "run_id": "0232",
+      "parent": "424c23ddbc8d3df5e2246d7831d2745931b4928d",
+      "track": "typescript",
+      "loss": 2.309063,
+      "steps_per_sec": 245.589919,
+      "loss_gain": 0.0,
+      "speed_gain": 3.34214,
+      "grad_ratio": 0.722129,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse each linear row into one exact ordered product-sum autograd node"
+    }
   },
   "counts": {
-    "experiments": 229,
-    "keep": 100,
+    "experiments": 230,
+    "keep": 101,
     "discard": 7,
     "crash": 122
   },
@@ -195,7 +207,7 @@
       "0170"
     ],
     "typescript": [
-      "0105"
+      "0232"
     ]
   },
   "runs": [
@@ -3677,6 +3689,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node",
       "measured": "2026-09-29T03:23:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0232",
+      "parent": "424c23ddbc8d3df5e2246d7831d2745931b4928d",
+      "track": "typescript",
+      "loss": 2.309063,
+      "steps_per_sec": 245.589919,
+      "loss_gain": 0.0,
+      "speed_gain": 3.34214,
+      "grad_ratio": 0.722129,
+      "status": "keep",
+      "reason": "",
+      "description": "Fuse each linear row into one exact ordered product-sum autograd node",
+      "measured": "2026-09-29T04:13:26Z",
       "has_record": true
     }
   ],
