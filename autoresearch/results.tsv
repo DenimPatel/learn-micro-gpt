@@ -176,3 +176,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0174	d52aa76a730fe9fea3dc011b31c9c739c6e75bf9	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Compact exact RMSNorm backward without tape expansion
 0175	e657dd3a904d49114c7713960d8269b4f48e5917	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear dot products into one tape node with direct product-rule gradients
 0176	7ea330c0c75a170d13963e423afa2e1d7c18682a	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Exact tape compaction and hoisted Adam bias correction
+0177	444c85f77b128db24c8ffb0c6dc884a8ae6e5ce7	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse constant operands and zero seeds in hot autograd accumulators
