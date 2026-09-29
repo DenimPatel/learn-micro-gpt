@@ -187,3 +187,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0185	c2d86deb442299a0e704fcf7df1bf3b269ac3d73	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Construct differentiable RMSNorm with existing Value primitives and no custom nodes
 0186	4f5da770a90b9dda6c5a614c7364a7352b8cf0fe	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear-layer sums into exact n-ary autograd nodes
 0187	b5a93cd90f7db11dfc9c146be3e229ac49e916e5	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse only the RMSNorm mean-square onto the tape with its exact 2x/n local derivative
+0188	c1f0f1aaad04288e43274ce1b2ff7ec2ed158a91	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse hot dot products and reductions into exact nary autograd sums
