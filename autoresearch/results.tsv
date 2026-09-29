@@ -172,3 +172,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0170	b509272993c012e8469dcc0b86ca2f037eae7574	go	2.224834	52.943912	+0.073441	+0.043219	0.999984	keep		Halve the one-layer MLP width from 64 to 32
 0171	224a57b4709116ffc1f5d77f35e2cbd302d9b68d	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math
 0172	3ff8f3b5a4b6bb2cc250f63df54b95e474fb3933	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0173	2b83f4329e900168b5ada719dd5698b869ffe2b0	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Differentiate the shared RMSNorm scale node on the autograd tape

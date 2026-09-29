@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 170,
+    "experiments": 171,
     "keep": 100,
     "discard": 7,
-    "crash": 63
+    "crash": 64
   },
   "pareto": {
     "rust": [
@@ -2792,6 +2792,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-29T00:54:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0173",
+      "parent": "2b83f4329e900168b5ada719dd5698b869ffe2b0",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Differentiate the shared RMSNorm scale node on the autograd tape",
+      "measured": "2026-09-29T00:55:10Z",
       "has_record": true
     }
   ],
