@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 172,
+    "experiments": 173,
     "keep": 100,
     "discard": 7,
-    "crash": 65
+    "crash": 66
   },
   "pareto": {
     "rust": [
@@ -2822,6 +2822,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Compact exact RMSNorm backward without tape expansion",
       "measured": "2026-09-29T00:57:15Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0175",
+      "parent": "e657dd3a904d49114c7713960d8269b4f48e5917",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse linear dot products into one tape node with direct product-rule gradients",
+      "measured": "2026-09-29T00:58:04Z",
       "has_record": true
     }
   ],
