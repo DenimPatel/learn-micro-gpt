@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 197,
+    "experiments": 198,
     "keep": 100,
     "discard": 7,
-    "crash": 90
+    "crash": 91
   },
   "pareto": {
     "rust": [
@@ -3197,6 +3197,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse RMSNorm onto the autograd tape with one shared exact mean-square node",
       "measured": "2026-09-29T01:57:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0200",
+      "parent": "3a6328d2dd17644776ed495d0c50cc0f3015fba3",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse hot reductions into exact nary autograd sums",
+      "measured": "2026-09-29T02:00:22Z",
       "has_record": true
     }
   ],
