@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 203,
+    "experiments": 204,
     "keep": 100,
     "discard": 7,
-    "crash": 96
+    "crash": 97
   },
   "pareto": {
     "rust": [
@@ -3287,6 +3287,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm mean-square scaling differentiable with one fused exact reduction",
       "measured": "2026-09-29T02:13:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0206",
+      "parent": "9f581aaea8ff9abc95085688700e8d24673e2d93",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse differentiable RMSNorm mean and scale into two shared tape nodes",
+      "measured": "2026-09-29T02:14:55Z",
       "has_record": true
     }
   ],
