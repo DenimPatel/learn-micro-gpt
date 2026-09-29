@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 218,
+    "experiments": 219,
     "keep": 100,
     "discard": 7,
-    "crash": 111
+    "crash": 112
   },
   "pareto": {
     "rust": [
@@ -3512,6 +3512,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm mean-square and reciprocal scale differentiable with existing Value operations",
       "measured": "2026-09-29T02:48:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0221",
+      "parent": "f57777c5b97311380450816b1fc9384f3e78133b",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Cut autograd allocation and traversal overhead plus redundant Adam power calculations with an unchanged loss curve",
+      "measured": "2026-09-29T02:52:26Z",
       "has_record": true
     }
   ],
