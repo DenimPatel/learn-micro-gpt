@@ -170,3 +170,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0168	9771ae257cafe3e912209182b1b482a18e57d21d	go	2.230962	60.288232	+0.070889	+0.187933	0.999993	keep		Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads
 0169	6e1beb5b0d7af51cb554d34b8350482a0554f1f6	go	2.230962	66.188536	+0.070889	+0.304194	0.999993	keep		Right-size the autograd topology buffer to reduce per-step GC pressure
 0170	b509272993c012e8469dcc0b86ca2f037eae7574	go	2.224834	52.943912	+0.073441	+0.043219	0.999984	keep		Halve the one-layer MLP width from 64 to 32
+0171	224a57b4709116ffc1f5d77f35e2cbd302d9b68d	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math

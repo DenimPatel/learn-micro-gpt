@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 168,
+    "experiments": 169,
     "keep": 100,
     "discard": 7,
-    "crash": 61
+    "crash": 62
   },
   "pareto": {
     "rust": [
@@ -2762,6 +2762,21 @@
       "reason": "",
       "description": "Halve the one-layer MLP width from 64 to 32",
       "measured": "2026-09-28T10:52:08Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0171",
+      "parent": "224a57b4709116ffc1f5d77f35e2cbd302d9b68d",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math",
+      "measured": "2026-09-29T00:44:19Z",
       "has_record": true
     }
   ],
