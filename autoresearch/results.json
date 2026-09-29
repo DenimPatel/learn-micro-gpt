@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 221,
+    "experiments": 222,
     "keep": 100,
     "discard": 7,
-    "crash": 114
+    "crash": 115
   },
   "pareto": {
     "rust": [
@@ -3557,6 +3557,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear rows into exact ordered n-ary product-sum autograd nodes for speed",
       "measured": "2026-09-29T02:59:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0224",
+      "parent": "3fd9d12d0b35d77aae3bdbdff940c9ee9d01b012",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse each linear row into one reverse-ordered exact n-ary autograd node",
+      "measured": "2026-09-29T03:04:03Z",
       "has_record": true
     }
   ],
