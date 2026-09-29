@@ -184,3 +184,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0182	c842776cc5a0bf6ab54c1f044b8192be75f011ea	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Shared differentiable RMSNorm scale with exact local derivatives
 0183	9e5e26952305907a0ec4e2fd0399322bcf7d2daf	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0184	f64720b376342763c624fc26f48785c0dfb27e5b	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use direct scalar nodes and fan-in sums to shrink the exact autograd tape
+0185	c2d86deb442299a0e704fcf7df1bf3b269ac3d73	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Construct differentiable RMSNorm with existing Value primitives and no custom nodes

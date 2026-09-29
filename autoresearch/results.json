@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 182,
+    "experiments": 183,
     "keep": 100,
     "discard": 7,
-    "crash": 75
+    "crash": 76
   },
   "pareto": {
     "rust": [
@@ -2972,6 +2972,21 @@
       "reason": "the patch did not apply",
       "description": "Use direct scalar nodes and fan-in sums to shrink the exact autograd tape",
       "measured": "2026-09-29T01:28:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0185",
+      "parent": "c2d86deb442299a0e704fcf7df1bf3b269ac3d73",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Construct differentiable RMSNorm with existing Value primitives and no custom nodes",
+      "measured": "2026-09-29T01:32:10Z",
       "has_record": true
     }
   ],
