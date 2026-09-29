@@ -207,3 +207,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0205	f95237329717f6540733f8750f4e1484a1ca01c6	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Make RMSNorm mean-square scaling differentiable with one fused exact reduction
 0206	9f581aaea8ff9abc95085688700e8d24673e2d93	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse differentiable RMSNorm mean and scale into two shared tape nodes
 0207	7ad58b7e77eeab7d8b2c7b3535b7fb838332a6f0	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse sum reductions into one n-ary autograd node
+0208	d3f62b586cead55ce1afe0a96567f4c29179c752	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse sum reductions into one n-ary autograd node to cut allocation and traversal overhead

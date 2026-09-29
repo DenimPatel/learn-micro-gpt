@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 205,
+    "experiments": 206,
     "keep": 100,
     "discard": 7,
-    "crash": 98
+    "crash": 99
   },
   "pareto": {
     "rust": [
@@ -3317,6 +3317,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse sum reductions into one n-ary autograd node",
       "measured": "2026-09-29T02:16:32Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0208",
+      "parent": "d3f62b586cead55ce1afe0a96567f4c29179c752",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse sum reductions into one n-ary autograd node to cut allocation and traversal overhead",
+      "measured": "2026-09-29T02:17:10Z",
       "has_record": true
     }
   ],
