@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 193,
+    "experiments": 194,
     "keep": 100,
     "discard": 7,
-    "crash": 86
+    "crash": 87
   },
   "pareto": {
     "rust": [
@@ -3137,6 +3137,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster late-run gradient adaptation",
       "measured": "2026-09-29T01:44:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0196",
+      "parent": "0e50da92910db29f1b7e140f27ad69bfda6d1661",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse hot accumulations into copied-child n-ary sum nodes",
+      "measured": "2026-09-29T01:48:59Z",
       "has_record": true
     }
   ],
