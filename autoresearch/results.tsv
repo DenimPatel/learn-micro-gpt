@@ -209,3 +209,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0207	7ad58b7e77eeab7d8b2c7b3535b7fb838332a6f0	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse sum reductions into one n-ary autograd node
 0208	d3f62b586cead55ce1afe0a96567f4c29179c752	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse sum reductions into one n-ary autograd node to cut allocation and traversal overhead
 0209	d49474809cb0f1fe69d4d3f77305f73c835efd32	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0210	7fcee3cde775c98d65a0961462db7794bbeb0474	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse hot linear and attention reductions into ordered exact n-ary sum nodes

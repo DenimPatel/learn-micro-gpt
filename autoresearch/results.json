@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 207,
+    "experiments": 208,
     "keep": 100,
     "discard": 7,
-    "crash": 100
+    "crash": 101
   },
   "pareto": {
     "rust": [
@@ -3347,6 +3347,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-29T02:17:11Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0210",
+      "parent": "7fcee3cde775c98d65a0961462db7794bbeb0474",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse hot linear and attention reductions into ordered exact n-ary sum nodes",
+      "measured": "2026-09-29T02:21:37Z",
       "has_record": true
     }
   ],
