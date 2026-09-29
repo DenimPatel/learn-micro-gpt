@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 188,
+    "experiments": 189,
     "keep": 100,
     "discard": 7,
-    "crash": 81
+    "crash": 82
   },
   "pareto": {
     "rust": [
@@ -3062,6 +3062,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm differentiable with exact square mean scale gradients",
       "measured": "2026-09-29T01:42:08Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0191",
+      "parent": "c1205f772e58d491a70180b0c030cb061959e540",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse sums into exact n-ary autograd nodes",
+      "measured": "2026-09-29T01:43:21Z",
       "has_record": true
     }
   ],
