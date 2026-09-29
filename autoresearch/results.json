@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 200,
+    "experiments": 201,
     "keep": 100,
     "discard": 7,
-    "crash": 93
+    "crash": 94
   },
   "pareto": {
     "rust": [
@@ -3242,6 +3242,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Replace Set topo visitation with per-Value epochs and compute Adam bias corrections once per step",
       "measured": "2026-09-29T02:07:56Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0203",
+      "parent": "587f8815321e78b341ab8de2bb58419c57848e1a",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Restore differentiable RMSNorm normalization statistics",
+      "measured": "2026-09-29T02:09:41Z",
       "has_record": true
     }
   ],
