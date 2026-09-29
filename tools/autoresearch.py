@@ -787,6 +787,48 @@ def train_once(
     return losses, elapsed, reported_sps
 
 
+def require_local_tsc(track: Track, project_dir: Path) -> None:
+    """Preflight on the npm path: can this project actually run its own compiler?
+
+    `npx` does not ask the project whether it has a compiler before it runs one.
+    With no `node_modules` to resolve `tsc` from, it falls back to the registry, and
+    the package published there under the name `tsc` is a deprecated stub whose whole
+    output is "This is not the tsc command you are looking for" followed by exit 1.
+    `build_track` then raised `tsc --noEmit failed` -- the same message, for the same
+    reason, on every candidate, correct or not. Sixty-one consecutive TypeScript
+    experiments (runs 0171-0231) were recorded that way and not one of them was the
+    model's fault.
+
+    So the compiler is resolved *here*, before anything is compiled, and a harness
+    that is not set up says so. The two failures have to be told apart: `tsc --noEmit
+    failed` is the model's problem and this is the operator's, and a reader of
+    `results.tsv` has one `reason` column and no other way to know which one a row
+    was.
+
+    A `stat`, not a subprocess. `npm ls typescript` would spend a node startup on the
+    one path that has to be cheap, and it would answer a broader question than the
+    one being asked -- whether *this* tree has a compiler it can run -- by a
+    round-trip that has its own failure modes.
+    """
+    if track.tool != "npm":
+        return
+    tsc = project_dir / "node_modules" / ".bin" / "tsc"
+    if tsc.exists():
+        return
+    raise ResearchError(
+        f"error: no local TypeScript compiler in {project_dir}: {tsc} is missing."
+        f" Run `npm ci` in {track.candidate.relative_to(REPO_ROOT)} and commit the"
+        f" result, or run `npm ci` in {project_dir} itself.\n"
+        "  `npx tsc --noEmit` does not check whether this project has a compiler. With"
+        " nothing local to resolve `tsc` from it fetches the npm package of that name,"
+        " which is a deprecated stub that prints \"This is not the tsc command you are"
+        " looking for\" and exits 1. That is this message. `tsc --noEmit failed` is a"
+        " different message and means the candidate's own types are wrong; a run that"
+        " reports this one has measured nothing, and must not be recorded as evidence"
+        " about the candidate."
+    )
+
+
 def build_track(tool: str, track: Track, project_dir: Path) -> list[str]:
     """Compile the candidate or the comparator, and say how to run it.
 
@@ -823,6 +865,7 @@ def build_track(tool: str, track: Track, project_dir: Path) -> list[str]:
             raise ResearchError(f"go build failed\n{(result.stderr or '')[-3000:]}")
         return [str(out / "microgpt-go")]
 
+    require_local_tsc(track, project_dir)
     result = run_command(["npx", "tsc", "--noEmit"], cwd=project_dir)
     if result.returncode != 0:
         raise ResearchError(f"tsc --noEmit failed\n{(result.stderr or '')[-3000:]}")
@@ -847,6 +890,11 @@ def lint_track(tool: str, track: Track, project_dir: Path) -> None:
         result = run_command([tool, "vet", "./..."], cwd=project_dir)
         failed = "go vet failed"
     else:
+        # Lint is a second, independent path to the same compiler, so the preflight
+        # runs again here rather than relying on `build_track` having been called
+        # first. The two are called one after the other in `measure_track` today;
+        # "today" is not a reason for a check to be conditional on it.
+        require_local_tsc(track, project_dir)
         result = run_command(["npx", "tsc", "--noEmit"], cwd=project_dir)
         failed = "tsc --noEmit failed"
     if result.returncode != 0:
@@ -2372,6 +2420,59 @@ def cmd_loop(args: argparse.Namespace) -> int:
 _SCRATCH_ROOTS: list[Path] = []
 
 
+def link_dependencies(track: Track, project: Path) -> None:
+    """Give a scratch copy the dependency tree a toolchain will not rebuild for it.
+
+    `target/` and `dist/` are left out of the copy because the toolchains that
+    produce them put them back on demand in the tree they were asked to build:
+    `cargo build` and `tsc -p` do that as their first act. npm has no such step.
+    Nothing in `build_track`, `lint_track`, `run_gradient_probe` or `train_once`
+    installs anything, and `npx` resolves a binary it cannot find against the
+    registry rather than against the project -- so a scratch tree with no
+    `node_modules` is not a tree that takes a moment to get ready, it is a tree
+    that cannot run its own compiler.
+
+    So the directory is excluded and then linked back in. A symlink to the
+    committed `autoresearch/candidate-ts/node_modules`, not a copy: it is 37 MB per
+    experiment, the scratch tree is throwaway and has exactly two jobs -- typecheck
+    and train -- and nothing is ever written into it, so a link costs nothing and
+    copies nothing. Node resolves through a symlinked `node_modules` the way npm's
+    own workspace links rely on: `node_modules/.bin/tsc` and `node_modules/.bin/tsx`
+    are relative shims, so they land in the committed tree and find their packages
+    there, and every `import` resolves out of the same place.
+
+    The fallback is `npm ci` into the scratch tree itself -- slow, and it wants the
+    network, so it is only for a checkout that has never installed -- and if it
+    fails the run stops rather than continuing into a tree that cannot typecheck.
+    Carrying on would put the harness back where it started: a compiler that is not
+    there, reached by a path that reports itself as a candidate that does not
+    compile.
+    """
+    if track.tool != "npm":
+        return
+    link = project / "node_modules"
+    if link.is_symlink() or link.exists():
+        return
+    committed = track.candidate / "node_modules"
+    if committed.is_dir():
+        link.symlink_to(committed, target_is_directory=True)
+        return
+    result = run_command(
+        ["npm", "ci", "--no-audit", "--no-fund"], cwd=project, timeout=600
+    )
+    if result.returncode != 0:
+        raise ResearchError(
+            f"error: there is no dependency tree for {track.name} and `npm ci` could"
+            f" not build one in {project}\n{(result.stderr or result.stdout or '')[-2000:]}\n"
+            f"  Run `npm ci` in {track.candidate.relative_to(REPO_ROOT)} and commit the"
+            f" result, so every experiment can link the same tree it was written"
+            f" against. Continuing without one would have `npx` fetch the npm package"
+            f" named `tsc` -- a stub that is not the compiler -- and report its failure"
+            f" as `tsc --noEmit failed`, which is a claim about the candidate and"
+            f" would be a lie."
+        )
+
+
 def apply_to_scratch(track: Track, patch: str) -> tuple[bool, Path, str]:
     """Copy the candidate aside, apply the patch, return the project to measure.
 
@@ -2383,9 +2484,17 @@ def apply_to_scratch(track: Track, patch: str) -> tuple[bool, Path, str]:
     do with the patch. Mirroring means the usual `-p1` works and the model can write
     the paths it was asked to write.
 
-    `target` and `node_modules` are excluded: they are build products of the copy,
-    several hundred megabytes for the TypeScript track, and `go run .` /
-    `npx tsx` will rebuild or reuse what it needs.
+    `target`, `dist` and `node_modules` are excluded, and the three are excluded for
+    two different reasons, which is the rule worth stating: a directory the toolchain
+    rebuilds on demand may be left out and forgotten, and a directory it does not
+    rebuild must be put back. `cargo build` and `tsc -p` rebuild the first kind
+    themselves, which is why `target/` is 700 MB of committed directory in
+    `implementations/rust/` and costs this copy nothing. npm rebuilds nothing, so
+    `node_modules` is excluded and then re-created by `link_dependencies` -- the
+    first version of this function dropped it and said "`npx tsx` will rebuild or
+    reuse what it needs", which is false: `npx` fetched the npm package named `tsc`,
+    a stub that is not the compiler, and every TypeScript candidate was recorded as
+    a crash with the reason `tsc --noEmit failed`.
     """
     work = Path(tempfile.mkdtemp(prefix="autoresearch-"))
     _SCRATCH_ROOTS.append(work)
@@ -2397,6 +2506,7 @@ def apply_to_scratch(track: Track, patch: str) -> tuple[bool, Path, str]:
         project,
         ignore=shutil.ignore_patterns("target", "node_modules", "dist"),
     )
+    link_dependencies(track, project)
     applied, error = apply_patch(patch, repo)
     return applied, project, error
 
