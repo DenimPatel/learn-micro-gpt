@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 187,
+    "experiments": 188,
     "keep": 100,
     "discard": 7,
-    "crash": 80
+    "crash": 81
   },
   "pareto": {
     "rust": [
@@ -3047,6 +3047,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Added reference AdamW decoupled weight decay with betaW 0.1",
       "measured": "2026-09-29T01:41:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0190",
+      "parent": "45c8e21833fd326c6d8dfa00b6ff0b799adda419",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Make RMSNorm differentiable with exact square mean scale gradients",
+      "measured": "2026-09-29T01:42:08Z",
       "has_record": true
     }
   ],
