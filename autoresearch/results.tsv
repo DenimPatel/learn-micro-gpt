@@ -185,3 +185,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0183	9e5e26952305907a0ec4e2fd0399322bcf7d2daf	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0184	f64720b376342763c624fc26f48785c0dfb27e5b	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use direct scalar nodes and fan-in sums to shrink the exact autograd tape
 0185	c2d86deb442299a0e704fcf7df1bf3b269ac3d73	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Construct differentiable RMSNorm with existing Value primitives and no custom nodes
+0186	4f5da770a90b9dda6c5a614c7364a7352b8cf0fe	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse linear-layer sums into exact n-ary autograd nodes

@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 183,
+    "experiments": 184,
     "keep": 100,
     "discard": 7,
-    "crash": 76
+    "crash": 77
   },
   "pareto": {
     "rust": [
@@ -2987,6 +2987,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Construct differentiable RMSNorm with existing Value primitives and no custom nodes",
       "measured": "2026-09-29T01:32:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0186",
+      "parent": "4f5da770a90b9dda6c5a614c7364a7352b8cf0fe",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Fuse linear-layer sums into exact n-ary autograd nodes",
+      "measured": "2026-09-29T01:33:30Z",
       "has_record": true
     }
   ],
