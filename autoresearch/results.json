@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 169,
+    "experiments": 170,
     "keep": 100,
     "discard": 7,
-    "crash": 62
+    "crash": 63
   },
   "pareto": {
     "rust": [
@@ -2777,6 +2777,21 @@
       "reason": "the patch did not apply",
       "description": "Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math",
       "measured": "2026-09-29T00:44:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0172",
+      "parent": "3ff8f3b5a4b6bb2cc250f63df54b95e474fb3933",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-29T00:54:02Z",
       "has_record": true
     }
   ],
