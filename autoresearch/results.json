@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 199,
+    "experiments": 200,
     "keep": 100,
     "discard": 7,
-    "crash": 92
+    "crash": 93
   },
   "pareto": {
     "rust": [
@@ -3227,6 +3227,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Differentiate RMSNorm through its mean square and fuse linear and softmax sums into exact n-ary Value nodes",
       "measured": "2026-09-29T02:02:32Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0202",
+      "parent": "265963e5822873bada2cd2bf918dc87040e2c109",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "tsc --noEmit failed",
+      "description": "Replace Set topo visitation with per-Value epochs and compute Adam bias corrections once per step",
+      "measured": "2026-09-29T02:07:56Z",
       "has_record": true
     }
   ],

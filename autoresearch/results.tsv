@@ -201,3 +201,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0199	a0a2d590585ae45a546555a6875ab779e54032bd	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse RMSNorm onto the autograd tape with one shared exact mean-square node
 0200	3a6328d2dd17644776ed495d0c50cc0f3015fba3	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse hot reductions into exact nary autograd sums
 0201	99f2d4d09fc823299a48515de543df50e7928db2	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Differentiate RMSNorm through its mean square and fuse linear and softmax sums into exact n-ary Value nodes
+0202	265963e5822873bada2cd2bf918dc87040e2c109	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Replace Set topo visitation with per-Value epochs and compute Adam bias corrections once per step
