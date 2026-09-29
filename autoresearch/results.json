@@ -167,10 +167,10 @@
     "typescript": null
   },
   "counts": {
-    "experiments": 173,
+    "experiments": 174,
     "keep": 100,
     "discard": 7,
-    "crash": 66
+    "crash": 67
   },
   "pareto": {
     "rust": [
@@ -2837,6 +2837,21 @@
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear dot products into one tape node with direct product-rule gradients",
       "measured": "2026-09-29T00:58:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0176",
+      "parent": "7ea330c0c75a170d13963e423afa2e1d7c18682a",
+      "track": "typescript",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Exact tape compaction and hoisted Adam bias correction",
+      "measured": "2026-09-29T01:05:24Z",
       "has_record": true
     }
   ],
