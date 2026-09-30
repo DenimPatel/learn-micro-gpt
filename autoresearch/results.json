@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 273,
+    "experiments": 274,
     "keep": 116,
     "discard": 14,
-    "crash": 143
+    "crash": 144
   },
   "pareto": {
     "rust": [
@@ -4410,6 +4410,21 @@
       "reason": "no axis improved materially: discarded: loss -24.9%, speed +411.6%; failing learned, loss_material, loss_tolerance",
       "description": "Count-sort the visited shuffled prefix by ascending document length with linear-time bucketing",
       "measured": "2026-09-30T19:52:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0277",
+      "parent": "a30b47fb36370d55168ee5e10fb87372d168330f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Remove the remaining Newton refinement from vector RMSNorm and Adam reciprocal square roots",
+      "measured": "2026-09-30T19:54:55Z",
       "has_record": true
     }
   ],
