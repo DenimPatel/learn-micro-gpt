@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 259,
+    "experiments": 260,
     "keep": 111,
     "discard": 10,
-    "crash": 138
+    "crash": 139
   },
   "pareto": {
     "rust": [
@@ -4200,6 +4200,21 @@
       "reason": "the patch did not apply",
       "description": "Skip every fourth backward and Adam update to trade a little learning for speed",
       "measured": "2026-09-30T18:52:31Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0263",
+      "parent": "128c9e3807c13bb8f8ee8be0940da6ed620d2005",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Narrow the residual stream from 12 to 10 and use two five-dimensional heads to reduce projection work",
+      "measured": "2026-09-30T18:56:15Z",
       "has_record": true
     }
   ],
