@@ -21,7 +21,7 @@
  
  /* Alignment for M-series 128-byte cache lines */
  #define ALIGN128 __attribute__((aligned(128)))
-@@ -189,24 +189,51 @@
+@@ -189,24 +189,86 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
@@ -66,6 +66,41 @@
 -  /* dx_out += W^T * dout */
 -  cblas_sgemv(CblasRowMajor, CblasTrans, nout, nin, 1.0f, w, nin, dout, 1, 1.0f,
 -              dx_out, 1);
++  if (nin == N_EMBD) {
++    float32x4_t acc0 = vld1q_f32(dx_out);
++    float32x4_t acc1 = vld1q_f32(dx_out + 4);
++    float32x4_t acc2 = vld1q_f32(dx_out + 8);
++    for (int i = 0; i < nout; i++) {
++      const float32x4_t di = vdupq_n_f32(dout[i]);
++      const float *row = w + i * nin;
++      acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
++      acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
++      acc2 = vfmaq_f32(acc2, di, vld1q_f32(row + 8));
++    }
++    vst1q_f32(dx_out, acc0);
++    vst1q_f32(dx_out + 4, acc1);
++    vst1q_f32(dx_out + 8, acc2);
++    return;
++  }
++  if (nin == MLP_DIM) {
++    float32x4_t acc0 = vld1q_f32(dx_out);
++    float32x4_t acc1 = vld1q_f32(dx_out + 4);
++    float32x4_t acc2 = vld1q_f32(dx_out + 8);
++    float32x4_t acc3 = vld1q_f32(dx_out + 12);
++    for (int i = 0; i < nout; i++) {
++      const float32x4_t di = vdupq_n_f32(dout[i]);
++      const float *row = w + i * nin;
++      acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
++      acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
++      acc2 = vfmaq_f32(acc2, di, vld1q_f32(row + 8));
++      acc3 = vfmaq_f32(acc3, di, vld1q_f32(row + 12));
++    }
++    vst1q_f32(dx_out, acc0);
++    vst1q_f32(dx_out + 4, acc1);
++    vst1q_f32(dx_out + 8, acc2);
++    vst1q_f32(dx_out + 12, acc3);
++    return;
++  }
 +  for (int i = 0; i < nout; i++) {
 +    float32x4_t di = vdupq_n_f32(dout[i]);
 +    const float *row = w + i * nin;

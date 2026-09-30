@@ -247,3 +247,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0245	c3d8d271f10330eaf920a6fe0c8a37a576ba6e65	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one 12-dimensional attention head and update its scaling constant
 0246	b6921ff9eeb5c3e66fb89cb552b4e16374852160	c	2.348480	55619.029307	-0.005031	+3.229897	0.988592	keep		Replace tiny BLAS linear kernels with inline NEON loops to cut per-call overhead
 0247	b9bc1d9a32cc4dd155cc69f3533defb42d654a4d	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Accumulate linear backward input gradients in registers before updating dx
+0248	c0b1db851ea61a90cd67ea7afc4441273dc6b284	c	2.348480	55826.288273	-0.005031	+3.245659	0.988592	keep		Keep linear backward input gradients in fixed NEON registers across output rows

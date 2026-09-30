@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "5f324c5aa3b76ee2e0aa45a9bfe617dd0096aa052cc23c648fe2104959151225",
+      "candidate_sha256": "0d67ceb20f1e5e391047a703b94df8606339597198b466a7f7c1a443e6d61a8f",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 244,
-    "keep": 106,
+    "experiments": 245,
+    "keep": 107,
     "discard": 9,
     "crash": 129
   },
@@ -253,7 +253,7 @@
     "c": [
       "0235",
       "0237",
-      "0246"
+      "0248"
     ]
   },
   "runs": [
@@ -3975,6 +3975,21 @@
       "reason": "the patch did not apply",
       "description": "Accumulate linear backward input gradients in registers before updating dx",
       "measured": "2026-09-30T06:16:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0248",
+      "parent": "c0b1db851ea61a90cd67ea7afc4441273dc6b284",
+      "track": "c",
+      "loss": 2.34848,
+      "steps_per_sec": 55826.288273,
+      "loss_gain": -0.005031,
+      "speed_gain": 3.245659,
+      "grad_ratio": 0.988592,
+      "status": "keep",
+      "reason": "",
+      "description": "Keep linear backward input gradients in fixed NEON registers across output rows",
+      "measured": "2026-09-30T06:17:30Z",
       "has_record": true
     }
   ],
