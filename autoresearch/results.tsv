@@ -256,3 +256,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0254	97d4824819a8f10fa0e83a9bcb7432418736588b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a seventh-order range-reduced NEON exponential in softmax
 0255	c5391cc05226006f7c57f6e8d3f152d5caf5c840	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a fixed smoothed unigram logit prior to output logits
 0256	b0b5daaaf2f4c35306d872b9331b3599f1a7d8bf	c	2.447928	55216.714992	-0.047590	+3.199300	1.074022	keep		Learn a zero-initialized output logit bias with Adam to capture class priors at low cost
+0257	4f8c65497d5b73846042e67c893696c4afa28ab0	c	2.447928	54046.265453	-0.047590	+3.110286	1.074022	keep		Block four linear outputs to reuse input vectors and expose FMA instruction level parallelism

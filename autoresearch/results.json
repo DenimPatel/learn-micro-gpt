@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "1a079568d395f536a396e8212120787061ae4f7139a82e8fd31317b4b0824c5b",
+      "candidate_sha256": "1b7432906cedd177ee5ca558232e85c0c1a660c53693d834a01289ada67f3916",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 253,
-    "keep": 109,
+    "experiments": 254,
+    "keep": 110,
     "discard": 9,
     "crash": 135
   },
@@ -4110,6 +4110,21 @@
       "reason": "",
       "description": "Learn a zero-initialized output logit bias with Adam to capture class priors at low cost",
       "measured": "2026-09-30T06:49:23Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0257",
+      "parent": "4f8c65497d5b73846042e67c893696c4afa28ab0",
+      "track": "c",
+      "loss": 2.447928,
+      "steps_per_sec": 54046.265453,
+      "loss_gain": -0.04759,
+      "speed_gain": 3.110286,
+      "grad_ratio": 1.074022,
+      "status": "keep",
+      "reason": "",
+      "description": "Block four linear outputs to reuse input vectors and expose FMA instruction level parallelism",
+      "measured": "2026-09-30T06:51:51Z",
       "has_record": true
     }
   ],

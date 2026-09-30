@@ -47,14 +47,47 @@
  
  /* ── Dataset ─────────────────────────────────────────────────────────── */
  static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
-@@ -189,24 +194,86 @@
+@@ -189,24 +194,152 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
 -  /* Use Accelerate cblas for matrix-vector multiply: out = W * x */
 -  cblas_sgemv(CblasRowMajor, CblasNoTrans, nout, nin, 1.0f, w, nin, x, 1, 0.0f,
 -              out, 1);
-+  for (int i = 0; i < nout; i++) {
++  int i = 0;
++  for (; i + 3 < nout; i += 4) {
++    const float *row0 = w + i * nin;
++    const float *row1 = row0 + nin;
++    const float *row2 = row1 + nin;
++    const float *row3 = row2 + nin;
++    float32x4_t acc0 = vdupq_n_f32(0.0f);
++    float32x4_t acc1 = vdupq_n_f32(0.0f);
++    float32x4_t acc2 = vdupq_n_f32(0.0f);
++    float32x4_t acc3 = vdupq_n_f32(0.0f);
++    int j = 0;
++    for (; j + 3 < nin; j += 4) {
++      float32x4_t xv = vld1q_f32(x + j);
++      acc0 = vfmaq_f32(acc0, vld1q_f32(row0 + j), xv);
++      acc1 = vfmaq_f32(acc1, vld1q_f32(row1 + j), xv);
++      acc2 = vfmaq_f32(acc2, vld1q_f32(row2 + j), xv);
++      acc3 = vfmaq_f32(acc3, vld1q_f32(row3 + j), xv);
++    }
++    float sum0 = vaddvq_f32(acc0);
++    float sum1 = vaddvq_f32(acc1);
++    float sum2 = vaddvq_f32(acc2);
++    float sum3 = vaddvq_f32(acc3);
++    for (; j < nin; j++) {
++      sum0 += row0[j] * x[j];
++      sum1 += row1[j] * x[j];
++      sum2 += row2[j] * x[j];
++      sum3 += row3[j] * x[j];
++    }
++    out[i] = sum0;
++    out[i + 1] = sum1;
++    out[i + 2] = sum2;
++    out[i + 3] = sum3;
++  }
++  for (; i < nout; i++) {
 +    const float *row = w + i * nin;
 +    float32x4_t acc = vdupq_n_f32(0.0f);
 +    int j = 0;
@@ -72,7 +105,40 @@
                                  float *__restrict__ gw, int nout, int nin) {
 -  /* gw += outer(dout, x) — use cblas_sger for rank-1 update */
 -  cblas_sger(CblasRowMajor, nout, nin, 1.0f, dout, 1, x, 1, gw, nin);
-+  for (int i = 0; i < nout; i++) {
++  int i = 0;
++  for (; i + 3 < nout; i += 4) {
++    float32x4_t di0 = vdupq_n_f32(dout[i]);
++    float32x4_t di1 = vdupq_n_f32(dout[i + 1]);
++    float32x4_t di2 = vdupq_n_f32(dout[i + 2]);
++    float32x4_t di3 = vdupq_n_f32(dout[i + 3]);
++    float *grow0 = gw + i * nin;
++    float *grow1 = grow0 + nin;
++    float *grow2 = grow1 + nin;
++    float *grow3 = grow2 + nin;
++    int j = 0;
++    for (; j + 3 < nin; j += 4) {
++      float32x4_t xv = vld1q_f32(x + j);
++      float32x4_t g0 = vld1q_f32(grow0 + j);
++      float32x4_t g1 = vld1q_f32(grow1 + j);
++      float32x4_t g2 = vld1q_f32(grow2 + j);
++      float32x4_t g3 = vld1q_f32(grow3 + j);
++      g0 = vfmaq_f32(g0, di0, xv);
++      g1 = vfmaq_f32(g1, di1, xv);
++      g2 = vfmaq_f32(g2, di2, xv);
++      g3 = vfmaq_f32(g3, di3, xv);
++      vst1q_f32(grow0 + j, g0);
++      vst1q_f32(grow1 + j, g1);
++      vst1q_f32(grow2 + j, g2);
++      vst1q_f32(grow3 + j, g3);
++    }
++    for (; j < nin; j++) {
++      grow0[j] += dout[i] * x[j];
++      grow1[j] += dout[i + 1] * x[j];
++      grow2[j] += dout[i + 2] * x[j];
++      grow3[j] += dout[i + 3] * x[j];
++    }
++  }
++  for (; i < nout; i++) {
 +    float32x4_t di = vdupq_n_f32(dout[i]);
 +    float *grow = gw + i * nin;
 +    int j = 0;
@@ -142,7 +208,7 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -417,6 +484,7 @@
+@@ -417,6 +550,7 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -150,7 +216,7 @@
    init_matrix(wte, vocab_size, N_EMBD, std);
    init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
    init_matrix(lm_head, vocab_size, N_EMBD, std);
-@@ -430,6 +498,7 @@
+@@ -430,6 +564,7 @@
    }
  
    int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD + vocab_size * N_EMBD;
@@ -158,7 +224,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -530,6 +599,8 @@
+@@ -530,6 +665,8 @@
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
    linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
@@ -167,7 +233,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -557,8 +628,11 @@
+@@ -557,8 +694,11 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -181,7 +247,7 @@
  
      /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
      memset(dx, 0, sizeof(float) * N_EMBD);
-@@ -630,18 +704,7 @@
+@@ -630,18 +770,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -200,7 +266,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +716,7 @@
+@@ -653,7 +782,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -209,7 +275,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +740,13 @@
+@@ -677,22 +806,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -235,7 +301,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -829,6 +883,8 @@
+@@ -829,6 +949,8 @@
    }
  
    linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
@@ -244,7 +310,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -903,6 +959,7 @@
+@@ -903,6 +1025,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -252,7 +318,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -938,6 +995,8 @@
+@@ -938,6 +1061,8 @@
      adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
      adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
      adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head, vocab_size * N_EMBD,
