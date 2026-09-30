@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 248,
+    "experiments": 249,
     "keep": 108,
     "discard": 9,
-    "crash": 131
+    "crash": 132
   },
   "pareto": {
     "rust": [
@@ -4035,6 +4035,21 @@
       "reason": "the patch did not apply",
       "description": "Cache attention mixtures and reuse dx to speed up backward without changing loss",
       "measured": "2026-09-30T06:23:27Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0252",
+      "parent": "3c127905c19cc901068f5ce7f8f5a52e6f5400e4",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Average gradients over three documents per Adam update",
+      "measured": "2026-09-30T06:29:09Z",
       "has_record": true
     }
   ],
