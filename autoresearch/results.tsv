@@ -269,3 +269,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0267	4badb6f49b0fb8b3d5d3b64d6da2b4d890d1deb2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0268	58b778ffec8886931532a6f96712559f093ed74a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cut redundant hot-loop memory work and use one Newton rsqrt refinement per vector reciprocal square root
 0269	3b9a93e57e5b76b077c30f2d10fcf9c4627d3622	c	2.440522	37987.727739	-0.044420	+1.889014	1.006256	keep		Isolate the speedup by removing only the second Newton refinement from vector RMSNorm and Adam reciprocal square roots
+0270	57f2dd01958cb6bf29270c6ba17f9061197bc754	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable

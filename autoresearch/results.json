@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 266,
+    "experiments": 267,
     "keep": 114,
     "discard": 11,
-    "crash": 141
+    "crash": 142
   },
   "pareto": {
     "rust": [
@@ -4305,6 +4305,21 @@
       "reason": "",
       "description": "Isolate the speedup by removing only the second Newton refinement from vector RMSNorm and Adam reciprocal square roots",
       "measured": "2026-09-30T19:16:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0270",
+      "parent": "57f2dd01958cb6bf29270c6ba17f9061197bc754",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-30T19:30:24Z",
       "has_record": true
     }
   ],
