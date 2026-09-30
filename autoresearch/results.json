@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "d67ebbf28a3eec0916d08c2cd23416e7b3ba3725be21e0dbf04db740816863a6",
+      "candidate_sha256": "ab980e5282fccff84e748cc80efd7b37dadf03d8dd7c0502c431317962f48a16",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 233,
-    "keep": 103,
+    "experiments": 234,
+    "keep": 104,
     "discard": 8,
     "crash": 122
   },
@@ -252,7 +252,7 @@
     ],
     "c": [
       "0235",
-      "0236"
+      "0237"
     ]
   },
   "runs": [
@@ -3809,6 +3809,21 @@
       "reason": "",
       "description": "Narrow the MLP from 48 to 32 for a larger speed gain",
       "measured": "2026-09-30T05:36:33Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0237",
+      "parent": "ae569d5c4309568ada060ed8b86f310ccfb93566",
+      "track": "c",
+      "loss": 2.334582,
+      "steps_per_sec": 39902.239382,
+      "loss_gain": 0.000917,
+      "speed_gain": 2.034615,
+      "grad_ratio": 0.998761,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow the MLP from 32 to 16 for a further speed gain",
+      "measured": "2026-09-30T05:36:56Z",
       "has_record": true
     }
   ],
