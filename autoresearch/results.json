@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 285,
+    "experiments": 286,
     "keep": 116,
-    "discard": 18,
+    "discard": 19,
     "crash": 151
   },
   "pareto": {
@@ -4590,6 +4590,21 @@
       "reason": "no axis improved materially: discarded: loss -8.5%, speed +267.6%; failing loss_material, loss_tolerance",
       "description": "Use one full-width attention head to reduce repeated softmax work",
       "measured": "2026-09-30T23:39:45Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0289",
+      "parent": "5bc3a4e8b56d752f48b373f87d61a8e13d181a3e",
+      "track": "c",
+      "loss": 2.45368,
+      "steps_per_sec": 50622.017872,
+      "loss_gain": -0.050051,
+      "speed_gain": 2.849868,
+      "grad_ratio": 1.005573,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -5.0%, speed +285.0%; failing loss_material, loss_tolerance",
+      "description": "Add a 10 percent learning rate floor to the linear decay",
+      "measured": "2026-09-30T23:42:17Z",
       "has_record": true
     }
   ],
