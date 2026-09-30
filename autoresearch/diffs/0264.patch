@@ -1,0 +1,22 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -383,7 +383,7 @@
+ static inline void adam_update(float *__restrict__ param,
+                                float *__restrict__ grad,
+                                float *__restrict__ m_buf,
+                                float *__restrict__ v_buf, int n, float lr_t,
+                                float b1c, float b2c) {
+-  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float beta1 = 0.85f, beta2 = 0.98f;
+   const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
+   const float eps = 1e-8f;
+   const float inv_b1c = 1.0f / b1c;
+@@ -957,7 +957,7 @@
+ 
+   /* Adam hyperparams */
+   const float learning_rate = 0.01f;
+-  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float beta1 = 0.85f, beta2 = 0.98f;
+ 
+   /* Training loop */
+   for (int step = 0; step < num_steps; step++) {

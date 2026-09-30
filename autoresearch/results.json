@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "47f189a750e62ef922979a471e05deba947f8ea94ebe3ecdf7f0657d69753d53",
+      "candidate_sha256": "beca7bc3c15849b0b0d09c480fb8eaaaf589f8a99317c954b33408f144fa4f41",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 260,
-    "keep": 111,
+    "experiments": 261,
+    "keep": 112,
     "discard": 10,
     "crash": 139
   },
@@ -4215,6 +4215,21 @@
       "reason": "the patch did not apply",
       "description": "Narrow the residual stream from 12 to 10 and use two five-dimensional heads to reduce projection work",
       "measured": "2026-09-30T18:56:15Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0264",
+      "parent": "a053dd1e8d51902a177907816f156ce765007f7d",
+      "track": "c",
+      "loss": 2.35033,
+      "steps_per_sec": 50340.744042,
+      "loss_gain": -0.005823,
+      "speed_gain": 2.828477,
+      "grad_ratio": 0.988592,
+      "status": "keep",
+      "reason": "",
+      "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "measured": "2026-09-30T18:57:37Z",
       "has_record": true
     }
   ],

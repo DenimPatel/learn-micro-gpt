@@ -208,6 +208,15 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
+@@ -302,7 +435,7 @@
+                                float *__restrict__ m_buf,
+                                float *__restrict__ v_buf, int n, float lr_t,
+                                float b1c, float b2c) {
+-  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float beta1 = 0.85f, beta2 = 0.98f;
+   const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
+   const float eps = 1e-8f;
+   const float inv_b1c = 1.0f / b1c;
 @@ -417,6 +550,7 @@
  
  static void init_weights(void) {
@@ -310,6 +319,15 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
+@@ -880,7 +1002,7 @@
+ 
+   /* Adam hyperparams */
+   const float learning_rate = 0.01f;
+-  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float beta1 = 0.85f, beta2 = 0.98f;
+ 
+   /* Training loop */
+   for (int step = 0; step < num_steps; step++) {
 @@ -903,6 +1025,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
