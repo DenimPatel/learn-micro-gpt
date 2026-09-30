@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 275,
+    "experiments": 276,
     "keep": 116,
     "discard": 15,
-    "crash": 144
+    "crash": 145
   },
   "pareto": {
     "rust": [
@@ -4440,6 +4440,21 @@
       "reason": "no axis improved materially: discarded: loss -5.9%, speed +293.9%; failing loss_material, loss_tolerance",
       "description": "Narrow the MLP hidden width from 16 to 12",
       "measured": "2026-09-30T20:02:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0279",
+      "parent": "2e3a7cf5ba325ed9ffdbb542bf45939adc0b62fa",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "cc failed",
+      "description": "Select the 50 shortest sampled documents into the final curriculum window once at load time",
+      "measured": "2026-09-30T20:05:01Z",
       "has_record": true
     }
   ],
