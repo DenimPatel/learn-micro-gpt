@@ -283,7 +283,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -557,13 +692,22 @@
+@@ -557,13 +692,23 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -297,7 +297,9 @@
  
      /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
      memset(dx, 0, sizeof(float) * N_EMBD);
-     linear_bwd_w(dlogits, saved_x_final[pos], g_lm_head, vocab_size, N_EMBD);
+-    linear_bwd_w(dlogits, saved_x_final[pos], g_lm_head, vocab_size, N_EMBD);
++    linear_bwd_w(dlogits, saved_x_normed_final[pos], g_lm_head, vocab_size,
++                 N_EMBD);
      linear_bwd_x(dlogits, lm_head, dx, vocab_size, N_EMBD);
 +
 +    float d_x_before_blocks[N_EMBD];
@@ -308,7 +310,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -630,18 +774,7 @@
+@@ -630,18 +775,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -327,7 +329,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +786,7 @@
+@@ -653,7 +787,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -336,7 +338,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +810,13 @@
+@@ -677,22 +811,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -362,7 +364,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -828,7 +952,10 @@
+@@ -828,7 +953,10 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -374,7 +376,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,7 +1007,7 @@
+@@ -880,7 +1008,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -383,7 +385,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -903,6 +1030,7 @@
+@@ -903,6 +1031,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -391,7 +393,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -930,14 +1058,21 @@
+@@ -930,14 +1059,21 @@
      /* Backward pass */
      backward_all(tokens, n);
  

@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "3347b93fa1a5064286ba3c1445a89db1ef343a28e60d5a4777f56984c1be6e81",
+      "candidate_sha256": "042600e0b3e4bd8f8a2dbd36fcb4d12dd8dff36beb29995e166fdd0880305823",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 269,
-    "keep": 115,
+    "experiments": 270,
+    "keep": 116,
     "discard": 11,
     "crash": 143
   },
@@ -4350,6 +4350,21 @@
       "reason": "",
       "description": "Add a final RMSNorm before the language-model head in training and inference",
       "measured": "2026-09-30T19:37:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0273",
+      "parent": "274d52aa0e192b217cfcfd19004d1994479fef2d",
+      "track": "c",
+      "loss": 2.448044,
+      "steps_per_sec": 54258.8681,
+      "loss_gain": -0.047639,
+      "speed_gain": 3.126455,
+      "grad_ratio": 1.005573,
+      "status": "keep",
+      "reason": "",
+      "description": "Use the normalized final activation for lm_head weight gradients",
+      "measured": "2026-09-30T19:38:26Z",
       "has_record": true
     }
   ],

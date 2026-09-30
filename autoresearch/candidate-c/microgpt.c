@@ -700,7 +700,8 @@ static void backward_all(const int *tokens, int n) {
 
     /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
     memset(dx, 0, sizeof(float) * N_EMBD);
-    linear_bwd_w(dlogits, saved_x_final[pos], g_lm_head, vocab_size, N_EMBD);
+    linear_bwd_w(dlogits, saved_x_normed_final[pos], g_lm_head, vocab_size,
+                 N_EMBD);
     linear_bwd_x(dlogits, lm_head, dx, vocab_size, N_EMBD);
 
     float d_x_before_blocks[N_EMBD];
