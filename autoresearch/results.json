@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 239,
+    "experiments": 240,
     "keep": 105,
     "discard": 9,
-    "crash": 125
+    "crash": 126
   },
   "pareto": {
     "rust": [
@@ -3900,6 +3900,21 @@
       "reason": "the patch did not apply",
       "description": "Restore embedding width 16 and attention scale 0.5",
       "measured": "2026-09-30T05:58:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0243",
+      "parent": "514eea964230a5231de593049291980dc1331495",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a smoothed corpus-frequency logit bias with Adam updates",
+      "measured": "2026-09-30T06:01:59Z",
       "has_record": true
     }
   ],

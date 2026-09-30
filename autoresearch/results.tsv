@@ -242,3 +242,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0240	ba0669206c7825a0bf99ef7c7881abe899358a77	c	2.354312	8344.218437	-0.007527	-0.365412	0.981992	discard	no axis improved materially: discarded: loss -0.8%, speed -36.5%; failing loss_material, speed_material, speed_tolerance	Halve the MLP width from 16 to 8 for another model FLOP reduction
 0241	773d74bdcd2bf7b1c498185d32da58d901a30b4b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse attention projections and reuse the forward attention vector to reduce per-position overhead
 0242	238b753aa0077f46242f1d7cf5fa14afceee53e1	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore embedding width 16 and attention scale 0.5
+0243	514eea964230a5231de593049291980dc1331495	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a smoothed corpus-frequency logit bias with Adam updates
