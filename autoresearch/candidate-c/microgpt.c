@@ -172,6 +172,8 @@ static float ALIGN128 saved_mlp_hidden[BLOCK_SIZE][MLP_DIM];
 static float ALIGN128 saved_mlp_relu[BLOCK_SIZE][MLP_DIM];
 
 static float ALIGN128 saved_x_final[BLOCK_SIZE][N_EMBD];
+static float ALIGN128 saved_x_normed_final[BLOCK_SIZE][N_EMBD];
+static float saved_rms_final[BLOCK_SIZE];
 static float saved_logits[BLOCK_SIZE][MAX_VOCAB];
 static float saved_probs[BLOCK_SIZE][MAX_VOCAB];
 
@@ -659,7 +661,8 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
   }
 
   memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
-  linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+  rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+  linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
   for (int i = 0; i < vocab_size; i++)
     saved_logits[pos_id][i] += lm_bias[i];
   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
@@ -699,6 +702,12 @@ static void backward_all(const int *tokens, int n) {
     memset(dx, 0, sizeof(float) * N_EMBD);
     linear_bwd_w(dlogits, saved_x_final[pos], g_lm_head, vocab_size, N_EMBD);
     linear_bwd_x(dlogits, lm_head, dx, vocab_size, N_EMBD);
+
+    float d_x_before_blocks[N_EMBD];
+    memset(d_x_before_blocks, 0, N_EMBD * sizeof(float));
+    rmsnorm_bwd(dx, saved_x_final[pos], d_x_before_blocks,
+                saved_rms_final[pos], N_EMBD);
+    memcpy(dx, d_x_before_blocks, N_EMBD * sizeof(float));
 
     /* Backward through layers (reverse order) */
     for (int li = N_LAYER - 1; li >= 0; li--) {
@@ -943,7 +952,8 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
       x[i] = mlp_out[i] + x_res[i];
   }
 
-  linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
+  rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+  linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
   for (int i = 0; i < vocab_size; i++)
     logits_out[i] += lm_bias[i];
 }

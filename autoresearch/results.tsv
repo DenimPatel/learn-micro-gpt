@@ -271,3 +271,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0269	3b9a93e57e5b76b077c30f2d10fcf9c4627d3622	c	2.440522	37987.727739	-0.044420	+1.889014	1.006256	keep		Isolate the speedup by removing only the second Newton refinement from vector RMSNorm and Adam reciprocal square roots
 0270	57f2dd01958cb6bf29270c6ba17f9061197bc754	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
 0271	6fd4b522fc416f4b2645e35619f23161b37b609b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a range-reduced polynomial exponential in softmax to raise speed
+0272	8da5a0f78567606bac3a6a40e988ac703f11bc4e	c	2.445680	55149.721089	-0.046628	+3.194205	0.991694	keep		Add a final RMSNorm before the language-model head in training and inference
