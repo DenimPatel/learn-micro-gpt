@@ -75,15 +75,17 @@ the selector. Editing the reference moves the highlights with it.
 
 **3. What is wrong is written down.**
 
-The C port's hand-written backward pass does not correctly propagate the key and
-value gradients of earlier positions back to their embeddings. Only the output
-head's gradient is right. Measured as a directional derivative over all 4,192
-parameters, its gradient comes out at **−0.12×** the true value, where a correct
-gradient is 1.0×.
+The frozen Rust port's `rmsnorm` reads its input's *values* rather than handles,
+so the whole normalisation sits outside the autograd tape. Its gradient is
+**6.32% high**, stably, across four orders of magnitude of step size — measured,
+not argued, and left in place on purpose, because the research loop needs
+something to measure against.
 
-**Its loss curve still tracks the reference to within 7%, and it still trains.**
-Adam divides by an estimate of the gradient's own magnitude, so a gradient that
-is wrong by a factor barely moves the step.
+Six percent is the number to sit with, because **that track's loss curve still
+tracks the reference.** Adam divides by an estimate of the gradient's own
+magnitude, so a gradient that is wrong by a factor barely moves the step. The C
+port once carried a gradient wrong by a factor of **−0.12×** — wrong sign, an
+order of magnitude out — and passed the parity gate for as long as anyone looked.
 
 That is the most instructive thing in the repository, and it is why
 [`docs/KNOWN-ISSUES.md`](docs/KNOWN-ISSUES.md) exists. A loss curve is evidence

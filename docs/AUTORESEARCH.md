@@ -51,11 +51,14 @@ model proposes an edit and never states an outcome.
 
 ## The gradient probe, and why it is the important part
 
-`docs/KNOWN-ISSUES.md` issue 1: the C port's hand-written backward pass has a
-directional derivative that is **−0.12×** the true value, and **its loss curve
-still tracks the reference to within 7%, and it still trains**. Adam divides by an
-estimate of the gradient's own magnitude, so a gradient that is uniformly wrong
-barely changes the step.
+`docs/KNOWN-ISSUES.md` issue 1 is why this repository has a gradient probe at all.
+The C port's hand-written backward pass had a directional derivative that was
+**&minus;0.12&times;** the true value &mdash; wrong sign, order of magnitude out
+&mdash; and **its loss curve still tracked the reference to within 7%, and it
+still trained**. Adam divides by an estimate of the gradient's own magnitude, so a
+gradient that is uniformly wrong barely changes the step. It measures 1.03 now;
+the point of citing it is not that it is fixed but that it was wrong *while every
+other check in this repository passed*.
 
 **A loss number cannot tell a correct gradient from a wrong one.** Only a finite
 difference can. So every candidate goes through
@@ -195,21 +198,24 @@ not measure a tree you did not mean.
 | 5-minute wall-clock budget, metric `val_bpb` | fixed 1,000 steps at seed 42; loss = last-50-step windowed mean, speed = steps/sec | no GPU, and a time budget makes runs incomparable across machines. Fixed steps make the loss axis deterministic; a per-session re-measured baseline makes the speed axis self-relative. |
 | the model edits `train.py` on a branch, branch advanced on keep | `autoresearch/candidate/src/lib.rs`, committed on **every** experiment, keep or discard | failures have to be published or they get retried |
 | the **model** reads `val_bpb` and decides keep/discard | `tools/autoresearch.py` decides, from measured medians | an LLM told "keep it if the number went down" drifts toward keeping its own bad ideas within about ten experiments, and then the log stops being evidence of anything |
-| no gradient check | every candidate finite-difference checked, digest-pinned, before it competes | issue 1: the C port's gradient is wrong by −8× and its loss curve still looks fine |
+| no gradient check | every candidate finite-difference checked, digest-pinned, before it competes | issue 1: the C port's gradient was wrong by −8× and its loss curve still looked fine |
 | no held-out validation split | none | 1,000 documents drawn from 32,033, one per step: overfitting is not a failure mode here, and the frozen baseline cannot be made to hold anything out without editing it. The gradient probe is the anti-gaming gate instead. |
 | `results.tsv` deliberately left untracked | committed | the point is to publish the negative results |
 | single scalar objective | Pareto over loss and speed | "lower loss" alone is how a repository quietly ships a slower model it is proud of |
 
 ## What is deliberately not here
 
-- **The Python reference or the C port as a target.** `--track` takes `rust`,
-  `go` and `typescript`, and rejects anything else loudly. The C port is excluded
-  on purpose rather than for convenience: its backward pass is a *known-wrong*
-  gradient (`docs/KNOWN-ISSUES.md` issue 1), so a finite-difference probe would
-  reject nearly every candidate for a reason that has nothing to do with whether
-  the patch was good &mdash; and the probe is the only thing that can tell a
-  correct gradient from a broken one that still trains. The Python reference is
-  excluded because it is the thing every other track is compared against.
+- **The Python reference as a target.** `--track` takes a language that has all
+  four of a candidate directory, a frozen comparator, a digest-pinned probe and a
+  stdout contract, and rejects anything else loudly. The C port is on that list
+  now. It was excluded while its backward pass was a *known-wrong* gradient
+  (`docs/KNOWN-ISSUES.md` issue 1), which would have made the probe reject nearly
+  every candidate for a reason that has nothing to do with whether the patch was
+  good &mdash; and the probe is the only thing that can tell a correct gradient
+  from a broken one that still trains. That reason is gone; the port measures
+  1.03 and `autoresearch/candidate-c/probe.c` is its tripwire. The Python
+  reference is excluded because it is the thing every other track is compared
+  against.
 - **A held-out split** or any other change of metric.
 - **Concept anchors into the candidate.** The atlas describes the reference
   algorithm, not the tuned variant, and `anchors.json` must keep describing the

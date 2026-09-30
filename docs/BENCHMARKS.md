@@ -127,8 +127,9 @@ reference's +18.5%.
 
 **And what the gate cannot catch:** a mis-scaled gradient. Adam divides by an
 estimate of the gradient's own magnitude, so a gradient that is wrong by a factor
-barely moves the step. The C port's gradient is wrong by a factor of -0.12 and
-its loss curve still passes. That is why every track needs a
-directional-derivative gradient check as well -- see
-[`docs/ADDING-A-LANGUAGE.md`](ADDING-A-LANGUAGE.md) requirement 5 and
-[`docs/KNOWN-ISSUES.md`](KNOWN-ISSUES.md) issue 1.
+barely moves the step. The C port's gradient used to be wrong by a factor of -0.12
+and its loss curve still passed -- that is what the gate is blind to, and it is
+the reason every track needs a directional-derivative gradient check as well. The C
+port is fixed now; what the gate still cannot see is issue 5's 6.32% on the frozen
+Rust track. See [`docs/ADDING-A-LANGUAGE.md`](ADDING-A-LANGUAGE.md) requirement 5
+and [`docs/KNOWN-ISSUES.md`](KNOWN-ISSUES.md) issues 1 and 5.

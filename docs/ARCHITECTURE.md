@@ -333,6 +333,9 @@ indistinguishable from one that quietly did.
 - **More trace widgets.** The format supports what a 199-line model produces; the
   selection settings are in `tools/trace.py` and documented in
   `docs/TRACE-FORMAT.md`.
-- **A real fix for the C backward pass.** `docs/KNOWN-ISSUES.md` issue 1 says
-  what is wrong, what the fix would be, and which test asks to be promoted when
-  it lands.
+- **A finite-difference check for the `scaled` C config.** Issue 1 is fixed for
+  the parity track, which `test_gradients.c` now asserts outright. The `scaled`
+  config received the same two fixes in the same commit and has no test of its
+  own — `test_gradients.c` includes `microgpt.c` and nothing else — so its
+  gradient is correct by textual identity rather than by measurement. The
+  research loop's `candidate-c/probe.c` is the shape such a check would take.

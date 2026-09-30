@@ -122,21 +122,28 @@ no way to check that the human was right by looking at the code alone — which 
 precisely the class of bug autograd exists to make impossible.
 
 :::callout "This is not hypothetical"
-The C port in the tab above is exactly the shape this warning describes, and its
-backward pass is wrong. `backward_all` does not correctly carry the key and
-value gradients of earlier positions back to their embeddings; only the output
-head's gradient is right. Projected on a random direction over all 4,192
-parameters, its gradient comes out at **-0.12x** the true directional
-derivative, where a correct gradient is 1.0x.
+The C port in the tab above is exactly the shape this warning describes, and for
+a while its `backward_all` really was wrong. It did not carry the key and value
+gradients of earlier positions back to their embeddings, and a second, larger bug
+made the forward pass overwrite the vector that the last `rmsnorm` was supposed
+to differentiate. Projected on a random direction over all 4,192 parameters, its
+gradient came out at **-0.12x** the true directional derivative, where a correct
+gradient is 1.0x. It measures 1.03 now. Issue 1 in `docs/KNOWN-ISSUES.md` has
+both bugs, the per-block measurement that showed the first diagnosis was wrong,
+and what the C track is and is not good for.
 
-The instructive part is that **its loss curve still tracks the reference to
-within 7%, and it still trains.** Adam's update divides by an estimate of the
-gradient's own magnitude, so a gradient that is wrong by a factor barely moves
-the step. A missing gradient path is therefore invisible to the loss, invisible
-to a statistical loss-band comparison, and visible only to a finite difference.
+The instructive part is not the bug, it is the silence. **Its loss curve still
+tracked the reference to within 7%, and it still trained,** for as long as it was
+wrong. Adam's update divides by an estimate of the gradient's own magnitude, so a
+gradient that is wrong by a factor barely moves the step. A missing gradient path
+is therefore invisible to the loss, invisible to a statistical loss-band
+comparison, and visible only to a finite difference.
 
-The full measurements, and what the C track is and is not good for, are in
-`docs/KNOWN-ISSUES.md`.
+The hazard did not go away with that fix, it only got smaller. The frozen Rust
+track still has an `rmsnorm` sitting outside its autograd tape, so its gradient
+is 6.32% high &mdash; a wrong gradient this repository keeps on purpose, because
+the research loop needs something to measure against (issue 5). Six percent is
+enough to pass every check described on this page.
 
 Two consequences worth internalising:
 

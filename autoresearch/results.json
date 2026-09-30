@@ -23,6 +23,13 @@
       "source": "src/index.ts",
       "probe": "src/probe.ts",
       "build": "`npx tsc --noEmit`"
+    },
+    "c": {
+      "language": "C",
+      "candidate_dir": "candidate-c",
+      "source": "microgpt.c",
+      "probe": "probe.c",
+      "build": "`cc -O3 -o microgpt microgpt.c -lm`"
     }
   },
   "provenance_of": {
@@ -49,6 +56,14 @@
       "candidate_sha256": "e6749a41c5fed34dfdcdfe3eec6f039e1b9f24840a12ff1f278e24927a4ad62c",
       "gradient_probe": "autoresearch/candidate-ts/src/probe.ts",
       "gradient_probe_sha256": "5c16a817ee3e391d29d0aefc1e1f67b008ad028be70a2521db582197e1084441"
+    },
+    "c": {
+      "baseline_source": "implementations/c/microgpt.c",
+      "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
+      "candidate_source": "autoresearch/candidate-c/microgpt.c",
+      "candidate_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
+      "gradient_probe": "autoresearch/candidate-c/probe.c",
+      "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
   },
   "protocol": {
@@ -135,7 +150,8 @@
       "status": "baseline",
       "reason": "frozen implementations/typescript, re-measured this session",
       "description": "the frozen TypeScript track, unmodified, as this session's comparator"
-    }
+    },
+    "c": null
   },
   "bests": {
     "rust": {
@@ -176,7 +192,8 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node"
-    }
+    },
+    "c": null
   },
   "counts": {
     "experiments": 230,
@@ -208,7 +225,8 @@
     ],
     "typescript": [
       "0232"
-    ]
+    ],
+    "c": []
   },
   "runs": [
     {
@@ -3711,6 +3729,6 @@
     "The speed axis is only comparable within one session. It was measured on the machine named under `runner`, and a ratio against a number from another machine is a number about that machine. `benchmarks/results.json` is not used as the baseline for exactly this reason.",
     "The loss axis is deterministic at a fixed seed: the track's PRNG is xoshiro256++ with SplitMix64 seeding, so a given candidate produces a given loss curve or it does not. The speed axis is not, and is the median of 3 runs.",
     "Wall clock here is the whole process, including startup and the twenty-sample inference pass. Both are small and both are constant, and the baseline is measured the same way in the same session, so the comparison is fair. The absolute figure is not a pure training time.",
-    "A loss number cannot tell a correct gradient from a wrong one -- the C port's is wrong by a factor of -8 and its loss curve still tracks the reference to within 7% (docs/KNOWN-ISSUES.md issue 1). Every candidate is finite-difference checked before it competes; see `grad_ratio` on each row."
+    "A loss number cannot tell a correct gradient from a wrong one -- the C port's was wrong by a factor of -8, its loss curve still tracked the reference to within 7%, and it still trained (docs/KNOWN-ISSUES.md issue 1; fixed since, at 1.03). Every candidate is finite-difference checked before it competes; see `grad_ratio` on each row."
   ]
 }

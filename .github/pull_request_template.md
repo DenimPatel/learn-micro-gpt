@@ -33,11 +33,12 @@ they will not catch the ones that moved slightly, and those are worth a look.
 | 107 Python tests, 18 unit, 18 e2e | — |
 
 **The parity gate cannot catch a mis-scaled gradient**, because Adam divides by
-an estimate of the gradient's own magnitude: the C port's gradient is wrong by a
-factor of −0.12 and its loss curve still passes. That is why requirement 5 in
-`docs/ADDING-A-LANGUAGE.md` asks every track for a directional-derivative check,
-and why `docs/KNOWN-ISSUES.md` exists. If you touch a backward pass, that is the
-check to look at first.
+an estimate of the gradient's own magnitude. The C port's gradient used to be
+wrong by a factor of −0.12 and its loss curve still passed; the frozen Rust
+track's is 6.32% high and its loss curve still passes now. That is why
+requirement 5 in `docs/ADDING-A-LANGUAGE.md` asks every track for a
+directional-derivative check, and why `docs/KNOWN-ISSUES.md` exists. If you
+touch a backward pass, that is the check to look at first.
 
 ## Style
 

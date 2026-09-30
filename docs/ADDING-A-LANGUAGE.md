@@ -70,12 +70,22 @@ confusion in CI.
 This is the requirement that matters.
 
 A loss curve is evidence that something learned. It is **not** evidence that the
-thing that learned was the gradient. The C port demonstrates the difference as
-concretely as possible: its backward pass is wrong by a factor of −0.12, its
-gradient direction is uncorrelated with the truth, and **its loss curve still
-tracks the reference to within 7%** — because Adam divides by an estimate of the
-gradient's own magnitude, so a gradient that is wrong by a factor barely moves
-the step.
+thing that learned was the gradient. The C port is the measurement that
+established this, and it is worth knowing what happened to it: its
+hand-written backward pass *was* wrong by a factor of −0.12, and **its loss
+curve still tracked the reference to within 7% and it still trained** — because
+Adam divides by an estimate of the gradient's own magnitude, so a gradient that
+is wrong by a factor barely moves the step. The parity gate passed the whole
+time. That number is the reason every candidate in this repository goes through
+a finite-difference probe before it is allowed to compete, and it is why
+requirement 5 exists rather than the loss-band check.
+
+The C port is now fixed, at 1.03 — inside the float32 noise floor of the
+difference itself — and it is the one track here that satisfies this
+requirement. It is worth being precise about what that costs, because it is the
+part a hand-written backward pass does not give you: nothing in the code says
+whether it is right. `docs/KNOWN-ISSUES.md` issue 1 has the measurements, the
+two bugs, and the number the test now asserts.
 
 So before your track is allowed to say "parity", it needs a
 **directional derivative check**: with a fixed pseudo-random direction `d` over
@@ -107,8 +117,9 @@ that the check above passes the first time.
 
 ### 6. Ship a test that can fail
 
-The deleted `test_gradients.c` printed a hardcoded number and returned 0. It
-could not fail, which is worse than having no test: it looked like evidence.
+The `test_gradients.c` shipped here replaced an older file of that name that
+printed a hardcoded number and returned 0. It could not fail, which is worse than
+having no test: it looked like evidence.
 
 At minimum:
 

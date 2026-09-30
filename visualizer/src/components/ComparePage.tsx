@@ -149,7 +149,7 @@ export function ComparePage() {
                     {language === 'python'
                       ? 'the reference'
                       : language === 'c'
-                        ? 'the parity track; its backward pass is wrong, see KNOWN-ISSUES'
+                        ? 'the parity track; a hand-written backward pass, finite-difference checked'
                         : language === 'typescript'
                           ? 'reference-faithful, float64, no tuning flags'
                           : 'a tape, so its gradients are correct by construction'}

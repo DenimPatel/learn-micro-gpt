@@ -936,10 +936,10 @@ function GradientSection({ track }: { track: ResearchTrack }) {
       <p>
         Every candidate is finite-difference checked before it is allowed to compete on loss. A loss
         number cannot tell a correct gradient from a wrong one: the C port&rsquo;s hand-written
-        backward pass is wrong by a factor of −8 and its loss curve still tracks the reference to
-        within 7% (<code>docs/KNOWN-ISSUES.md</code> issue 1). So the ratio is the directional
-        derivative of the loss over all parameters against a central difference, where a correct
-        gradient is 1.0.
+        backward pass was wrong by a factor of −8, its loss curve still tracked the reference to
+        within 7%, and it still trained (<code>docs/KNOWN-ISSUES.md</code> issue 1, fixed since). So
+        the ratio is the directional derivative of the loss over all parameters against a central
+        difference, where a correct gradient is 1.0.
       </p>
       {baseline ? (
         <p>

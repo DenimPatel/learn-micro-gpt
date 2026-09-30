@@ -52,12 +52,14 @@ method, so almost any change of substance is in scope.
 **Do not edit `{{probe_path}}`.** It is not yours. It is a
 finite-difference check on the autograd tape, written by the repository, and its
 sha256 is verified before your patch is even applied. This is not bureaucracy:
-the C port in this repository has a hand-written backward pass whose gradient is
-`-0.12x` the true value, and **its loss curve still tracks the reference to
-within 7% and it still trains**. A loss number cannot tell a correct gradient
-from a broken one. Only a finite difference can. If your patch makes the tape
-wrong, the probe fails and the experiment is recorded as a crash — which is the
-correct outcome, not a punishment.
+the C port in this repository once had a hand-written backward pass whose
+gradient was `-0.12x` the true value, and **its loss curve still tracked the
+reference to within 7% and it still trained**. A loss number cannot tell a
+correct gradient from a broken one. Only a finite difference can. That bug is
+fixed, and the reason this rule is still here is that the tripwire is the point:
+you are rewriting the file unsupervised. If your patch makes the tape wrong, the
+probe fails and the experiment is recorded as a crash — which is the correct
+outcome, not a punishment.
 
 **Do not game the probe.** Do not special-case its direction, its seeds, or its
 configuration. Do not detect that a probe is running. There is a tripwire, and
@@ -65,17 +67,11 @@ it is the tripwire.
 
 **Do not remove or rename anything the harness reads.** It needs:
 
-* `pub fn run()`, and the `[[bin]]` that calls it;
 * the `--input`, `--steps` and `--seed` arguments;
 * a line on stdout of exactly the form `step 123 / 1000 | loss 2.3456`, once per
   step. Every track in this repository prints it, `tools/parity.py` parses it,
   and without it your run produces no measurement at all;
-* the public items the probe uses: `Config` and its fields, `Model::{new,
-  forward, params}`, `Rng::new`, `TensorHandle`, `Tensor::{leaf, data, grad,
-  backward, set_data, add, mul, neg, log, exp, div, sub_scalar, div_scalar}`, and
-  the `pub` visibility of the crate root. In particular `Tensor::set_data` is the
-  only thing separating the probe from a private arena, and a rewrite that drops
-  it fails the probe.
+{{probe_api}}
 
 **Do not make the project fail {{lint_command}}.** It is checked, and
 a warning is a failed experiment.
@@ -133,12 +129,7 @@ The diff is applied with `git apply --recount`, so:
 * the **context lines must match the file exactly**, including indentation.
   The file is reproduced in full above precisely so you can copy them rather than
   recall them;
-* read the whole file before writing the patch. It is 880-odd lines, and the
-  function you want is usually not the one you would guess. Two of the first
-  attempts at this task failed for the same reason: a patch written against an
-  `rmsnorm` that took a weight tensor and had `.data()` and `.mul()` methods.
-  Neither exists. `fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle>` does, and
-  you can read it;
+* read the whole file before writing the patch. {{patch_caution}};
 * one hunk is fine. Several are fine. Changing everything is rarely the fastest
   route to a number moving.
 

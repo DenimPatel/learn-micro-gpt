@@ -10,8 +10,9 @@ body:
         first. Requirement 5 is the one that matters: a directional-derivative
         gradient check, because a loss curve is evidence that something learned
         and not evidence that the thing that learned was the gradient. The C port
-        passes the loss-band check with a gradient that is wrong by a factor of
-        -0.12.
+        used to pass the loss-band check with a gradient that was wrong by a
+        factor of -0.12; that is issue 1 in `docs/KNOWN-ISSUES.md`, and it is why
+        the check exists.
 
   - type: dropdown
     id: kind
@@ -37,8 +38,9 @@ body:
       label: Approach
       description: |
         If adding: reimplement the autograd tape, or hand-write the backward
-        pass? The three existing tracks all took the tape, and the C port's
-        hand-written pass is the repository's known issue.
+        pass? The three tracks that have a tape took that route. The C port is
+        the one that hand-writes its backward pass, and it carries a
+        finite-difference test of its own precisely because of that.
     validations:
       required: false
 

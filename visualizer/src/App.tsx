@@ -443,10 +443,10 @@ function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number })
           is a build failure.
         </li>
         <li>
-          <strong>What is wrong is written down.</strong> The C port&rsquo;s hand-written backward
-          pass gets a gradient wrong by a factor of &minus;0.12, and its loss curve still looks
-          fine. <a href="#/about">That is documented, measured, and tested</a> &mdash; and it is the
-          most instructive thing on the site.
+          <strong>What is wrong is written down.</strong> The frozen Rust track&rsquo;s gradient is
+          6.32% high, because its <code>rmsnorm</code> sits outside the autograd tape, and it is
+          left that way on purpose. <a href="#/about">That is documented, measured, and tested</a>{' '}
+          &mdash; and it is the most instructive thing on the site.
         </li>
       </ul>
 
@@ -539,20 +539,20 @@ function AboutPage() {
 
       <h2>What is known to be wrong</h2>
       <p>
-        The C port&rsquo;s hand-written backward pass does not correctly propagate the key and value
-        gradients of earlier positions back to their embeddings. Only the output head&rsquo;s
-        gradient is right. Measured as a directional derivative over all 4,192 parameters, its
-        gradient comes out at <strong>&minus;0.12&times;</strong> the true value, where a correct
-        gradient is 1.0&times;.
+        The frozen Rust port&rsquo;s <code>rmsnorm</code> reads its input&rsquo;s values rather than
+        its handles, so the whole normalisation sits outside the autograd tape. Its gradient is{' '}
+        <strong>6.32% high</strong>, stably, across four orders of magnitude of step size. It is
+        left that way on purpose: the research loop measures every candidate against this build, and
+        a comparator with a known, measured, documented defect is worth more here than one that has
+        been quietly corrected.
       </p>
       <p>
-        The instructive part:{' '}
-        <strong>
-          its loss curve still tracks the reference to within 7% and the model still trains.
-        </strong>{' '}
-        Adam divides by an estimate of the gradient&rsquo;s own magnitude, so a gradient that is
-        wrong by a factor barely moves the step. A loss curve is evidence that something learned,
-        not evidence that the thing that learned was the gradient. The full measurements are in{' '}
+        The instructive part: <strong>its loss curve still tracks the reference.</strong> Adam
+        divides by an estimate of the gradient&rsquo;s own magnitude, so a gradient that is wrong by
+        a factor barely moves the step. The C port carried one wrong by a factor of
+        &minus;0.12&times; &mdash; wrong sign, an order of magnitude out &mdash; and the parity gate
+        passed it the whole time. A loss curve is evidence that something learned, not evidence that
+        the thing that learned was the gradient. The full measurements are in{' '}
         <code>docs/KNOWN-ISSUES.md</code>.
       </p>
 
