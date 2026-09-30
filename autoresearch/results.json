@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 255,
+    "experiments": 256,
     "keep": 111,
     "discard": 9,
-    "crash": 135
+    "crash": 136
   },
   "pareto": {
     "rust": [
@@ -4140,6 +4140,21 @@
       "reason": "",
       "description": "Stop feeding cumulative output-bias gradients into lm_head backpropagation",
       "measured": "2026-09-30T06:54:41Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0259",
+      "parent": "31d35f43ce9342173747d0f65c18060b55f452bd",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Widen N_EMBD to 16 and update the head scaling and fixed-width gradient kernel",
+      "measured": "2026-09-30T06:57:39Z",
       "has_record": true
     }
   ],
