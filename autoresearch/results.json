@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 247,
+    "experiments": 248,
     "keep": 108,
     "discard": 9,
-    "crash": 130
+    "crash": 131
   },
   "pareto": {
     "rust": [
@@ -4020,6 +4020,21 @@
       "reason": "the patch did not apply",
       "description": "Use one full-width attention head to cut attention softmax overhead",
       "measured": "2026-09-30T06:21:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0251",
+      "parent": "bcfdda4f6987405ccb4bd9cf853b4556711d4568",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache attention mixtures and reuse dx to speed up backward without changing loss",
+      "measured": "2026-09-30T06:23:27Z",
       "has_record": true
     }
   ],
