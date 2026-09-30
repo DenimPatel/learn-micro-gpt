@@ -259,3 +259,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0257	4f8c65497d5b73846042e67c893696c4afa28ab0	c	2.447928	54046.265453	-0.047590	+3.110286	1.074022	keep		Block four linear outputs to reuse input vectors and expose FMA instruction level parallelism
 0258	20a7d2f4f6866f1ab9ef2e40244696b899a4e080	c	2.348664	53952.710510	-0.005110	+3.103171	0.988592	keep		Stop feeding cumulative output-bias gradients into lm_head backpropagation
 0259	31d35f43ce9342173747d0f65c18060b55f452bd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Widen N_EMBD to 16 and update the head scaling and fixed-width gradient kernel
+0260	0eceda548e132ddcfc1a6d895a096daa790b7df9	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: The read operation timed out	the model returned nothing usable

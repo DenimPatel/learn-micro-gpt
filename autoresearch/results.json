@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 256,
+    "experiments": 257,
     "keep": 111,
     "discard": 9,
-    "crash": 136
+    "crash": 137
   },
   "pareto": {
     "rust": [
@@ -4155,6 +4155,21 @@
       "reason": "the patch did not apply",
       "description": "Widen N_EMBD to 16 and update the head scaling and fixed-width gradient kernel",
       "measured": "2026-09-30T06:57:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0260",
+      "parent": "0eceda548e132ddcfc1a6d895a096daa790b7df9",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the model request failed: The read operation timed out",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-30T18:46:26Z",
       "has_record": true
     }
   ],
