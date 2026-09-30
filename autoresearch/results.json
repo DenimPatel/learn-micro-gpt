@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 237,
+    "experiments": 238,
     "keep": 105,
     "discard": 9,
-    "crash": 123
+    "crash": 124
   },
   "pareto": {
     "rust": [
@@ -3870,6 +3870,21 @@
       "reason": "no axis improved materially: discarded: loss -0.8%, speed -36.5%; failing loss_material, speed_material, speed_tolerance",
       "description": "Halve the MLP width from 16 to 8 for another model FLOP reduction",
       "measured": "2026-09-30T05:50:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0241",
+      "parent": "773d74bdcd2bf7b1c498185d32da58d901a30b4b",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse attention projections and reuse the forward attention vector to reduce per-position overhead",
+      "measured": "2026-09-30T05:55:47Z",
       "has_record": true
     }
   ],
