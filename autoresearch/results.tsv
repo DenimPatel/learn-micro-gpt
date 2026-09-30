@@ -291,3 +291,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0289	5bc3a4e8b56d752f48b373f87d61a8e13d181a3e	c	2.453680	50622.017872	-0.050051	+2.849868	1.005573	discard	no axis improved materially: discarded: loss -5.0%, speed +285.0%; failing loss_material, loss_tolerance	Add a 10 percent learning rate floor to the linear decay
 0290	f73d688ca529887388eb12322dec19f077870e88	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Seed output-class biases from smoothed training-token frequencies
 0291	af02508aa28f73c6e70a4ac8896291fc15a7e5b0	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use three width-4 attention heads with corrected inverse-square-root scaling
+0292	496a3dfe1725df4197c591bc7dfbd53ce624d41e	c	2.359370	75971.481592	-0.009691	+4.777726	0.988406	keep		Untie the output head while narrowing the MLP to width 12
