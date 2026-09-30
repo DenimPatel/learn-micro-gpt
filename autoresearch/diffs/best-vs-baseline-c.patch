@@ -21,7 +21,33 @@
  
  /* Alignment for M-series 128-byte cache lines */
  #define ALIGN128 __attribute__((aligned(128)))
-@@ -189,24 +189,86 @@
+@@ -109,6 +109,9 @@
+ static float ALIGN128 mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
+ static float ALIGN128 mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
+ 
++/* Direct output-class prior learned alongside the language model. */
++static float ALIGN128 lm_bias[MAX_VOCAB];
++
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
+@@ -119,6 +122,7 @@
+ static float ALIGN128 g_attn_wo[N_LAYER][N_EMBD * N_EMBD];
+ static float ALIGN128 g_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
+ static float ALIGN128 g_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
++static float ALIGN128 g_lm_bias[MAX_VOCAB];
+ 
+ /* Adam moment buffers */
+ static float ALIGN128 m_wte[MAX_VOCAB * N_EMBD], v_wte[MAX_VOCAB * N_EMBD];
+@@ -137,6 +141,7 @@
+     v_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
+ static float ALIGN128 m_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM],
+     v_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
++static float ALIGN128 m_lm_bias[MAX_VOCAB], v_lm_bias[MAX_VOCAB];
+ 
+ /* ── Dataset ─────────────────────────────────────────────────────────── */
+ static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
+@@ -189,24 +194,86 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
@@ -116,7 +142,46 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -630,18 +692,7 @@
+@@ -417,6 +484,7 @@
+ 
+ static void init_weights(void) {
+   const float std = 0.08f;
++  memset(lm_bias, 0, sizeof(lm_bias));
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+   init_matrix(lm_head, vocab_size, N_EMBD, std);
+@@ -430,6 +498,7 @@
+   }
+ 
+   int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD + vocab_size * N_EMBD;
++  total += vocab_size;
+   for (int l = 0; l < N_LAYER; l++)
+     total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
+   printf("num params: %d\n", total);
+@@ -530,6 +599,8 @@
+ 
+   memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
+   linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
++  for (int i = 0; i < vocab_size; i++)
++    saved_logits[pos_id][i] += lm_bias[i];
+   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
+ }
+ 
+@@ -557,8 +628,11 @@
+ 
+     /* dL/d(logits) = (probs - one_hot(target)) / n */
+     float dlogits[MAX_VOCAB];
+-    for (int i = 0; i < vocab_size; i++)
+-      dlogits[i] = (saved_probs[pos][i] - (i == target_id ? 1.0f : 0.0f)) * inv_n;
++    for (int i = 0; i < vocab_size; i++) {
++      float d = (saved_probs[pos][i] - (i == target_id ? 1.0f : 0.0f)) * inv_n;
++      dlogits[i] = d + g_lm_bias[i];
++      g_lm_bias[i] += d;
++    }
+ 
+     /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
+     memset(dx, 0, sizeof(float) * N_EMBD);
+@@ -630,18 +704,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -135,7 +200,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +704,7 @@
+@@ -653,7 +716,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -144,7 +209,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +728,13 @@
+@@ -677,22 +740,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -170,3 +235,29 @@
  
        /* Backward through Q, K, V linear projections.
         *
+@@ -829,6 +883,8 @@
+   }
+ 
+   linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
++  for (int i = 0; i < vocab_size; i++)
++    logits_out[i] += lm_bias[i];
+ }
+ 
+ /* ── Main ────────────────────────────────────────────────────────────── */
+@@ -903,6 +959,7 @@
+     memset(g_wte, 0, sizeof(g_wte));
+     memset(g_wpe, 0, sizeof(g_wpe));
+     memset(g_lm_head, 0, sizeof(g_lm_head));
++    memset(g_lm_bias, 0, sizeof(g_lm_bias));
+     for (int l = 0; l < N_LAYER; l++) {
+       memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
+       memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
+@@ -938,6 +995,8 @@
+     adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
+     adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
+     adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head, vocab_size * N_EMBD,
++                lr_t, b1c, b2c);
++    adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
+                 lr_t, b1c, b2c);
+     for (int l = 0; l < N_LAYER; l++) {
+       adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],

@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "7b254c329e2f2e6e74cd89cd4b2bf660156bb324e6fe603dac8c7ac559ca0392",
+      "candidate_sha256": "1a079568d395f536a396e8212120787061ae4f7139a82e8fd31317b4b0824c5b",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 252,
-    "keep": 108,
+    "experiments": 253,
+    "keep": 109,
     "discard": 9,
     "crash": 135
   },
@@ -4095,6 +4095,21 @@
       "reason": "the patch did not apply",
       "description": "Add a fixed smoothed unigram logit prior to output logits",
       "measured": "2026-09-30T06:45:12Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0256",
+      "parent": "b0b5daaaf2f4c35306d872b9331b3599f1a7d8bf",
+      "track": "c",
+      "loss": 2.447928,
+      "steps_per_sec": 55216.714992,
+      "loss_gain": -0.04759,
+      "speed_gain": 3.1993,
+      "grad_ratio": 1.074022,
+      "status": "keep",
+      "reason": "",
+      "description": "Learn a zero-initialized output logit bias with Adam to capture class priors at low cost",
+      "measured": "2026-09-30T06:49:23Z",
       "has_record": true
     }
   ],
