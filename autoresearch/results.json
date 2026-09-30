@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 250,
+    "experiments": 251,
     "keep": 108,
     "discard": 9,
-    "crash": 133
+    "crash": 134
   },
   "pareto": {
     "rust": [
@@ -4065,6 +4065,21 @@
       "reason": "the patch did not apply",
       "description": "Polynomial softmax exponential and fewer reciprocal-square-root passes with Adam leaving gradient clearing to the training loop",
       "measured": "2026-09-30T06:36:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0254",
+      "parent": "97d4824819a8f10fa0e83a9bcb7432418736588b",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use a seventh-order range-reduced NEON exponential in softmax",
+      "measured": "2026-09-30T06:40:55Z",
       "has_record": true
     }
   ],
