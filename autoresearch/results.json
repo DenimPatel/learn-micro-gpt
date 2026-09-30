@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 264,
+    "experiments": 265,
     "keep": 113,
     "discard": 11,
-    "crash": 140
+    "crash": 141
   },
   "pareto": {
     "rust": [
@@ -4275,6 +4275,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-30T19:07:31Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0268",
+      "parent": "58b778ffec8886931532a6f96712559f093ed74a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cut redundant hot-loop memory work and use one Newton rsqrt refinement per vector reciprocal square root",
+      "measured": "2026-09-30T19:15:22Z",
       "has_record": true
     }
   ],
