@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "7bab2026c7f80b4ef9694b04e543ab5bcb9e35cee763125eb157bf9bf88a5ce9",
+      "candidate_sha256": "5f324c5aa3b76ee2e0aa45a9bfe617dd0096aa052cc23c648fe2104959151225",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 242,
-    "keep": 105,
+    "experiments": 243,
+    "keep": 106,
     "discard": 9,
     "crash": 128
   },
@@ -253,7 +253,7 @@
     "c": [
       "0235",
       "0237",
-      "0239"
+      "0246"
     ]
   },
   "runs": [
@@ -3945,6 +3945,21 @@
       "reason": "the patch did not apply",
       "description": "Use one 12-dimensional attention head and update its scaling constant",
       "measured": "2026-09-30T06:10:16Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0246",
+      "parent": "b6921ff9eeb5c3e66fb89cb552b4e16374852160",
+      "track": "c",
+      "loss": 2.34848,
+      "steps_per_sec": 55619.029307,
+      "loss_gain": -0.005031,
+      "speed_gain": 3.229897,
+      "grad_ratio": 0.988592,
+      "status": "keep",
+      "reason": "",
+      "description": "Replace tiny BLAS linear kernels with inline NEON loops to cut per-call overhead",
+      "measured": "2026-09-30T06:15:29Z",
       "has_record": true
     }
   ],

@@ -189,24 +189,51 @@ static float ALIGN128 dv_pending[BLOCK_SIZE][N_EMBD];
 static inline void linear_fwd(const float *__restrict__ x,
                               const float *__restrict__ w,
                               float *__restrict__ out, int nout, int nin) {
-  /* Use Accelerate cblas for matrix-vector multiply: out = W * x */
-  cblas_sgemv(CblasRowMajor, CblasNoTrans, nout, nin, 1.0f, w, nin, x, 1, 0.0f,
-              out, 1);
+  for (int i = 0; i < nout; i++) {
+    const float *row = w + i * nin;
+    float32x4_t acc = vdupq_n_f32(0.0f);
+    int j = 0;
+    for (; j + 3 < nin; j += 4)
+      acc = vfmaq_f32(acc, vld1q_f32(row + j), vld1q_f32(x + j));
+    float sum = vaddvq_f32(acc);
+    for (; j < nin; j++)
+      sum += row[j] * x[j];
+    out[i] = sum;
+  }
 }
 
 static inline void linear_bwd_w(const float *__restrict__ dout,
                                 const float *__restrict__ x,
                                 float *__restrict__ gw, int nout, int nin) {
-  /* gw += outer(dout, x) — use cblas_sger for rank-1 update */
-  cblas_sger(CblasRowMajor, nout, nin, 1.0f, dout, 1, x, 1, gw, nin);
+  for (int i = 0; i < nout; i++) {
+    float32x4_t di = vdupq_n_f32(dout[i]);
+    float *grow = gw + i * nin;
+    int j = 0;
+    for (; j + 3 < nin; j += 4) {
+      float32x4_t g = vld1q_f32(grow + j);
+      g = vfmaq_f32(g, di, vld1q_f32(x + j));
+      vst1q_f32(grow + j, g);
+    }
+    for (; j < nin; j++)
+      grow[j] += dout[i] * x[j];
+  }
 }
 
 static inline void linear_bwd_x(const float *__restrict__ dout,
                                 const float *__restrict__ w,
                                 float *__restrict__ dx_out, int nout, int nin) {
-  /* dx_out += W^T * dout */
-  cblas_sgemv(CblasRowMajor, CblasTrans, nout, nin, 1.0f, w, nin, dout, 1, 1.0f,
-              dx_out, 1);
+  for (int i = 0; i < nout; i++) {
+    float32x4_t di = vdupq_n_f32(dout[i]);
+    const float *row = w + i * nin;
+    int j = 0;
+    for (; j + 3 < nin; j += 4) {
+      float32x4_t dx = vld1q_f32(dx_out + j);
+      dx = vfmaq_f32(dx, di, vld1q_f32(row + j));
+      vst1q_f32(dx_out + j, dx);
+    }
+    for (; j < nin; j++)
+      dx_out[j] += dout[i] * row[j];
+  }
 }
 
 static inline void rmsnorm_fwd(const float *__restrict__ x,
