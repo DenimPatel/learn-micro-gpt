@@ -266,3 +266,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0264	a053dd1e8d51902a177907816f156ce765007f7d	c	2.350330	50340.744042	-0.005823	+2.828477	0.988592	keep		Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation
 0265	8649345e1dd5313fbef4382ad51ec8fb5624b85a	c	2.440522	54985.841307	-0.044420	+3.181742	1.006265	keep		Tie the token embedding to the output head and update the shared matrix once with summed gradients
 0266	e154401928c28e709c36be8066aecf2a69bc5d8f	c	2.333334	48930.860487	+0.001451	+2.721253	1.005469	discard	no axis improved materially: discarded: loss +0.1%, speed +272.1%; failing learned, loss_material	Add a smoothed dataset bigram logit prior to the output distribution
+0267	4badb6f49b0fb8b3d5d3b64d6da2b4d890d1deb2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable

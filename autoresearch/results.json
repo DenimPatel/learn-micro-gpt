@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 263,
+    "experiments": 264,
     "keep": 113,
     "discard": 11,
-    "crash": 139
+    "crash": 140
   },
   "pareto": {
     "rust": [
@@ -4260,6 +4260,21 @@
       "reason": "no axis improved materially: discarded: loss +0.1%, speed +272.1%; failing learned, loss_material",
       "description": "Add a smoothed dataset bigram logit prior to the output distribution",
       "measured": "2026-09-30T19:02:07Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0267",
+      "parent": "4badb6f49b0fb8b3d5d3b64d6da2b4d890d1deb2",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-30T19:07:31Z",
       "has_record": true
     }
   ],
