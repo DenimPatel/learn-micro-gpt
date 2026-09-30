@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 238,
+    "experiments": 239,
     "keep": 105,
     "discard": 9,
-    "crash": 124
+    "crash": 125
   },
   "pareto": {
     "rust": [
@@ -3885,6 +3885,21 @@
       "reason": "the patch did not apply",
       "description": "Fuse attention projections and reuse the forward attention vector to reduce per-position overhead",
       "measured": "2026-09-30T05:55:47Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0242",
+      "parent": "238b753aa0077f46242f1d7cf5fa14afceee53e1",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Restore embedding width 16 and attention scale 0.5",
+      "measured": "2026-09-30T05:58:03Z",
       "has_record": true
     }
   ],
