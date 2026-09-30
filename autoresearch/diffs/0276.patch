@@ -1,0 +1,41 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -111,6 +111,30 @@ static int doc_order[MAX_DOCS]; /* shuffle order */
+ static char uchars[MAX_VOCAB];  /* sorted unique chars */
+ static int char_to_idx[128];    /* ASCII lookup table */
+ 
++static void count_sort_docs_by_length(int *indices, int n) {
++  static int sorted[MAX_DOCS];
++  int next[MAX_DOC_LEN + 1] = {0};
++
++  for (int i = 0; i < n; i++)
++    next[doc_lens[indices[i]]]++;
++
++  int offset = 0;
++  for (int len = 0; len <= MAX_DOC_LEN; len++) {
++    int count = next[len];
++    next[len] = offset;
++    offset += count;
++  }
++
++  for (int i = 0; i < n; i++) {
++    int doc = indices[i];
++    sorted[next[doc_lens[doc]]++] = doc;
++  }
++
++  memcpy(indices, sorted, (size_t)n * sizeof(sorted[0]));
++}
++
+ /* ── Activation buffers (pre-allocated, zero malloc in hot loop) ─────── */
+ /* Per-position saved activations for backward pass */
+ static float ALIGN128 saved_x_embed[BLOCK_SIZE][N_EMBD];
+@@ -1072,6 +1096,9 @@ int main(int argc, char **argv) {
+ 
+   seed_rng(run_seed);
+   load_data(dataset_path);
++  int sorted_prefix_len = num_steps < num_docs ? num_steps : num_docs;
++  count_sort_docs_by_length(doc_order, sorted_prefix_len);
++
+   init_weights();
+ 
+   /* Adam hyperparams */
