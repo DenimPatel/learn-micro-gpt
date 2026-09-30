@@ -151,7 +151,19 @@
       "reason": "frozen implementations/typescript, re-measured this session",
       "description": "the frozen TypeScript track, unmodified, as this session's comparator"
     },
-    "c": null
+    "c": {
+      "run_id": "0233",
+      "parent": "7e91c5386a1dfc807b59326700684b9c43196647",
+      "track": "c",
+      "loss": 2.336724,
+      "steps_per_sec": 27428.853855,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 1.005086,
+      "status": "baseline",
+      "reason": "frozen implementations/c, re-measured this session",
+      "description": "the frozen C track, unmodified, as this session's comparator"
+    }
   },
   "bests": {
     "rust": {
@@ -226,7 +238,9 @@
     "typescript": [
       "0232"
     ],
-    "c": []
+    "c": [
+      "0233"
+    ]
   },
   "runs": [
     {
@@ -3722,6 +3736,21 @@
       "reason": "",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node",
       "measured": "2026-09-29T04:13:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0233",
+      "parent": "7e91c5386a1dfc807b59326700684b9c43196647",
+      "track": "c",
+      "loss": 2.336724,
+      "steps_per_sec": 27428.853855,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 1.005086,
+      "status": "baseline",
+      "reason": "frozen implementations/c, re-measured this session",
+      "description": "the frozen C track, unmodified, as this session's comparator",
+      "measured": "2026-09-30T05:08:08Z",
       "has_record": true
     }
   ],

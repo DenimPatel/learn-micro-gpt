@@ -2146,8 +2146,15 @@ def cmd_seed(args: argparse.Namespace) -> int:
             "ratio": row.grad_ratio,
             "note": (
                 f"From the seeded {track.name} candidate, which is the frozen "
-                f"track's source plus whatever its probe needs. See KNOWN-ISSUES.md "
-                f"issue 5 for why it is not 1.0."
+                f"track's source plus whatever its probe needs. "
+                + (
+                    "It is 1.0, and that is the point: this track differentiates "
+                    "through its normalisation, so its backward pass is a correct "
+                    "gradient and there is no known-issue discount to read. See "
+                    "KNOWN-ISSUES.md issue 1 for what the alternative looked like."
+                    if 0.95 <= row.grad_ratio <= 1.05
+                    else "See KNOWN-ISSUES.md issue 5 for why it is not 1.0."
+                )
             ),
         },
         "source_sha256": {

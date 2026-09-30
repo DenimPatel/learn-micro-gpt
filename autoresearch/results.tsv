@@ -232,3 +232,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0230	14d36c3dd9c0afdb0aad6655119a053368102255	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Keep Adam at a constant 0.01 learning rate
 0231	c33b9d4606f6d0cd816e0db0de5be81658c7b620	typescript	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	tsc --noEmit failed	Fuse each linear row into one exact ordered product-sum autograd node
 0232	424c23ddbc8d3df5e2246d7831d2745931b4928d	typescript	2.309063	245.589919	+0.000000	+3.342140	0.722129	keep		Fuse each linear row into one exact ordered product-sum autograd node
+0233	7e91c5386a1dfc807b59326700684b9c43196647	c	2.336724	27428.853855	+0.000000	+0.000000	1.005086	baseline	frozen implementations/c, re-measured this session	the frozen C track, unmodified, as this session's comparator
