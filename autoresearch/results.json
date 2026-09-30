@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 286,
+    "experiments": 287,
     "keep": 116,
     "discard": 19,
-    "crash": 151
+    "crash": 152
   },
   "pareto": {
     "rust": [
@@ -4605,6 +4605,21 @@
       "reason": "no axis improved materially: discarded: loss -5.0%, speed +285.0%; failing loss_material, loss_tolerance",
       "description": "Add a 10 percent learning rate floor to the linear decay",
       "measured": "2026-09-30T23:42:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0290",
+      "parent": "f73d688ca529887388eb12322dec19f077870e88",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Seed output-class biases from smoothed training-token frequencies",
+      "measured": "2026-09-30T23:47:31Z",
       "has_record": true
     }
   ],
