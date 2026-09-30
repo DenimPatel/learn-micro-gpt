@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 258,
+    "experiments": 259,
     "keep": 111,
     "discard": 10,
-    "crash": 137
+    "crash": 138
   },
   "pareto": {
     "rust": [
@@ -4185,6 +4185,21 @@
       "reason": "no axis improved materially: discarded: loss -55.7%, speed +312.5%; failing learned, loss_material, loss_tolerance",
       "description": "Fine tune on the shortest documents during the final 50 updates",
       "measured": "2026-09-30T18:48:50Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0262",
+      "parent": "f1438efefe0c81db27620ab1f11f5d91dfa42f42",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Skip every fourth backward and Adam update to trade a little learning for speed",
+      "measured": "2026-09-30T18:52:31Z",
       "has_record": true
     }
   ],
