@@ -1,0 +1,45 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -1037,6 +1037,36 @@ static void parse_args(int argc, char **argv) {
+   }
+ }
+ 
++static void select_shortest_tail(int steps) {
++  const int prefix_count = steps < num_docs ? steps : num_docs;
++  const int tail_count = prefix_count < 50 ? prefix_count : 50;
++  if (tail_count == 0)
++    return;
++
++  unsigned char chosen_doc[MAX_DOCS] = {0};
++  for (int out = prefix_count - tail_count; out < prefix_count; out++) {
++    int best_pos = -1;
++    int best_doc = -1;
++    for (int j = 0; j < prefix_count; j++) {
++      int candidate = doc_order[j];
++      if (chosen_doc[candidate])
++        continue;
++      if (best_pos < 0 ||
++          doc_lens[candidate] < doc_lens[best_doc]) {
++        best_pos = j;
++        best_doc = candidate;
++      }
++    }
++
++    chosen_doc[best_doc] = 1;
++    int tmp = doc_order[out];
++    doc_order[out] = doc_order[best_pos];
++    doc_order[best_pos] = tmp;
++  }
++}
++
+ int main(int argc, char **argv) {
+   struct timespec t_start, t_end;
+   parse_args(argc, argv);
+@@ -1055,6 +1085,7 @@ int main(int argc, char **argv) {
+ 
+   seed_rng(run_seed);
+   load_data(dataset_path);
++  select_shortest_tail(num_steps);
+   init_weights();
+ 
+   /* Adam hyperparams */

@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 283,
+    "experiments": 284,
     "keep": 116,
-    "discard": 16,
+    "discard": 17,
     "crash": 151
   },
   "pareto": {
@@ -4560,6 +4560,21 @@
       "reason": "the patch did not apply",
       "description": "Replace softmax expf with a safely range-reduced degree-six approximation",
       "measured": "2026-09-30T23:27:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0287",
+      "parent": "44c631f6d4c95fee81a1bf207e44af2e7e53d8ca",
+      "track": "c",
+      "loss": 2.807736,
+      "steps_per_sec": 50101.141747,
+      "loss_gain": -0.201569,
+      "speed_gain": 2.810254,
+      "grad_ratio": 1.005573,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -20.2%, speed +281.0%; failing learned, loss_material, loss_tolerance",
+      "description": "Select the 50 shortest shuffled-prefix documents for the final curriculum window",
+      "measured": "2026-09-30T23:38:20Z",
       "has_record": true
     }
   ],
