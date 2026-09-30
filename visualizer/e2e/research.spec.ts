@@ -141,6 +141,104 @@ test.describe('the research page', () => {
     expect(text).toContain('lines added')
   })
 
+  test('draws every language on one graph, colour-coded, with its own frontier', async ({
+    page,
+  }) => {
+    // The cross-track chart is the one place two languages are next to each
+    // other, and it is the only place that could quietly stop being a
+    // cross-track chart. So: one mark per measured run, one ink per language, a
+    // frontier per language rather than one across all of them, and a per-language
+    // table that a reader can read a number off instead of estimating a pixel.
+    await page.goto('#/research')
+    const figure = page
+      .locator('figure.widget')
+      .filter({ hasText: 'Every language the loop has worked on' })
+    const chart = figure.locator('svg.chart')
+    await expect(chart).toBeVisible()
+
+    // The mark count is checked against the count the chart reports about
+    // itself, not against `results.json` on disk.
+    //
+    // Reading the JSON looked stronger and is not: this file runs against a
+    // *built* bundle, and the ledger grows whenever the loop is running, so a
+    // test comparing marks to a file on disk reports "off by one" for no reason
+    // except that a row was appended between the build and the run. That
+    // failure is indistinguishable from a real one, which is the worst property
+    // a test can have. CI already guarantees the bundle matches the committed
+    // JSON -- its "the generated research results are current" step re-renders and
+    // fails on a diff -- so re-deriving it here buys nothing.
+    //
+    // What this does check is the invariant that matters and is not guaranteed by
+    // that step: every run the chart claims to have drawn is a mark, and the
+    // baselines are one ring rather than one per language.
+    const claimed = Number(
+      (await chart.getAttribute('aria-label'))?.match(/of (\d+) measured runs/)?.[1] ?? '-1',
+    )
+    expect(claimed, 'the chart states how many runs it drew').toBeGreaterThan(0)
+    // Each placed track contributes exactly one baseline row, and those are not
+    // drawn as marks -- they all coincide at (1, 1) and are drawn as a single
+    // ring. So marks + comparators = runs, and the ring count must be 1 however
+    // many languages are on the chart. Both numbers come from the page or from
+    // the track list, neither of which changes while a run is appended.
+    const comparators = Number(
+      (await figure.locator('.research__key--tracks').innerText()).match(
+        /all (\d+) comparators/,
+      )?.[1] ?? '-1',
+    )
+    expect(comparators, 'the legend states how many comparators coincide').toBeGreaterThan(0)
+    const marks = await chart.locator('circle.research__point--relative').count()
+    expect(marks, 'one mark per run, minus the comparators').toBe(claimed - comparators)
+    expect(
+      await chart.locator('circle.research__point--baseline').count(),
+      'the coinciding comparators are one ring, not one per language',
+    ).toBe(1)
+
+    // One ink per language, and no language sharing another's. Read from the
+    // computed style, because an ink is only a claim until the browser agrees.
+    const inks = await figure
+      .locator('circle.research__point--relative')
+      .evaluateAll((marks) => [...new Set(marks.map((mark) => getComputedStyle(mark).fill))])
+    expect(new Set(inks).size).toBe(RESEARCH_LANGUAGES.length)
+
+    // A frontier staircase per language, each in that language's ink. Not one
+    // frontier across all four: a C run is never dominated by a TypeScript run,
+    // and a single frontier would imply the languages compete.
+    const frontierStrokes = await figure
+      .locator('path.research__frontier[style]')
+      .evaluateAll((paths) => [...new Set(paths.map((path) => getComputedStyle(path).stroke))])
+    expect(frontierStrokes.length).toBeLessThanOrEqual(RESEARCH_LANGUAGES.length)
+
+    // The per-language table, one row per language, and the switcher's own
+    // arithmetic on best loss agrees with it.
+    const table = figure.locator('table.research__matrix')
+    await expect(table.locator('tbody tr')).toHaveCount(RESEARCH_TRACK_COUNT)
+    for (const language of RESEARCH_LANGUAGES) {
+      await expect(table).toContainText(language)
+    }
+
+    // Selecting a run rings it, so a mark in a dense cloud is findable.
+    const select = figure.locator('select')
+    const options = await select.locator('option').count()
+    expect(options).toBe(claimed + 1) // plus the placeholder
+    await select.selectOption({ index: 1 })
+    await expect(figure.locator('circle.research__point--selected')).toHaveCount(1)
+    await expect(figure.locator('.research__lookup-readout')).toContainText('baseline loss')
+  })
+
+  test('says in words that the axes are ratios and not raw numbers', async ({ page }) => {
+    // The chart is only honest if the reader is told why it is not a comparison
+    // of raw losses and steps-per-second. A reader who skips the caption sees
+    // four clouds and assumes C is faster, which is the exact misreading the
+    // normalisation exists to prevent -- so the caveat is asserted, not trusted.
+    await page.goto('#/research')
+    const figure = page
+      .locator('figure.widget')
+      .filter({ hasText: 'Every language the loop has worked on' })
+    const caption = await figure.locator('figcaption').innerText()
+    expect(caption).toMatch(/multiple of its own track/i)
+    expect(caption).toMatch(/not comparable|is not comparable/i)
+  })
+
   test('offers every track the harness knows, and switching changes the page', async ({ page }) => {
     // The whole point of the multi-track change: a Go number must never be
     // reachable under a Rust heading, or vice versa. So the switcher has to be

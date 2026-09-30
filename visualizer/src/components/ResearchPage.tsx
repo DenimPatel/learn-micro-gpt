@@ -38,6 +38,7 @@ import {
   lossTicks,
   measuredRows,
   ratioErrorPercent,
+  relativeRuns,
   shortDigest,
   statusCount,
   trackRows,
@@ -163,6 +164,420 @@ function decadeTicks(lo: number, hi: number, count: number): number[] {
   // More than `count` decades is a range wider than any axis here, but it has
   // to degrade rather than overflow, so every other decade is kept.
   return decades.filter((_, index) => index % Math.ceil(decades.length / count) === 0)
+}
+
+/**
+ * One colour per track, as a CSS custom property name.
+ *
+ * The four are aliases of ink tokens that already exist in both themes rather
+ * than new hex values, so the dark theme is the light theme's tokens rather than
+ * a second palette somebody has to remember to tune. The hues are also close to
+ * each language's own -- amber for Rust, green for Go, the site's accent for
+ * TypeScript because that is the language the playground on the home page runs,
+ * and rose for C.
+ *
+ * The channel is *only* track. Status is carried by size and opacity, and frontier
+ * by size and a separating stroke, because a third channel on a chart that already
+ * has four hues and two sizes is a chart nobody can read at a glance.
+ */
+const TRACK_INK: Record<ResearchTrack, string> = {
+  rust: 'var(--track-rust)',
+  go: 'var(--track-go)',
+  typescript: 'var(--track-typescript)',
+  c: 'var(--track-c)',
+}
+
+/**
+ * Every track's runs on one pair of axes, as multiples of their own comparators.
+ *
+ * The chart is `relativeRuns()` drawn: x is `loss / its own baseline loss`, y is
+ * `steps_per_sec / its own baseline speed`. See `relativeRuns` for why the
+ * ratios are the only version of this comparison that means anything, and
+ * `ParetoScatter` for why the axes are linear and log respectively.
+ *
+ * What it adds over four separate scatters is the one thing four separate
+ * scatters cannot show: that the four tracks occupy the same plane at all. The
+ * comparators coincide at (1, 1) by construction, so the reader's eye has a
+ * single origin to measure every language's progress from, and a language whose
+ * cloud is tight against it is one the loop could not move. Judged track by
+ * track that question is unanswerable, because each track's own spread is all the
+ * reader ever sees.
+ */
+function CrossTrackScatter() {
+  const [ref, width] = usePlotWidth(880)
+  const [selected, setSelected] = useState<string | null>(null)
+  const placed = useMemo(() => relativeRuns(), [])
+  const runs = useMemo(() => placed.flatMap((group) => group.runs), [placed])
+  const narrow = width < NARROW
+  const xScale = useMemo(() => linearScale(runs.map((run) => run.lossRatio)), [runs])
+  const yScale = useMemo(() => logScale(runs.map((run) => run.speedRatio)), [runs])
+  const xTicks = useMemo(() => lossTicks(xScale, narrow ? 3 : 6), [xScale, narrow])
+  const yTicks = useMemo(
+    () => decadeTicks(yScale.min, yScale.max, narrow ? 3 : 6),
+    [yScale, narrow],
+  )
+
+  if (runs.length === 0) {
+    return (
+      <p className="research__empty">
+        No track has both a seeded baseline and a measured run, so there is nothing to compare. Run{' '}
+        <code>make autoresearch-rust</code> against at least one track first.
+      </p>
+    )
+  }
+
+  const height = Math.round(clamp(320, width * 0.46, 500))
+  const pad = { top: 34, right: 16, bottom: 52, left: narrow ? 52 : 60 }
+  const plot = {
+    w: Math.max(120, width - pad.left - pad.right),
+    h: Math.max(160, height - pad.top - pad.bottom),
+  }
+  const axisY = pad.top + plot.h
+  const xOf = (value: number) => pad.left + (xScale.at(value) / 100) * plot.w
+  const yOf = (value: number) => pad.top + (1 - yScale.at(value) / 100) * plot.h
+
+  const chosen = runs.find((run) => run.row.run_id === selected) ?? null
+  const excluded = tracks().filter((track) => !placed.some((group) => group.track === track))
+
+  const summary = placed
+    .map(
+      (group) =>
+        `${group.language}: ${group.runs.length} runs, ${group.keepCount} kept, ${group.frontierCount} on its frontier`,
+    )
+    .join('. ')
+  const all = [
+    `Cross-track scatter of ${runs.length} measured runs from ${placed.length} languages, each plotted as a multiple of its own track's frozen comparator.`,
+    `Horizontal axis: mean loss divided by that track's baseline loss, ${formatRatio(xScale.min)} to ${formatRatio(xScale.max)}, lower is better.`,
+    `Vertical axis: steps per second divided by that track's baseline speed, on a log scale, ${formatRatio(yScale.min)} to ${formatRatio(yScale.max)}, higher is better.`,
+    'Every comparator sits at 1.0 on both axes, so that point is the origin for all four.',
+    summary,
+  ].join(' ')
+
+  return (
+    <figure className="widget">
+      <figcaption className="widget__caption">
+        Every language the loop has worked on, on one pair of axes. Each run is drawn as a{' '}
+        <em>multiple of its own track&rsquo;s frozen comparator</em>, not as its own loss and steps
+        per second, because those are not comparable: the C port runs at 27,000 steps/s and the
+        TypeScript port at 245, and that 110&times; gap is a fact about two implementations rather
+        than about anything the loop did. Divided by their own starting points, all four comparators
+        land on exactly 1.0 &mdash; the hollow ring &mdash; and every experiment becomes a
+        measurement of how far the loop moved that language from where it started. Down and to the
+        left is better, up and to the right is better, and down-and-right is the trade the rule
+        exists to price.
+      </figcaption>
+
+      <p className="chart__legend research__key research__key--tracks">
+        {placed.map((group) => (
+          <span key={group.track}>
+            <i className="research__key-dot" style={{ background: TRACK_INK[group.track] }} />
+            {group.language} ({group.runs.length})
+          </span>
+        ))}
+        <span>
+          <i className="research__key-dot research__key-dot--hollow" />
+          all {placed.length} comparators, at 1.0 &times; 1.0
+        </span>
+        <span>
+          <i className="research__key-dot research__key-dot--ring" />
+          that track&rsquo;s frontier
+        </span>
+      </p>
+
+      <div className="research__plot" ref={ref}>
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
+          className="chart research__scatter"
+          role="img"
+          aria-label={all}
+        >
+          {xTicks.map((tick) => (
+            <line
+              key={`g${tick}`}
+              className="research__grid"
+              x1={xOf(tick)}
+              x2={xOf(tick)}
+              y1={pad.top}
+              y2={axisY}
+            />
+          ))}
+          {yTicks.map((tick) => (
+            <line
+              key={`h${tick}`}
+              className="research__grid"
+              x1={pad.left}
+              x2={pad.left + plot.w}
+              y1={yOf(tick)}
+              y2={yOf(tick)}
+            />
+          ))}
+
+          {/*
+            The 1.0 crosshair, drawn heavier than the grid and in `--ink` rather
+            than `--faint`, because it is the only two lines on this chart that
+            mean something: everything left of the vertical is a lower loss than
+            the frozen port reached, everything above the horizontal is faster
+            than it. A reader who finds that pair has found the reference.
+          */}
+          <line
+            className="research__axis research__axis--reference"
+            x1={xOf(1)}
+            x2={xOf(1)}
+            y1={pad.top}
+            y2={axisY}
+          />
+          <line
+            className="research__axis research__axis--reference"
+            x1={pad.left}
+            x2={pad.left + plot.w}
+            y1={yOf(1)}
+            y2={yOf(1)}
+          />
+
+          <line
+            className="research__axis"
+            x1={pad.left}
+            x2={pad.left + plot.w}
+            y1={axisY}
+            y2={axisY}
+          />
+          <line className="research__axis" x1={pad.left} x2={pad.left} y1={pad.top} y2={axisY} />
+          {xTicks.map((tick) => (
+            <line
+              key={`tx${tick}`}
+              className="research__axis research__axis--tick"
+              x1={xOf(tick)}
+              x2={xOf(tick)}
+              y1={axisY}
+              y2={axisY + 4}
+            />
+          ))}
+          {yTicks.map((tick) => (
+            <line
+              key={`ty${tick}`}
+              className="research__axis research__axis--tick"
+              x1={pad.left - 4}
+              x2={pad.left}
+              y1={yOf(tick)}
+              y2={yOf(tick)}
+            />
+          ))}
+
+          {/*
+            One frontier staircase per track, in that track's ink. Per track and
+            not one frontier across all four, deliberately: "nothing dominates
+            this" is a statement about a candidate against its own frozen
+            comparator, and a C run is never dominated by a TypeScript run in
+            either direction. Drawing a single cross-track frontier would imply
+            the languages compete, which is the claim the ratio axes exist to
+            refuse.
+          */}
+          {placed.map((group) => {
+            const ordered = group.runs
+              .filter((run) => run.onFrontier)
+              .sort((a, b) => a.lossRatio - b.lossRatio)
+            return ordered.map((run, index) => {
+              const previous = index > 0 ? ordered[index - 1] : undefined
+              if (!previous) return null
+              return (
+                <path
+                  key={`f${group.track}${run.row.run_id}`}
+                  className="research__frontier"
+                  style={{ stroke: TRACK_INK[group.track] }}
+                  fill="none"
+                  d={`M${xOf(previous.lossRatio)},${yOf(previous.speedRatio)} L${xOf(run.lossRatio)},${yOf(previous.speedRatio)} L${xOf(run.lossRatio)},${yOf(run.speedRatio)}`}
+                />
+              )
+            })
+          })}
+
+          {/* The crowd, then what carries the argument, on top of it. */}
+          {runs
+            .filter((run) => !run.onFrontier && run.row.status !== 'baseline')
+            .map((run) => (
+              <circle
+                key={run.row.run_id}
+                className="research__point research__point--relative"
+                style={{ fill: TRACK_INK[run.track] }}
+                cx={xOf(run.lossRatio)}
+                cy={yOf(run.speedRatio)}
+                r={run.row.status === 'keep' ? 3.6 : 2.9}
+              >
+                <title>
+                  {`${run.language} run ${run.row.run_id} (${STATUS_LABEL[run.row.status]}): ${formatRatio(run.lossRatio)}x its baseline loss, ${formatRatio(run.speedRatio)}x its baseline speed — ${run.row.description}`}
+                </title>
+              </circle>
+            ))}
+          {runs
+            .filter((run) => run.onFrontier)
+            .map((run) => (
+              <circle
+                key={`f${run.row.run_id}`}
+                className="research__point research__point--relative is-frontier"
+                style={{ fill: TRACK_INK[run.track] }}
+                cx={xOf(run.lossRatio)}
+                cy={yOf(run.speedRatio)}
+                r="5"
+              >
+                <title>
+                  {`${run.language} run ${run.row.run_id} (${STATUS_LABEL[run.row.status]}, on its track's frontier): ${formatRatio(run.lossRatio)}x baseline loss, ${formatRatio(run.speedRatio)}x baseline speed — ${run.row.description}`}
+                </title>
+              </circle>
+            ))}
+
+          {/*
+            The comparators, as one mark rather than four. They all sit at exactly
+            (1, 1) -- that is what dividing by them achieves -- so drawing four
+            rings would draw one ring and three invisible ones. The legend says
+            how many are there.
+          */}
+          <circle
+            className="research__point research__point--baseline"
+            cx={xOf(1)}
+            cy={yOf(1)}
+            r="6"
+          >
+            <title>
+              {`The frozen comparator of each of the ${placed.length} languages, drawn once because they are all at exactly 1.0 x 1.0 by construction: ${placed
+                .map(
+                  (group) =>
+                    `${group.language} run ${group.runs.find((run) => run.row.status === 'baseline')?.row.run_id ?? '—'}`,
+                )
+                .join(', ')}`}
+            </title>
+          </circle>
+          {chosen ? (
+            <circle
+              className="research__point research__point--selected"
+              cx={xOf(chosen.lossRatio)}
+              cy={yOf(chosen.speedRatio)}
+              r="9"
+            >
+              <title>
+                {`${chosen.language} run ${chosen.row.run_id}: ${formatRatio(chosen.lossRatio)}x baseline loss, ${formatRatio(chosen.speedRatio)}x baseline speed`}
+              </title>
+            </circle>
+          ) : null}
+
+          {xTicks.map((tick) => (
+            <text
+              key={`lx${tick}`}
+              className="research__tick"
+              x={xOf(tick)}
+              y={axisY + 17}
+              textAnchor="middle"
+            >
+              {formatRatio(tick)}
+            </text>
+          ))}
+          {yTicks.map((tick) => (
+            <text
+              key={`ly${tick}`}
+              className="research__tick"
+              x={pad.left - 8}
+              y={yOf(tick)}
+              textAnchor="end"
+              dominantBaseline="middle"
+            >
+              {formatRatio(tick)}
+            </text>
+          ))}
+          <text
+            className="research__axis-title"
+            x={pad.left + plot.w / 2}
+            y={height - 10}
+            textAnchor="middle"
+          >
+            {narrow
+              ? 'loss x baseline'
+              : 'mean loss as a multiple of that track\u2019s own baseline, and 1.0 is the frozen port'}
+          </text>
+          <text className="research__axis-title" x={pad.left} y={pad.top - 10} textAnchor="start">
+            {narrow
+              ? 'speed x baseline'
+              : 'steps per second as a multiple of that track\u2019s own baseline, log scale'}
+          </text>
+        </svg>
+      </div>
+
+      <div className="widget__controls research__lookup">
+        <label>
+          find a run
+          <select
+            value={selected ?? ''}
+            onChange={(event) => setSelected(event.target.value || null)}
+          >
+            <option value="">
+              {runs.length} runs across {placed.length} languages &mdash; choose one&hellip;
+            </option>
+            {runs.map((run) => (
+              <option key={run.row.run_id} value={run.row.run_id}>
+                {run.language} {run.row.run_id} — {STATUS_LABEL[run.row.status]} —{' '}
+                {run.row.description}
+              </option>
+            ))}
+          </select>
+        </label>
+        {chosen ? (
+          <span className="research__lookup-readout">
+            {chosen.language} run {chosen.row.run_id}: {formatRatio(chosen.lossRatio)}x baseline
+            loss, {formatRatio(chosen.speedRatio)}x baseline speed
+            {chosen.onFrontier ? ' — on its track\u2019s frontier' : ''}
+          </span>
+        ) : null}
+      </div>
+
+      {/*
+        The per-language numbers, because a scatter says which language moved
+        furthest and not by how much on each axis, and "the loop got C to 0.91x
+        its baseline loss" is a sentence this table lets a reader write.
+      */}
+      <table className="research__matrix">
+        <caption>
+          What the loop achieved per language, against that language&rsquo;s own baseline
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">language</th>
+            <th scope="col">runs</th>
+            <th scope="col">kept</th>
+            <th scope="col">frontier</th>
+            <th scope="col">best loss</th>
+            <th scope="col">best speed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {placed.map((group) => (
+            <tr key={group.track}>
+              <th scope="row">
+                <i
+                  className="research__key-dot research__key-dot--inline"
+                  style={{ background: TRACK_INK[group.track] }}
+                />
+                {group.language}
+              </th>
+              <td>{group.runs.length}</td>
+              <td>{group.keepCount}</td>
+              <td>{group.frontierCount}</td>
+              <td>{formatRatio(group.bestLossRatio)}</td>
+              <td>{formatRatio(group.bestSpeedRatio)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {excluded.length > 0 ? (
+        <p className="widget__note">
+          Not plotted:{' '}
+          {excluded.map((track) => research.tracks[track]?.language ?? track).join(', ')}{' '}
+          {excluded.length === 1 ? 'has' : 'have'} no seeded baseline, and a run with no baseline is
+          not a ratio of anything.
+        </p>
+      ) : null}
+    </figure>
+  )
 }
 
 /**
@@ -1107,11 +1522,22 @@ export function ResearchPage() {
       <h1>What the loop has tried</h1>
       <p className="lede">
         A model rewrites one track, the harness measures it against that track&rsquo;s own frozen
-        build, and a rule decides whether the rewrite is kept. The loop runs on Rust, Go and
-        TypeScript; pick one below. Both the kept and the discarded attempts are here, because a
-        search that only shows its hits is not a search. Every number was measured on one machine in
-        one session and is committed to the repository; CI re-measures the loss axis on every push
-        and fails if the code on this page no longer produces the number quoted beside it.
+        build, and a rule decides whether the rewrite is kept. The loop runs on{' '}
+        {/* Written from the data, not from a list. This sentence named three
+            languages in prose and went stale the moment a fourth was added, and
+            it would have gone stale again silently — there is no test that can
+            tell a hardcoded language list is out of date, because the sentence
+            is still perfectly valid English. */}
+        {all.map((name, index) => (
+          <span key={name}>
+            {index > 0 ? (index === all.length - 1 ? ' and ' : ', ') : ''}
+            {research.tracks[name]?.language ?? name}
+          </span>
+        ))}
+        ; pick one below. Both the kept and the discarded attempts are here, because a search that
+        only shows its hits is not a search. Every number was measured on one machine in one session
+        and is committed to the repository; CI re-measures the loss axis on every push and fails if
+        the code on this page no longer produces the number quoted beside it.
       </p>
 
       <fieldset className="research__tracks">
@@ -1193,6 +1619,16 @@ export function ResearchPage() {
         if the number went down&rdquo; drifts toward keeping its own bad ideas within about ten
         experiments, and then the log stops being evidence of anything.
       </p>
+
+      <h2>Every language, on one pair of axes</h2>
+      <p>
+        The next chart is the only one on this page that puts two languages next to each other, and
+        it is placed here for that reason rather than under the switcher: everything below it is
+        about whichever track you have selected, and the question it answers &mdash; can the loop
+        improve a model <em>in this language</em>, or only in the one it has been run against
+        &mdash; is a question about all of them at once.
+      </p>
+      <CrossTrackScatter />
 
       <h2>Every run, on both axes</h2>
       <ParetoScatter track={track} />

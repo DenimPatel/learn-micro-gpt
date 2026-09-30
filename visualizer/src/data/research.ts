@@ -197,6 +197,103 @@ export function lossTicks(scale: Scale, count = 4): number[] {
   return niceTicks(scale.min, scale.max, count)
 }
 
+// --- across tracks -----------------------------------------------------------
+
+/**
+ * One measured run, as a multiple of its own track's frozen comparator.
+ *
+ * `lossRatio` and `speedRatio` are both 1.0 at that track's session baseline, so
+ * the two numbers are "how many times its own starting point", which is the only
+ * form in which a Go steps-per-second and a C steps-per-second can share an axis.
+ */
+export interface RelativeRun {
+  row: ResearchRow
+  track: ResearchTrack
+  language: string
+  lossRatio: number
+  speedRatio: number
+  onFrontier: boolean
+}
+
+/** A track that can be placed on a ratio axis at all, with its runs. */
+export interface PlottableTrack {
+  track: ResearchTrack
+  language: string
+  runs: RelativeRun[]
+  /** How many of the runs are on this track's own frontier. */
+  frontierCount: number
+  /** The lowest loss ratio any kept or discarded run reached. 1.0 if none beat it. */
+  bestLossRatio: number
+  /** The highest speed ratio any run reached. 1.0 if none beat it. */
+  bestSpeedRatio: number
+  keepCount: number
+}
+
+/**
+ * Every track's runs, normalised against that track's own session baseline.
+ *
+ * ## Why this exists, and why the ratios are the only honest version of it
+ *
+ * This page says in three separate places that a steps-per-second on one track
+ * is not a steps-per-second on another, and it means it: the C port runs at
+ * 27,000 steps per second and the TypeScript port at 245, which is 110x, and
+ * the two numbers are not 110x apart in any comparable sense -- they are the
+ * rate of two different implementations of the same algorithm on the same
+ * machine, each measured against its own frozen comparator. Plotting them on one
+ * axis would produce a picture that is *visually* true (the C cloud really is
+ * higher) and *substantively* false (nothing about the C port being faster says
+ * the loop did better on C). It is the same mistake as ranking a Go build
+ * against a Rust build measured against different comparators, which is why
+ * `bestRow` refuses to borrow a number from another track.
+ *
+ * Dividing each run by its own baseline removes the part that cannot be compared
+ * and keeps the part that can: how far the loop moved that track, as a multiple
+ * of where that track started. After it, all four comparators sit at exactly
+ * (1.0, 1.0) -- the same point, by construction, which is the clearest possible
+ * statement that the axes are relative. A reader asking "how well does the system
+ * optimise, in each language" is asking exactly that question, and the answer is
+ * a ratio.
+ *
+ * ## Why a track can be missing
+ *
+ * A track with no baseline has nothing to be a ratio *of*, and a track with no
+ * baseline and no runs has nothing to plot at all. Both are dropped rather than
+ * drawn at zero: a run plotted against a missing baseline would sit at infinity,
+ * and drawing it at 0.0 would be a fabrication. The caller is expected to report
+ * which tracks it left out, because a silently shorter chart reads as "that
+ * language has not been tried" when the real reason may be that its baseline has
+ * not been seeded.
+ */
+export function relativeRuns(): PlottableTrack[] {
+  const placed: PlottableTrack[] = []
+  for (const track of tracks()) {
+    const baseline = baselineRow(track)
+    if (!baseline || !(baseline.loss > 0) || !(baseline.steps_per_sec > 0)) continue
+    const frontier = new Set(frontierIds(track))
+    const language = research.tracks[track]?.language ?? track
+    const runs: RelativeRun[] = measuredRows(track)
+      .filter((row) => row.steps_per_sec > 0)
+      .map((row) => ({
+        row,
+        track,
+        language,
+        lossRatio: row.loss / baseline.loss,
+        speedRatio: row.steps_per_sec / baseline.steps_per_sec,
+        onFrontier: frontier.has(row.run_id),
+      }))
+    placed.push({
+      track,
+      language,
+      runs,
+      frontierCount: runs.filter((run) => run.onFrontier).length,
+      bestLossRatio: runs.reduce((best, run) => Math.min(best, run.lossRatio), 1),
+      bestSpeedRatio: runs.reduce((best, run) => Math.max(best, run.speedRatio), 1),
+      keepCount: runs.filter((run) => run.row.status === 'keep').length,
+    })
+  }
+  return placed
+}
+
 // --- formatting -------------------------------------------------------------
 
 /** A signed percentage with one decimal, and an explicit sign even at zero. */

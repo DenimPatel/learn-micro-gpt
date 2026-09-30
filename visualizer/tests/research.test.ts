@@ -18,6 +18,7 @@ import {
   rowTrack,
   statusCount,
   trackRows,
+  relativeRuns,
   tracks,
 } from '../src/data/research'
 
@@ -431,6 +432,82 @@ describe('the diff tally', () => {
     for (const track of tracks()) {
       if (track === 'rust' || research.baselines[track] !== null) continue
       expect(bestVsBaselinePatch(track), `${track} has no patch of its own`).toBe('')
+    }
+  })
+})
+
+/**
+ * `relativeRuns()` — the normalisation the cross-track chart rests on.
+ *
+ * The chart claims that dividing every run by its own track's baseline is the
+ * only honest way to put four languages on one pair of axes, and that after the
+ * division all four comparators coincide at exactly (1.0, 1.0). Both are
+ * assertions about arithmetic, and both are the kind that quietly stops being
+ * true: a baseline that moves, a track seeded with a zero, a crash row that is
+ * not excluded and divides by nothing.
+ */
+describe('the cross-track normalisation', () => {
+  it('puts the baseline of every track at exactly 1.0 on both axes', () => {
+    // The property the chart's origin ring claims. If this is not exactly 1.0 for
+    // every track, the four baselines are at different places and the chart is
+    // drawing four origins and calling them one.
+    const placed = relativeRuns()
+    expect(placed.length).toBeGreaterThan(0)
+    for (const group of placed) {
+      const baseline = group.runs.find((run) => run.row.status === 'baseline')
+      expect(baseline, `${group.track} has a baseline row`).toBeDefined()
+      expect(baseline?.lossRatio, `${group.track} baseline loss ratio`).toBeCloseTo(1, 10)
+      expect(baseline?.speedRatio, `${group.track} baseline speed ratio`).toBeCloseTo(1, 10)
+    }
+  })
+
+  it('never plots a crash, and never divides by a zero', () => {
+    for (const group of relativeRuns()) {
+      for (const run of group.runs) {
+        expect(run.row.status, `run ${run.row.run_id} is a crash`).not.toBe('crash')
+        expect(Number.isFinite(run.lossRatio), `run ${run.row.run_id} loss ratio`).toBe(true)
+        expect(Number.isFinite(run.speedRatio), `run ${run.row.run_id} speed ratio`).toBe(true)
+        // A log axis over a non-positive ratio puts the point off the plot with
+        // no error, so this is a real condition rather than belt and braces.
+        expect(run.speedRatio, `run ${run.row.run_id} speed ratio is positive`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('reproduces the raw numbers, so it is a division and not a re-derivation', () => {
+    for (const group of relativeRuns()) {
+      const baseline = research.baselines[group.track]
+      expect(baseline).not.toBeNull()
+      for (const run of group.runs) {
+        expect(run.lossRatio).toBeCloseTo(run.row.loss / baseline!.loss, 12)
+        expect(run.speedRatio).toBeCloseTo(run.row.steps_per_sec / baseline!.steps_per_sec, 12)
+      }
+    }
+  })
+
+  it('reports a best of 1.0 for a track nothing improved, rather than 0 or infinity', () => {
+    for (const group of relativeRuns()) {
+      // 1.0 is the comparator. Reporting the minimum of a set that happens to be
+      // worse than 1.0 is honest; reporting 0 would claim a loss of zero.
+      expect(group.bestLossRatio).toBeGreaterThan(0)
+      expect(group.bestLossRatio).toBeLessThanOrEqual(1)
+      expect(group.bestSpeedRatio).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('only places a track that has a baseline to be a ratio of', () => {
+    for (const group of relativeRuns()) {
+      expect(research.baselines[group.track], `${group.track} has a baseline`).not.toBeNull()
+    }
+  })
+
+  it('marks frontier runs from the frontier of that track only', () => {
+    for (const group of relativeRuns()) {
+      const own = new Set(research.pareto[group.track] ?? [])
+      for (const run of group.runs) {
+        expect(run.onFrontier).toBe(own.has(run.row.run_id))
+      }
+      expect(group.frontierCount).toBe(group.runs.filter((r) => r.onFrontier).length)
     }
   })
 })

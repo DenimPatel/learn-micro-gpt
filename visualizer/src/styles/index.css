@@ -2713,6 +2713,37 @@ select:hover {
   stroke: var(--chart-line);
   stroke-width: 1.5;
 }
+/* The cross-track chart's marks. The fill is the track's ink, set inline, so the
+   only thing to say here is that the track colour and the status are separate
+   channels: hue says which language, size and opacity say which verdict. A
+   discard is a third smaller and a third fainter than a keep at the same ink,
+   which is what lets four hues and three verdicts share one plot. */
+.research__point--relative {
+  stroke: var(--paper);
+  fill-opacity: 0.55;
+}
+.research__point--relative.is-frontier {
+  /* A `--paper` ring of 2px: the frontier mark has to be separable from a
+     hundred same-ink neighbours, and a paper-coloured gap does that without
+     spending a second hue on it. */
+  stroke: var(--paper);
+  stroke-width: 2;
+  fill-opacity: 1;
+}
+/* The 1.0 crosshair. Heavier than the grid and in `--ink`, because it is the only
+   pair of lines on the cross-track chart that carries meaning: left of it is a
+   lower loss than the frozen port, above it is faster. */
+.research__axis--reference {
+  stroke: var(--edge-strong);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+/* A track's own frontier line, in that track's ink, set inline. */
+.research__frontier[style] {
+  stroke-width: 1.2;
+  stroke-dasharray: none;
+  opacity: 0.55;
+}
 .research__point.is-best {
   stroke: var(--accent);
   stroke-width: 1.5;
@@ -2763,6 +2794,18 @@ select:hover {
   fill: var(--muted);
 }
 
+/* One ink per track, for the cross-track chart.
+   Aliases of tokens that already exist in both themes rather than new hex values,
+   so the dark theme is the light theme's tokens instead of a second palette.
+   Assigned close to each language's own: amber for Rust, green for Go, the site's
+   accent for TypeScript, rose for C. */
+:root {
+  --track-rust: var(--amber-ink);
+  --track-go: var(--moss-ink);
+  --track-typescript: var(--accent);
+  --track-c: var(--rose-ink);
+}
+
 /* The legends. `.chart__legend` lays them out; these are the marks, and each is
    the same shape the plot uses for the same thing. */
 .research__key-dot,
@@ -2780,6 +2823,53 @@ select:hover {
 }
 .research__key-dot--keep {
   background: color-mix(in oklab, var(--moss-ink) 62%, var(--paper));
+}
+/* The cross-track legend's non-track marks: the shared comparator ring and the
+   frontier mark. The ring is the `.research__point--baseline` treatment at
+   legend size, so the legend swatch is the same shape as the plot's. */
+.research__key-dot--hollow {
+  background: var(--surface-1);
+  border: 1.5px solid var(--ink);
+}
+.research__key-dot--ring {
+  background: var(--muted);
+  box-shadow: 0 0 0 2px var(--paper);
+}
+.research__key-dot--inline {
+  display: inline-block;
+  margin-right: 6px;
+  vertical-align: baseline;
+}
+.research__key--tracks {
+  gap: 14px;
+}
+/* The per-language table under the cross-track chart. */
+.research__matrix {
+  width: 100%;
+  margin-top: 1.2rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.research__matrix caption {
+  margin-bottom: 0.5rem;
+  color: var(--muted);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+.research__matrix th,
+.research__matrix td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--edge-soft);
+  text-align: right;
+}
+.research__matrix thead th {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  font-weight: 550;
+}
+.research__matrix th[scope='row'],
+.research__matrix thead th:first-child {
+  text-align: left;
 }
 .research__key-dot--discard {
   background: color-mix(in oklab, var(--muted) 62%, var(--paper));
