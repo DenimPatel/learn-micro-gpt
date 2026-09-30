@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 262,
+    "experiments": 263,
     "keep": 113,
-    "discard": 10,
+    "discard": 11,
     "crash": 139
   },
   "pareto": {
@@ -4245,6 +4245,21 @@
       "reason": "",
       "description": "Tie the token embedding to the output head and update the shared matrix once with summed gradients",
       "measured": "2026-09-30T19:00:14Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0266",
+      "parent": "e154401928c28e709c36be8066aecf2a69bc5d8f",
+      "track": "c",
+      "loss": 2.333334,
+      "steps_per_sec": 48930.860487,
+      "loss_gain": 0.001451,
+      "speed_gain": 2.721253,
+      "grad_ratio": 1.005469,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.1%, speed +272.1%; failing learned, loss_material",
+      "description": "Add a smoothed dataset bigram logit prior to the output distribution",
+      "measured": "2026-09-30T19:02:07Z",
       "has_record": true
     }
   ],

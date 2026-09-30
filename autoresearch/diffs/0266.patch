@@ -1,0 +1,69 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -103,6 +103,9 @@ static float ALIGN128 mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
+ 
+ /* Direct output-class prior learned alongside the language model. */
+ static float ALIGN128 lm_bias[MAX_VOCAB];
++
++/* Fixed smoothed log P(next character | current character). */
++static float ALIGN128 bigram_logit[MAX_VOCAB][MAX_VOCAB];
+ 
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+@@ -399,6 +402,37 @@ static void load_data(const char *path) {
+   BOS_TOKEN = vc;
+   vocab_size = vc + 1;
+ 
++  /* Count exactly the transitions used by the truncated training windows. */
++  memset(bigram_logit, 0, sizeof(bigram_logit));
++  for (int doc = 0; doc < num_docs; doc++) {
++    int transitions = doc_lens[doc] + 1;
++    if (transitions > BLOCK_SIZE)
++      transitions = BLOCK_SIZE;
++
++    int prev = BOS_TOKEN;
++    for (int pos = 0; pos < transitions; pos++) {
++      int next = pos < doc_lens[doc]
++                     ? char_to_idx[(int)docs_raw[doc][pos]]
++                     : BOS_TOKEN;
++      bigram_logit[prev][next] += 1.0f;
++      prev = next;
++    }
++  }
++
++  /* Turn counts into a smoothed conditional log-probability vector. */
++  const float smoothing = 0.1f;
++  for (int prev = 0; prev < vocab_size; prev++) {
++    float total = 0.0f;
++    for (int next = 0; next < vocab_size; next++)
++      total += bigram_logit[prev][next];
++    float denominator = total + smoothing * (float)vocab_size;
++    for (int next = 0; next < vocab_size; next++)
++      bigram_logit[prev][next] =
++          logf((bigram_logit[prev][next] + smoothing) / denominator);
++  }
++
+   /* Init shuffle order */
+   for (int i = 0; i < num_docs; i++)
+     doc_order[i] = i;
+@@ -570,8 +604,9 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+ 
+   memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
+   linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
++  const float *transition = bigram_logit[token_id];
+   for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++    saved_logits[pos_id][i] += lm_bias[i] + transition[i];
+   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
+ }
+@@ -773,8 +808,9 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+   }
+ 
+   linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
++  const float *transition = bigram_logit[token_id];
+   for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++    logits_out[i] += lm_bias[i] + transition[i];
+ }
+ 
+ /* ── Main ────────────────────────────────────────────────────────────── */
