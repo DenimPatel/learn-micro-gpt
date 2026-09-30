@@ -1,4 +1,32 @@
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
+
+/**
+ * The number of research tracks, read from the data the page is built against
+ * rather than written down here.
+ *
+ * A literal `3` in this file was a second copy of the track list, and the second
+ * copy is what failed: adding C made the page render four buttons and this
+ * assertion still asked for three. It failed loudly, which is the good outcome,
+ * but "add a track" should not mean "find the literals".
+ *
+ * Read from `autoresearch/results.json` rather than from the page, so that the
+ * assertion still has teeth: it compares the switcher against the data it claims
+ * to render, and a track present in the bundle but missing from the switcher
+ * would still fail.
+ */
+const RESEARCH_TRACKS = (
+  JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../autoresearch/results.json', import.meta.url)),
+      'utf-8',
+    ),
+  ) as { tracks: Record<string, { language: string }> }
+).tracks
+const RESEARCH_TRACK_COUNT = Object.keys(RESEARCH_TRACKS).length
+/** The button labels, which are languages rather than track keys. */
+const RESEARCH_LANGUAGES = Object.values(RESEARCH_TRACKS).map((track) => track.language)
 
 /**
  * `#/research`, against a production build served from a subpath.
@@ -120,7 +148,18 @@ test.describe('the research page', () => {
     // one has to actually change what the page says.
     await page.goto('#/research')
     const buttons = page.locator('.research__track')
-    await expect(buttons).toHaveCount(3)
+    await expect(buttons).toHaveCount(RESEARCH_TRACK_COUNT)
+    // The exact set of labels, compared against the data and in the data's own
+    // order -- which is a stronger claim than a set, and is what the switcher
+    // renders since it iterates `Object.keys(research.tracks)`.
+    //
+    // A count alone would pass on four buttons reading "Rust Rust Go Go", so the
+    // labels are compared. They are read from `.research__track-label` rather than
+    // with `filter({ hasText })`, because Playwright's `hasText` string form is a
+    // case-insensitive *substring* match: `hasText: 'C'` matches "TypeScript" too,
+    // which is the same trap that let a page-wide innerText assertion pass against
+    // another track's control.
+    await expect(buttons.locator('.research__track-label')).toHaveText(RESEARCH_LANGUAGES)
     await expect(buttons.filter({ hasText: 'Rust' })).toHaveAttribute('aria-pressed', 'true')
 
     // Asserted on the source file and the build command rather than on the

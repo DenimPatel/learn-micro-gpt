@@ -1124,7 +1124,7 @@ export function ResearchPage() {
             aria-pressed={name === track}
             onClick={() => setTrack(name)}
           >
-            {research.tracks[name].language}
+            <span className="research__track-label">{research.tracks[name].language}</span>
             <span className="research__track-note">
               {trackRows(name).filter((row) => row.status === 'keep').length} kept
             </span>
