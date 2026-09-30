@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 240,
+    "experiments": 241,
     "keep": 105,
     "discard": 9,
-    "crash": 126
+    "crash": 127
   },
   "pareto": {
     "rust": [
@@ -3915,6 +3915,21 @@
       "reason": "the patch did not apply",
       "description": "Add a smoothed corpus-frequency logit bias with Adam updates",
       "measured": "2026-09-30T06:01:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0244",
+      "parent": "892b0953e42ee9bcd5eb692f93eadbd2a58c28d2",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Remove the redundant pre-layer RMSNorm and accumulate attention gradients in place to reduce per-step work",
+      "measured": "2026-09-30T06:06:43Z",
       "has_record": true
     }
   ],
