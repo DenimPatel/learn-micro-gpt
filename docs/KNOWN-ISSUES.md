@@ -9,76 +9,120 @@ ship it at all. A reader who is told "the C port's backward pass is wrong, here
 is the number, here is the test" can decide what to do with that. A reader who
 assumes every tab on the site is correct has no way to find out.
 
+Entries keep their original numbers after they are fixed, because the rest of
+this file and the code that cites it refer to them by number. A fixed entry is
+marked **fixed** and stays as the record of what the number was, what the
+diagnosis was, and — where the diagnosis turned out to be incomplete — what the
+measurement said instead. Issue 1 is the one that got that treatment, and it is
+the reason the diagnosis is a measurement and not a guess.
+
 ---
 
-## 1. The C port's backward pass is not a correct gradient
+## 1. The C port's backward pass was not a correct gradient
 
 **Track:** `implementations/c/microgpt.c` (the parity track)
-**Status:** open. Locked by `implementations/c/test_gradients.c`.
-**Severity:** high for anyone studying gradients, low for anyone studying speed.
+**Status:** **fixed** in `7b63330`. Kept here, and kept under its original number,
+because it is the issue the rest of this file is built around and because the
+diagnosis it originally carried was wrong in an instructive way.
+**Severity:** was high for anyone studying gradients, low for anyone studying speed.
 
-### What is wrong
+### What was wrong
 
-`backward_all()` does not correctly propagate the key and value gradients of
-*earlier* positions back through those positions' own computation to their
-embeddings. In the Python reference this happens for free: `k[t]` and `v[t]`
-are `Value` objects produced by earlier calls to `gpt()`, so the graph already
-contains the path, and `backward()` follows it. In C there is no graph, so
-somebody has to write that path down — and it is not written down correctly.
+Two independent bugs, and the one the original entry named was the smaller of
+them.
 
-Only the output head's gradient is right.
+**The dominant bug was an aliasing mistake in the forward pass.**
+`forward_pos()` ran its residual stream through `saved_x_embed[pos_id]` directly:
 
-### How it was found
+```c
+float *x = saved_x_embed[pos_id];
+...
+rmsnorm_fwd(x, saved_x_normed_pre[pos_id], N_EMBD, &saved_rms_pre[pos_id]);
+memcpy(x, saved_x_normed_pre[pos_id], N_EMBD * sizeof(float));   /* overwrites the input */
+```
 
-By finite differences, which is exactly what the deleted `test_gradients.c` used
-to *claim* to do and did not. It prints a hardcoded number and returns 0; it
-could not fail.
+The pre-layer rmsnorm is the only one of the three norms in the block that does
+not first copy its input somewhere private — the attention and MLP norms both
+`memcpy` into `saved_x_residual_*` — so it overwrote the only surviving record of
+its own input with its own output. `backward_all()`'s last call then passed that
+corrupted vector to `rmsnorm_bwd()` as the `x` it differentiates, so the
+`coeff * x` term, which is the entire reason that argument exists, was computed
+against the wrong vector.
 
-### The measurement
+**The second bug is the one this entry originally described, and it was real.**
+The key and value gradients of *earlier* positions were never propagated back
+through those positions' own computation. In the Python reference `k[t]` and
+`v[t]` are `Value` objects from an earlier `gpt()` call, so the tape already
+holds the route back to that position's embeddings and `backward()` follows it
+for free. In C there is no tape, so somebody has to write that route down. The
+old code noticed this in a comment, banked the gradients into `dk_global` and
+`dv_global`, and then pushed them straight into the embeddings at the end of the
+pass — skipping the attention output projection, the MLP, and every layer below.
+It is now banked per key position and consumed by that position's own pass, which
+is sound because the query loop walks positions downwards and no query before `t`
+can read key `t`.
 
-A directional derivative over all 4,192 parameters at once, against a fixed
-pseudo-random direction `d`:
+### How the original diagnosis was wrong, and how it was caught
+
+The measured symptom was one number: a directional derivative over all 4,192
+parameters at `-0.12x` the truth — wrong sign, order of magnitude off. The entry
+blamed the missing K/V path alone. Splitting the directional derivative by
+parameter block said otherwise:
+
+| block | analytic | numeric |
+| --- | --- | --- |
+| `wte` | +14.182955 | -0.220489 |
+| `wpe` | -4.959895 | -0.089119 |
+| `lm_head` | -0.768743 | -0.769409 |
+| `wq` | -0.000700 | -0.000225 |
+| `wk+wv+wo` | -0.161552 | -0.161089 |
+| `fc1+fc2` | +0.242907 | +0.236522 |
+
+Every weight block was already correct except the two embedding ones, which were
+out by a factor of about sixty. An error in a gradient *path* shows up in
+everything downstream of it; an error in the last step shows up in one block. Two
+more measurements closed it: scaling the K/V gradients by 1000 moved the total
+only from 8.53 to 36.26, so the K/V path was worth about 3% of the error and
+could not be the cause; and replacing `rmsnorm` with the identity in both
+directions made every block match at once.
+
+### The measurement, after the fix
 
 ```
-analytic  <grad, d>  = +8.534968
+analytic  <grad, d>  = -1.000142
 numeric   (L(w+hd) - L(w-hd)) / 2h  =  -1.032066   at h = 1e-2
                                                   =  -1.006564   at h = 3e-3
 ```
 
-For a correct gradient that ratio is `1.000`. It is `-0.12`: the wrong sign, and
-an order of magnitude off. Stable across two step sizes, so it is not a
-measurement artifact.
+Ratio `numeric / analytic` = **1.03**, from a previously recorded **-0.12**. The
+remaining 3% is the finite difference's own float32 noise, not gradient error —
+issue 2 below is about exactly that, and it is why `DIRECTIONAL_RATIO_TOLERANCE`
+is 0.06 rather than something tighter.
 
-Per-parameter, the picture is consistent — analytic vs central difference on the
-document `mary`:
+`test_gradients.c` had this recorded as a *known-defect lock* rather than a
+failing test, so that the number could not silently change and so that fixing it
+would trip an assertion demanding the lock be flipped. It did, and it is now an
+ordinary assertion: `the hand-written backward pass is a correct gradient, end to
+end`.
 
-| parameter | analytic | numeric |
-| --- | --- | --- |
-| `lm_head[3]` | 0.001064 | 0.001073 |
-| `wte[0]` | wrong | -0.2639 |
-| `wpe[1]` | wrong | -0.0682 |
-| `attn_wq[0][0]` | wrong | 0.000119 |
+### Why the loss curve never showed any of this
 
-### Why the loss curve does not show it
-
-This is the part worth understanding, because it is a general lesson and not a
-defence of the bug.
-
-**The parity gate passes.** `make parity` reports the C track within ±7% of the
-reference's smoothed loss, with a +17.6% trend against the reference's +18.5%.
-The forward pass is correct, and the model learns.
+**The parity gate passed the whole time.** `make parity` reports the C track
+within ±7% of the reference's smoothed loss with a +18.5% trend against the
+reference's +18.7%. The forward pass was always correct, and the model learned.
 
 **Adam is nearly scale-invariant per parameter.** The update is
 `lr * m_hat / (sqrt(v_hat) + eps)`. If every gradient in a block is wrong by the
-same *factor*, then `m_hat` and `sqrt(v_hat)` are both wrong by that factor,
-they cancel, and the update is almost unchanged. So a systematically
-mis-scaled gradient — and a missing gradient path is exactly that — is largely
-invisible to both the loss curve and a statistical loss-band comparison.
+same *factor*, then `m_hat` and `sqrt(v_hat)` are both wrong by that factor, they
+cancel, and the update is almost unchanged. So a systematically mis-scaled
+gradient — and a missing gradient path is exactly that — is largely invisible to
+both the loss curve and a statistical loss-band comparison. What it cannot hide
+is a sign flip, which is why the measured ratio was negative at all.
 
-This is the real argument for the finite-difference test the plan asked for and
-the deleted one did not perform: **a loss curve is evidence that something
-learned, not evidence that the thing that learned was the gradient.** Only a
-directional derivative, or an independent autograd engine, can tell those apart.
+This is the real argument for the finite-difference test: **a loss curve is
+evidence that something learned, not evidence that the thing that learned was the
+gradient.** Only a directional derivative, or an independent autograd engine, can
+tell those apart.
 
 ### What the C track is and is not good for
 
@@ -87,26 +131,19 @@ directional derivative, or an independent autograd engine, can tell those apart.
 | studying the forward pass, the architecture, the shapes | yes — the forward is correct |
 | measuring the speed of this algorithm | yes — that is the point of the track |
 | the `scaled` config for throughput | yes — it is excluded from parity for the same reason |
-| reading as an example of manual backprop | **no** — it is an example of manual backprop with a bug in it |
+| reading as an example of manual backprop | yes — and now that it has been read by a finite difference, which is what makes that claim mean anything |
 | comparing gradient magnitudes across languages | **no** |
 
-`docs/ADDING-A-LANGUAGE.md` therefore requires a directional-derivative check
-before any new track is allowed to claim parity. That requirement is the direct
-consequence of this issue.
+The `scaled` config received the same two fixes in the same commit. It is not
+covered by a finite-difference test — `test_gradients.c` includes `microgpt.c` and
+nothing else — so the claim "its gradient is correct" rests on the two changes
+being textually identical, not on a measurement. If that track is ever promoted
+to a candidate, the probe is what will check it, and that is the point of issue
+6's band being a tripwire rather than a precision measurement.
 
-### Fixing it
-
-The fix is to push `dk_global[t]` and `dv_global[t]` back through *position t's*
-`attn_wk`/`attn_wv` inputs, its pre-attention `rmsnorm`, and then its residual
-add — and, critically, through the residual connection into the MLP block as
-well, not only into the embedding. The scaffolding is already there
-(`dk_global`, `dv_global`, the saved `x_normed_attn[t]` and `x_embed[t]`
-buffers); the arithmetic along the path is what needs auditing.
-
-When it is fixed, `test_gradients.c` will fail on
-`the known gradient defect has not changed`, which is the prompt to set
-`KNOWN_DIRECTIONAL_RATIO` to 1.0, delete the `KNOWN DEFECT` block, and delete
-this section.
+`docs/ADDING-A-LANGUAGE.md` requires a directional-derivative check before any new
+track is allowed to claim parity. That requirement is the direct consequence of
+this issue, and the C track is now the one that satisfies it.
 
 ---
 
@@ -167,17 +204,19 @@ recorded number in this repository describe code that no longer exists upstream.
 ## 4. `backward_all` uses a `static` initialisation flag
 
 **Track:** `implementations/c/microgpt.c`
-**Status:** benign, but fragile.
+**Status:** **fixed** in `7b63330`, as a side effect of fixing issue 1.
 
-The K/V gradient accumulators are zeroed when `pos == n - 1 && !dk_dv_initialized`,
-and `dk_dv_initialized` is reset at the end of the pass. It works, but the
-"first call" condition and the reset live ~60 lines apart, and a future edit that
-returns early between them would leave stale accumulators contributing to the
-next document's gradients.
+The K/V gradient accumulators used to be zeroed when
+`pos == n - 1 && !dk_dv_initialized`, with `dk_dv_initialized` reset at the end
+of the pass — a "first call" condition and its reset about 60 lines apart, which
+a future early return between them would have turned into stale accumulators
+contributing to the next document's gradients.
 
-Not a bug today. Noted because it is the kind of thing that becomes one
-silently, and because the C track is explicitly not a model of good practice —
-see issue 1.
+The rewrite of the K/V path removed the flag entirely. The per-key banks
+(`dk_pending`, `dv_pending`) are now cleared once at the top of every
+`backward_all()` call, next to `inv_n`, and each is read exactly once — by the
+pass for the position that produced the key. There is no longer a "first call"
+condition to get wrong.
 
 ---
 
@@ -332,7 +371,9 @@ Narrowing the band to each port's measured ratio would fix the arithmetic and
 break the reason the band exists. The point of a finite-difference check is to
 catch a class of failure — a zero gradient, a sign flip, a missing chain — and
 those are not close calls: a discarded gradient measures 0, a sign slip negative,
-the C port's broken backward pass −0.12. A band of 0.5–2.0 fails every one of them
+and the C port's backward pass measured -0.12 until issue 1 was fixed — the one
+real sign slip the band was built to catch, and the only track that has ever
+produced one. A band of 0.5–2.0 fails every one of them
 by a factor of four or more, on every port, and keeps a uniform scale error of
 roughly 2x on the Rust and Go tapes. A band tightened around each port's own number
 would catch more, and would also stop catching the day a port's *baseline* moved,

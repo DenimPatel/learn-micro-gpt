@@ -113,6 +113,7 @@ help:
 	@echo
 	@echo "AUTORESEARCH  (a model improves the Rust track; see docs/AUTORESEARCH.md)"
 	@echo "  autoresearch-rust        run the loop, committing and pushing every experiment"
+	@echo "  autoresearch-c           the same, on the C track (TRACK=c)"
 	@echo "  autoresearch-verify      what CI runs: rebuild, re-check, re-measure the loss axis"
 	@echo "  autoresearch-render      regenerate autoresearch/results.json from the ledger"
 	@echo
@@ -238,12 +239,18 @@ bench:
 #   make autoresearch-rust                          # one Rust experiment, pushed
 #   make autoresearch-rust EXPERIMENTS=5
 #   make autoresearch-rust EXPERIMENTS=1 PUSH=0        # commit locally, do not push
-#   make autoresearch-rust TRACK=go                    # or TRACK=typescript
+#   make autoresearch-rust TRACK=go                    # or TRACK=typescript, TRACK=c
 #   make autoresearch-rust RESEARCH_BRANCH=my-branch   # the branch it must be on
 #
 # TRACK picks which implementation to optimise. Each is measured against its own
 # frozen comparator in its own candidate directory, so a Go steps-per-second says
 # nothing about the Rust one and the two never compete on the same axis.
+#
+# C is also spelled out as its own target below, because it is the one track that
+# could not be a candidate at all until docs/KNOWN-ISSUES.md issue 1 was fixed:
+# its hand-written backward pass measured a gradient ratio of -0.12, which is
+# outside the harness's own [0.5, 2.0] tripwire, so its baseline could never have
+# been seeded. `TRACK=c` and `make autoresearch-c` are the same thing.
 #
 # It commits and pushes one commit per experiment, so the GitHub Page updates
 # without anyone pressing anything. Note the cost of that: CI cancels
@@ -264,6 +271,9 @@ autoresearch-rust:
 		--branch $(if $(RESEARCH_BRANCH),$(RESEARCH_BRANCH),main) \
 		$(if $(PUSH_DELAY),--push-delay $(PUSH_DELAY),) \
 		$(if $(filter 0,$(PUSH)),--no-push,)
+
+autoresearch-c:
+	@$(MAKE) autoresearch-rust TRACK=c
 
 # What CI runs: no API key, no loop, no writes to the candidate. Rebuilds the
 # candidate, checks the gradient probe, confirms the committed source still
@@ -324,5 +334,5 @@ distclean: clean
 .PHONY: setup setup-python setup-web run run-python run-c run-scaled \
         run-go run-rust run-ts validate test test-web install-web \
         verify-provenance provenance trace trace-check parity bench c-test \
-        autoresearch-rust autoresearch-verify autoresearch-render \
+        autoresearch-rust autoresearch-c autoresearch-verify autoresearch-render \
         dev build preview lint fmt check clean distclean

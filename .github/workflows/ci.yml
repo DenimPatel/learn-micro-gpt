@@ -175,9 +175,11 @@ jobs:
         run: make -C implementations/c test
 
       - name: The C gradient and invariant tests
-        # Includes the locked known-issue check on the backward pass's directional
-        # derivative. If that number moves, the gradient code was edited without
-        # anyone re-checking it.
+        # Includes the directional-derivative assertion on the backward pass, over
+        # a 4,192-parameter direction. Issue 1 was a lock on a *measured* -0.12
+        # rather than a passing test; the fix turned it into a real assertion, and
+        # this step is now the thing that would catch the gradient being edited
+        # without anyone re-checking it.
         run: make -C implementations/c check
 
       - name: Build the Go track
@@ -206,18 +208,39 @@ jobs:
         working-directory: autoresearch/candidate-ts
         run: npm ci --no-audit --no-fund && npx tsc --noEmit
 
+      - name: Build the research candidate (the tuned C track)
+        # No setup step, unlike Go, Rust and TypeScript: `cc` is already on the
+        # runner, which is the only toolchain requirement this track has. The
+        # lint is `-fsyntax-only` at `-Wall -Wextra` rather than the other three
+        # tracks' warning-is-error bar, and that is a deliberate difference
+        # rather than an oversight -- see the `lint_track` branch for why.
+        #
+        # `-fsyntax-only` so the check compiles without leaving a binary behind
+        # in a directory whose recorded source digest CI is about to compare.
+        working-directory: autoresearch/candidate-c
+        run: cc -O3 -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -fsyntax-only microgpt.c
+
       - name: Every gradient probe passes, on every track
-        # The three probes, run directly rather than through the harness, so a
+        # The four probes, run directly rather than through the harness, so a
         # failure here names the file that moved instead of arriving as "the
         # gradient check did not pass" from inside a measurement. They are the only
         # thing standing between a model and a broken gradient that still trains:
-        # `docs/KNOWN-ISSUES.md` issue 1 is a port whose loss curve tracks the
-        # reference to within 7% and still has a gradient that is wrong by -8x.
+        # `docs/KNOWN-ISSUES.md` issue 1 is a port whose loss curve tracked the
+        # reference to within 7% while its gradient was wrong by -8x, and the C
+        # port is now the one that measures 1.00 -- so it is the tripwire, not the
+        # demonstration.
+        #
+        # The C probe is compiled into /tmp rather than the candidate directory,
+        # because it `#include`s the candidate's own source and a binary dropped in
+        # there would show up in the source-digest comparison below.
         run: |
           cargo test --release --manifest-path autoresearch/candidate/Cargo.toml \
             --test gradient_check -- --nocapture
           ( cd autoresearch/candidate-go && go test -run TestGradcheck -v . )
           ( cd autoresearch/candidate-ts && npx tsx src/probe.ts )
+          ( cd autoresearch/candidate-c && cc -O2 -Wno-unused-function \
+              -o /tmp/probe-c probe.c -lm \
+            && /tmp/probe-c --input ../../data/input.txt )
 
       - name: The committed research results still describe the committed candidate
         # No API key, no OpenRouter, no loop, and nothing is written to the

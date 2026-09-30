@@ -56,8 +56,9 @@ Pareto rule, and `verdict()` is where it lives.
 
 `docs/KNOWN-ISSUES.md` issue 1 is the reason this repository is careful, and it is
 the reason the loop cannot just optimise loss. The C port's hand-written backward
-pass is wrong by a factor of -8, and its loss curve *still* tracks the reference
-to within 7%, and it *still* trains. A loss number cannot tell a correct gradient
+pass was wrong by a factor of -8, and its loss curve *still* tracked the reference
+to within 7%, and it *still* trained; it measures 1.03 now, but the argument is
+the one that number's history makes. A loss number cannot tell a correct gradient
 from a wrong one. Only a finite difference can.
 
 So every candidate is put through `autoresearch/candidate/tests/gradient_check.rs`
@@ -164,9 +165,9 @@ SPEED_TOL = 0.05
 
 #: Mirrors `tools/parity.py::MIN_RELATIVE_IMPROVEMENT`, and for the same reason:
 #: a candidate that does not learn at all must not be able to win on speed. The
-#: C port's broken gradient still achieves 17.6% windowed improvement, so this
-#: catches divergence but is nowhere near sufficient on its own. The gradient
-#: check is what catches a broken tape.
+#: C port's gradient used to be wrong by a factor of -8 and still achieved 17.6%
+#: windowed improvement, so this catches divergence but is nowhere near
+#: sufficient on its own. The gradient check is what catches a broken tape.
 MIN_RELATIVE_IMPROVEMENT = parity.MIN_RELATIVE_IMPROVEMENT
 
 #: The window the loss axis is read over. `tools/parity.py`'s trend gate uses 50
@@ -390,7 +391,31 @@ TRACKS: dict[str, Track] = {
         tool_hint="Install Node from https://nodejs.org/",
         fence="typescript",
         build_hint="`npx tsc --noEmit`",
-        loss_parse="trace",
+        loss_parse="stdout",
+    ),
+    "c": Track(
+        name="c",
+        language="C",
+        candidate_dir="candidate-c",
+        candidate_source="microgpt.c",
+        comparator_dir="c",
+        comparator_source="microgpt.c",
+        probe_path="probe.c",
+        probe_sha256="4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc",
+        dependency_note=(
+            "The link line is `-lm` and nothing else. `microgpt_simd.h` supplies "
+            "the 19 NEON intrinsics and 3 BLAS calls as real ones on aarch64 and "
+            "as small portable fallbacks everywhere else, which is what lets this "
+            "track build in CI on Linux. A candidate must not add a BLAS binding: "
+            "the reference's whole point is that the algorithm fits in one file, "
+            "and a port that reached for a library would be measuring the library."
+        ),
+        lint_command="`cc -fsyntax-only -Wall -Wextra`",
+        tool="cc",
+        tool_hint="Install a C compiler — on macOS the Xcode command line tools (`xcode-select --install`), on Debian `build-essential`",
+        fence="c",
+        build_hint="`cc -O3 -o microgpt microgpt.c -lm`",
+        loss_parse="stdout",
     ),
 }
 
@@ -865,6 +890,21 @@ def build_track(tool: str, track: Track, project_dir: Path) -> list[str]:
             raise ResearchError(f"go build failed\n{(result.stderr or '')[-3000:]}")
         return [str(out / "microgpt-go")]
 
+    if track.tool == "cc":
+        # Also into a temporary directory, for the same reason as Go: the
+        # comparator is a pinned directory and a binary dropped into it is a
+        # change to the frozen track. `-O3` and `-lm` are the whole link line.
+        out = Path(tempfile.mkdtemp(prefix="autoresearch-c-"))
+        _SCRATCH_ROOTS.append(out)
+        binary = out / "microgpt-c"
+        result = run_command(
+            [tool, "-O3", "-o", str(binary), track.candidate_source, "-lm"],
+            cwd=project_dir,
+        )
+        if result.returncode != 0:
+            raise ResearchError(f"cc failed\n{(result.stderr or '')[-3000:]}")
+        return [str(binary)]
+
     require_local_tsc(track, project_dir)
     result = run_command(["npx", "tsc", "--noEmit"], cwd=project_dir)
     if result.returncode != 0:
@@ -889,6 +929,20 @@ def lint_track(tool: str, track: Track, project_dir: Path) -> None:
     elif track.tool == "go":
         result = run_command([tool, "vet", "./..."], cwd=project_dir)
         failed = "go vet failed"
+    elif track.tool == "cc":
+        # Warnings are not errors here, and deliberately: `-Werror` on a
+        # candidate would reject a patch for an unused variable that the compiler
+        # can see is harmless, and the other three tracks all lint at a
+        # warning-is-error bar while C cannot without becoming a different
+        # language. What this does buy is the one thing that matters for a
+        # hand-written port: a syntax error is caught before the timing run, by a
+        # path that compiles nothing and writes no binary.
+        result = run_command(
+            [tool, "-fsyntax-only", "-Wall", "-Wextra", "-Wno-unused-parameter",
+             "-Wno-unused-function", track.candidate_source],
+            cwd=project_dir,
+        )
+        failed = "cc -fsyntax-only failed"
     else:
         # Lint is a second, independent path to the same compiler, so the preflight
         # runs again here rather than relying on `build_track` having been called
@@ -929,6 +983,29 @@ def run_gradient_probe(tool: str, track: Track, project_dir: Path) -> dict[str, 
         probe_cmd = [tool, "test", "--release", "--test", "gradient_check", "--", "--nocapture"]
     elif track.tool == "go":
         probe_cmd = [tool, "test", "-run", "TestGradcheck", "-v", "."]
+    elif track.tool == "cc":
+        # The C probe `#include`s the candidate's own source, so compiling it
+        # measures the *candidate's* gradient -- which is the point, since the
+        # candidate is what a model rewrites. It is built into a temporary
+        # directory for the same reason the track's own binary is: the
+        # comparator is pinned.
+        out = Path(tempfile.mkdtemp(prefix="autoresearch-c-probe-"))
+        _SCRATCH_ROOTS.append(out)
+        binary = out / "probe-c"
+        build = run_command(
+            [tool, "-O2", "-Wno-unused-function", "-o", str(binary),
+             track.probe_path, "-lm"],
+            cwd=project_dir,
+        )
+        if build.returncode != 0:
+            raise ResearchError(
+                f"the gradient probe did not build\n{(build.stderr or '')[-3000:]}"
+            )
+        # `--input` rather than a relative "input.txt": the C port was the one
+        # track that used to resolve its dataset from the current working
+        # directory, and docs/ADDING-A-LANGUAGE.md requirement 4 exists because
+        # of it. The probe is held to the same rule.
+        probe_cmd = [str(binary), "--input", str(DATASET)]
     else:
         probe_cmd = ["npx", "tsx", track.probe_path]
     result = run_command(probe_cmd, cwd=project_dir)
@@ -1198,9 +1275,10 @@ CAVEATS = [
     "measured the same way in the same session, so the comparison is fair. The "
     "absolute figure is not a pure training time.",
     "A loss number cannot tell a correct gradient from a wrong one -- the C port's "
-    "is wrong by a factor of -8 and its loss curve still tracks the reference to "
-    "within 7% (docs/KNOWN-ISSUES.md issue 1). Every candidate is finite-difference "
-    "checked before it competes; see `grad_ratio` on each row.",
+    "was wrong by a factor of -8, its loss curve still tracked the reference to "
+    "within 7%, and it still trained "
+    "(docs/KNOWN-ISSUES.md issue 1; fixed since, at 1.03). Every candidate is "
+    "finite-difference checked before it competes; see `grad_ratio` on each row.",
 ]
 
 
@@ -2522,6 +2600,13 @@ def commit_candidate(track: Track, source: Path) -> None:
         movable = ("Cargo.toml", "Cargo.lock", "src/lib.rs", "src/main.rs")
     elif track.tool == "go":
         movable = ("go.mod", "go.sum", track.candidate_source)
+    elif track.tool == "cc":
+        # `microgpt_simd.h` is here defensively rather than because the prompt
+        # offers it: the model is shown one file and asked for one diff, but a
+        # patch that does reach the header has already been built and measured,
+        # so dropping it on the way back would leave the committed candidate
+        # different from the thing that won.
+        movable = ("microgpt_simd.h", track.candidate_source)
     else:
         movable = ("package.json", "package-lock.json", "tsconfig.json", track.candidate_source)
     for relative in movable:

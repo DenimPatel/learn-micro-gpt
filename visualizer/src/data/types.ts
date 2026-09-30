@@ -230,7 +230,7 @@ export type ResearchVerdict = 'baseline' | 'keep' | 'discard' | 'crash'
  * the first thing every selector here filters on -- putting a Go loss and a Rust
  * loss on one scatter would be a chart about nothing.
  */
-export type ResearchTrack = 'rust' | 'go' | 'typescript'
+export type ResearchTrack = 'rust' | 'go' | 'typescript' | 'c'
 
 export interface ResearchRow {
   run_id: string
