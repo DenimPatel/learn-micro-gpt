@@ -1,0 +1,32 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -500,6 +500,24 @@ static void load_data(const char *path) {
+   for (int i = 0; i < num_docs; i++)
+     doc_order[i] = i;
+   shuffle_docs(doc_order, num_docs);
+ 
++  /* Keep the shuffled sample, but put its shortest documents last. */
++  if (num_docs > 1) {
++    const int prefix = num_docs < NUM_STEPS ? num_docs : NUM_STEPS;
++    int order_copy[NUM_STEPS];
++    int counts[MAX_DOC_LEN + 1] = {0};
++    int next[MAX_DOC_LEN + 1];
++
++    for (int i = 0; i < prefix; i++) {
++      order_copy[i] = doc_order[i];
++      counts[doc_lens[order_copy[i]]]++;
++    }
++    int offset = 0;
++    for (int len = 0; len <= MAX_DOC_LEN; len++) {
++      next[len] = offset;
++      offset += counts[len];
++    }
++    for (int i = 0; i < prefix; i++) {
++      int id = order_copy[i];
++      doc_order[next[doc_lens[id]]++] = id;
++    }
++  }
++
+   printf("num docs: %d\n", num_docs);
+   printf("vocab size: %d\n", vocab_size);
+ }
