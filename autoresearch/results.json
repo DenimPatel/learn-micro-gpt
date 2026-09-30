@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 243,
+    "experiments": 244,
     "keep": 106,
     "discard": 9,
-    "crash": 128
+    "crash": 129
   },
   "pareto": {
     "rust": [
@@ -3960,6 +3960,21 @@
       "reason": "",
       "description": "Replace tiny BLAS linear kernels with inline NEON loops to cut per-call overhead",
       "measured": "2026-09-30T06:15:29Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0247",
+      "parent": "b9bc1d9a32cc4dd155cc69f3533defb42d654a4d",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Accumulate linear backward input gradients in registers before updating dx",
+      "measured": "2026-09-30T06:16:43Z",
       "has_record": true
     }
   ],
