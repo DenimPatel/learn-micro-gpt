@@ -31,7 +31,7 @@
 #define N_LAYER 1
 #define BLOCK_SIZE 16
 #define HEAD_DIM (N_EMBD / N_HEAD) /* 4 */
-#define MLP_DIM (3 * N_EMBD)       /* 48 */
+#define MLP_DIM 32
 #define MAX_DOCS 40000
 #define MAX_DOC_LEN 20
 #define NUM_STEPS 1000

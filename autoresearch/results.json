@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "ebcda65b1f5919c92d8eee76d7125a8956553d90de261058ab6da37dd17cb618",
+      "candidate_sha256": "d67ebbf28a3eec0916d08c2cd23416e7b3ba3725be21e0dbf04db740816863a6",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 232,
-    "keep": 102,
+    "experiments": 233,
+    "keep": 103,
     "discard": 8,
     "crash": 122
   },
@@ -251,7 +251,8 @@
       "0232"
     ],
     "c": [
-      "0235"
+      "0235",
+      "0236"
     ]
   },
   "runs": [
@@ -3793,6 +3794,21 @@
       "reason": "",
       "description": "Narrow the MLP from 64 to 48 to trade excess width for double-digit speed",
       "measured": "2026-09-30T05:35:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0236",
+      "parent": "b18d817b5ddec1531a781154f364dd305a0e0895",
+      "track": "c",
+      "loss": 2.337584,
+      "steps_per_sec": 39286.621024,
+      "loss_gain": -0.000368,
+      "speed_gain": 1.987797,
+      "grad_ratio": 0.984212,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow the MLP from 48 to 32 for a larger speed gain",
+      "measured": "2026-09-30T05:36:33Z",
       "has_record": true
     }
   ],
