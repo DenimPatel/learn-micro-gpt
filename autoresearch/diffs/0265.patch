@@ -1,0 +1,49 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -128,8 +128,6 @@ static float ALIGN128 m_wte[MAX_VOCAB * N_EMBD], v_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 m_wpe[BLOCK_SIZE * N_EMBD], v_wpe[BLOCK_SIZE * N_EMBD];
+-static float ALIGN128 m_lm_head[MAX_VOCAB * N_EMBD],
+-    v_lm_head[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 m_attn_wq[N_LAYER][N_EMBD * N_EMBD],
+     v_attn_wq[N_LAYER][N_EMBD * N_EMBD];
+@@ -443,15 +441,14 @@ static void init_weights(void) {
+   memset(lm_bias, 0, sizeof(lm_bias));
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+-  init_matrix(lm_head, vocab_size, N_EMBD, std);
++  memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
+   for (int l = 0; l < N_LAYER; l++) {
+     init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
+     init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
+@@ -462,7 +459,7 @@ static void init_weights(void) {
+     init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
+   }
+ 
+-  int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD + vocab_size * N_EMBD;
++  int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD;
+   total += vocab_size;
+   for (int l = 0; l < N_LAYER; l++)
+     total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
+@@ -1055,6 +1052,12 @@ int main(int argc, char **argv) {
+     /* Backward pass */
+     backward_all(tokens, n);
+ 
++    for (int i = 0; i < vocab_size * N_EMBD; i++) {
++      float tied_g = g_wte[i] + g_lm_head[i];
++      g_wte[i] = tied_g;
++      g_lm_head[i] = tied_g;
++    }
++
+     /* Adam update */
+     float lr_t = learning_rate * (1.0f - (float)step / num_steps);
+     float b1c = 1.0f - powf(beta1, step + 1);
+@@ -1062,10 +1065,10 @@ int main(int argc, char **argv) {
+     float b2c = 1.0f - powf(beta2, step + 1);
+ 
+     adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
++    memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
+     adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
+-    adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head, vocab_size * N_EMBD,
+-                lr_t, b1c, b2c);
+     adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
+                 lr_t, b1c, b2c);

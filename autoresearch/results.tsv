@@ -264,3 +264,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0262	f1438efefe0c81db27620ab1f11f5d91dfa42f42	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Skip every fourth backward and Adam update to trade a little learning for speed
 0263	128c9e3807c13bb8f8ee8be0940da6ed620d2005	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Narrow the residual stream from 12 to 10 and use two five-dimensional heads to reduce projection work
 0264	a053dd1e8d51902a177907816f156ce765007f7d	c	2.350330	50340.744042	-0.005823	+2.828477	0.988592	keep		Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation
+0265	8649345e1dd5313fbef4382ad51ec8fb5624b85a	c	2.440522	54985.841307	-0.044420	+3.181742	1.006265	keep		Tie the token embedding to the output head and update the shared matrix once with summed gradients

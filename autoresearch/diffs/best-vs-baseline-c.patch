@@ -31,7 +31,7 @@
  /* Gradient arrays */
  static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
  static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
-@@ -119,6 +122,7 @@
+@@ -119,12 +122,11 @@
  static float ALIGN128 g_attn_wo[N_LAYER][N_EMBD * N_EMBD];
  static float ALIGN128 g_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
  static float ALIGN128 g_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
@@ -39,7 +39,13 @@
  
  /* Adam moment buffers */
  static float ALIGN128 m_wte[MAX_VOCAB * N_EMBD], v_wte[MAX_VOCAB * N_EMBD];
-@@ -137,6 +141,7 @@
+ static float ALIGN128 m_wpe[BLOCK_SIZE * N_EMBD], v_wpe[BLOCK_SIZE * N_EMBD];
+-static float ALIGN128 m_lm_head[MAX_VOCAB * N_EMBD],
+-    v_lm_head[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 m_attn_wq[N_LAYER][N_EMBD * N_EMBD],
+     v_attn_wq[N_LAYER][N_EMBD * N_EMBD];
+ static float ALIGN128 m_attn_wk[N_LAYER][N_EMBD * N_EMBD],
+@@ -137,6 +139,7 @@
      v_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
  static float ALIGN128 m_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM],
      v_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
@@ -47,7 +53,7 @@
  
  /* ── Dataset ─────────────────────────────────────────────────────────── */
  static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
-@@ -189,24 +194,152 @@
+@@ -189,24 +192,152 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
@@ -208,7 +214,7 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -302,7 +435,7 @@
+@@ -302,7 +433,7 @@
                                 float *__restrict__ m_buf,
                                 float *__restrict__ v_buf, int n, float lr_t,
                                 float b1c, float b2c) {
@@ -217,23 +223,29 @@
    const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
    const float eps = 1e-8f;
    const float inv_b1c = 1.0f / b1c;
-@@ -417,6 +550,7 @@
+@@ -417,9 +548,10 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
 +  memset(lm_bias, 0, sizeof(lm_bias));
    init_matrix(wte, vocab_size, N_EMBD, std);
    init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
-   init_matrix(lm_head, vocab_size, N_EMBD, std);
-@@ -430,6 +564,7 @@
+-  init_matrix(lm_head, vocab_size, N_EMBD, std);
++  memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
+   for (int l = 0; l < N_LAYER; l++) {
+     init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
+     init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
+@@ -429,7 +561,8 @@
+     init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
-   int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD + vocab_size * N_EMBD;
+-  int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD + vocab_size * N_EMBD;
++  int total = vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD;
 +  total += vocab_size;
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -530,6 +665,8 @@
+@@ -530,6 +663,8 @@
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
    linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
@@ -242,7 +254,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -557,8 +694,11 @@
+@@ -557,8 +692,11 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -256,7 +268,7 @@
  
      /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
      memset(dx, 0, sizeof(float) * N_EMBD);
-@@ -630,18 +770,7 @@
+@@ -630,18 +768,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -275,7 +287,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +782,7 @@
+@@ -653,7 +780,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -284,7 +296,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +806,13 @@
+@@ -677,22 +804,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -310,7 +322,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -829,6 +949,8 @@
+@@ -829,6 +947,8 @@
    }
  
    linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
@@ -319,7 +331,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,7 +1002,7 @@
+@@ -880,7 +1000,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -328,7 +340,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -903,6 +1025,7 @@
+@@ -903,6 +1023,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -336,11 +348,25 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -938,6 +1061,8 @@
+@@ -930,14 +1051,21 @@
+     /* Backward pass */
+     backward_all(tokens, n);
+ 
++    for (int i = 0; i < vocab_size * N_EMBD; i++) {
++      float tied_g = g_wte[i] + g_lm_head[i];
++      g_wte[i] = tied_g;
++      g_lm_head[i] = tied_g;
++    }
++
+     /* Adam update */
+     float lr_t = learning_rate * (1.0f - (float)step / num_steps);
+     float b1c = 1.0f - powf(beta1, step + 1);
+     float b2c = 1.0f - powf(beta2, step + 1);
+ 
      adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
++    memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
      adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
-     adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head, vocab_size * N_EMBD,
-+                lr_t, b1c, b2c);
+-    adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head, vocab_size * N_EMBD,
 +    adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
                  lr_t, b1c, b2c);
      for (int l = 0; l < N_LAYER; l++) {
