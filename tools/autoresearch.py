@@ -269,6 +269,20 @@ class Track:
     #: file that does not exist.
     dependency_note: str
     lint_command: str
+    #: The bullet describing what the harness and the probe read out of this track's
+    #: source, and the anecdote about a patch that did not apply.
+    #:
+    #: Both exist because they are the two things a model gets wrong most often,
+    #: and both were originally written once, for Rust, in `program.md` -- so Go
+    #: and TypeScript were being told to preserve a `pub fn run()` and to look for
+    #: `fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle>`, neither of which
+    #: exists in their source. `TensorHandle` was not in the `foreign` table
+    #: because that table holds build vocabulary, not type names, so the test that
+    #: was supposed to catch this passed for two extra tracks. Per track, because
+    #: the honest sentence for C -- that its probe `#include`s the file and reads
+    #: its statics -- is a different sentence from the honest one for Rust.
+    probe_api: str
+    patch_caution: str
 
     @property
     def candidate(self) -> Path:
@@ -343,6 +357,21 @@ TRACKS: dict[str, Track] = {
             "library, and a port that reached for a crate would be measuring the crate."
         ),
         lint_command="`cargo clippy --release -- -D warnings`",
+        probe_api=(
+            "* `pub fn run()`, and the `[[bin]]` that calls it;\n"
+            "* the public items the probe uses: `Config` and its fields, `Model::{new,\n"
+            "  forward, params}`, `Rng::new`, `TensorHandle`, `Tensor::{leaf, data, grad,\n"
+            "  backward, set_data, add, mul, neg, log, exp, div, sub_scalar, div_scalar}`,\n"
+            "  and the `pub` visibility of the crate root. In particular `Tensor::set_data`\n"
+            "  is the only thing separating the probe from a private arena, and a\n"
+            "  rewrite that drops it fails the probe."
+        ),
+        patch_caution=(
+            "Two of the first attempts at this task failed for the same reason: a patch\n"
+            "  written against an `rmsnorm` that took a weight tensor and had `.data()`\n"
+            "  and `.mul()` methods. Neither exists.\n"
+            "  `fn rmsnorm(x: &[TensorHandle]) -> Vec<TensorHandle>` does, and you can read it"
+        ),
         tool="cargo",
         tool_hint="Install Rust from https://rustup.rs",
         fence="rust",
@@ -365,6 +394,16 @@ TRACKS: dict[str, Track] = {
             "measuring the package."
         ),
         lint_command="`go vet ./...`",
+        probe_api=(
+            "* a `main` package whose `Train`, `Config` and `Rng` are the ones the "
+            "probe calls — the probe is an in-package test file, so it reaches the "
+            "unexported names directly and they must keep those names"
+        ),
+        patch_caution=(
+            "The first attempt at this task failed because it patched a function "
+            "that does not exist under that name. Read the file before writing the "
+            "hunk"
+        ),
         tool="go",
         tool_hint="Install Go from https://go.dev/dl/",
         fence="go",
@@ -387,6 +426,15 @@ TRACKS: dict[str, Track] = {
             "fits in one file with nothing but a standard library."
         ),
         lint_command="`npx tsc --noEmit`",
+        probe_api=(
+            "* the `export`s the probe imports: `Config`, `Tensor`, `TensorHandle` and "
+            "`Model`. `setData` is the only thing separating the probe from a private "
+            "arena, and a rewrite that drops it fails the probe"
+        ),
+        patch_caution=(
+            "The first attempt at this task failed because it patched an `rmsnorm` "
+            "that took a weight tensor. The one in this file takes a `TensorHandle`"
+        ),
         tool="npm",
         tool_hint="Install Node from https://nodejs.org/",
         fence="typescript",
@@ -411,6 +459,28 @@ TRACKS: dict[str, Track] = {
             "and a port that reached for a library would be measuring the library."
         ),
         lint_command="`cc -fsyntax-only -Wall -Wextra`",
+        probe_api=(
+            "* a `main(int argc, char **argv)` that accepts `--input`, `--steps` and "
+            "`--seed`;\n"
+            "* the names the probe reads. The probe `#include`s this file, so it uses "
+            "the statics directly: `wte`, `wpe`, `lm_head`, `attn_wq`, `attn_wk`, "
+            "`attn_wv`, `attn_wo`, `mlp_fc1`, `mlp_fc2`, their `g_`-prefixed "
+            "gradient twins, `forward_pos`, `backward_all`, `zero_gradients`, "
+            "`seed_rng`, `load_data`, `init_weights`, `char_to_idx`, `BOS_TOKEN`, "
+            "`vocab_size`, `saved_probs`, and the "
+            "`N_EMBD`/`N_HEAD`/`N_LAYER`/`BLOCK_SIZE`/`MLP_DIM` macros.\n"
+            "* the *order* of the gradient arrays, because the probe finds them by a "
+            "positional walk: `wte`, `wpe`, `lm_head`, then per layer `wq`, `wk`, "
+            "`wv`, `wo`, `fc1`, `fc2`. Moving a declaration is safe. Reordering those "
+            "blocks is not — the probe will read a gradient out of the wrong array, "
+            "and the resulting ratio will be plausible and wrong."
+        ),
+        patch_caution=(
+            "Read the whole file before writing the hunk. This port has no autograd "
+            "tape, so `backward_all` is a hand-written chain rule over the saved "
+            "activations, and the natural place to add a term is very often also a "
+            "place that has to be added to `zero_gradients`"
+        ),
         tool="cc",
         tool_hint="Install a C compiler — on macOS the Xcode command line tools (`xcode-select --install`), on Debian `build-essential`",
         fence="c",
@@ -1658,6 +1728,8 @@ def read_prompt(track: Track) -> str:
         "probe_path": track.probe.relative_to(REPO_ROOT).as_posix(),
         "dependency_note": track.dependency_note,
         "lint_command": track.lint_command,
+        "probe_api": track.probe_api,
+        "patch_caution": track.patch_caution,
     }
     # Substituted with a regex rather than `str.format`, because the brief contains
     # literal braces: the example patch adds a `Tensor { new, forward, params }`

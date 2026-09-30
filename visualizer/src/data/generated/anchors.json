@@ -4,8 +4,8 @@
   "sources": {
     "c": {
       "path": "implementations/c/microgpt.c",
-      "lines": 1005,
-      "bytes": 38314
+      "lines": 1008,
+      "bytes": 39440
     },
     "python": {
       "path": "reference/microgpt.py",
@@ -28,8 +28,8 @@
         "selector": "comment:Adam optimizer update offset:[0, 8]"
       },
       "c": {
-        "start": 292,
-        "end": 352,
+        "start": 300,
+        "end": 360,
         "selector": "def:adam_update"
       }
     },
@@ -40,8 +40,8 @@
         "selector": "def:gpt offset:[7, -10]"
       },
       "c": {
-        "start": 447,
-        "end": 511,
+        "start": 455,
+        "end": 528,
         "selector": "def:forward_pos offset:[16, -6]"
       }
     },
@@ -52,8 +52,8 @@
         "selector": "def:Value.backward"
       },
       "c": {
-        "start": 520,
-        "end": 791,
+        "start": 537,
+        "end": 756,
         "selector": "def:backward_all"
       }
     },
@@ -64,8 +64,8 @@
         "selector": "def:Value"
       },
       "c": {
-        "start": 520,
-        "end": 813,
+        "start": 537,
+        "end": 778,
         "selector": "def:backward_all offset:[0, 22]"
       }
     },
@@ -76,8 +76,8 @@
         "selector": "def:gpt offset:[55, 25]"
       },
       "c": {
-        "start": 516,
-        "end": 516,
+        "start": 524,
+        "end": 533,
         "selector": "def:forward_pos offset:[85, -1]"
       }
     },
@@ -88,8 +88,8 @@
         "selector": "section:Let there be an input dataset"
       },
       "c": {
-        "start": 355,
-        "end": 402,
+        "start": 363,
+        "end": 410,
         "selector": "def:load_data"
       }
     },
@@ -100,8 +100,8 @@
         "selector": "def:gpt offset:[1, -32]"
       },
       "c": {
-        "start": 434,
-        "end": 441,
+        "start": 442,
+        "end": 458,
         "selector": "def:forward_pos offset:[3, -76]"
       }
     },
@@ -112,8 +112,8 @@
         "selector": "def:gpt"
       },
       "c": {
-        "start": 431,
-        "end": 517,
+        "start": 439,
+        "end": 534,
         "selector": "def:forward_pos"
       }
     },
@@ -124,8 +124,8 @@
         "selector": "section:Inference:"
       },
       "c": {
-        "start": 794,
-        "end": 867,
+        "start": 759,
+        "end": 832,
         "selector": "def:forward_inference"
       }
     },
@@ -136,8 +136,8 @@
         "selector": "def:linear"
       },
       "c": {
-        "start": 181,
-        "end": 187,
+        "start": 189,
+        "end": 195,
         "selector": "def:linear_fwd"
       }
     },
@@ -148,8 +148,8 @@
         "selector": "def:gpt offset:[35, 0]"
       },
       "c": {
-        "start": 514,
-        "end": 516,
+        "start": 522,
+        "end": 533,
         "selector": "def:forward_pos offset:[83, -1]"
       }
     },
@@ -160,8 +160,8 @@
         "selector": "def:gpt offset:[27, -3]"
       },
       "c": {
-        "start": 490,
-        "end": 511,
+        "start": 498,
+        "end": 528,
         "selector": "def:forward_pos offset:[59, -6]"
       }
     },
@@ -172,8 +172,8 @@
         "selector": "def:gpt offset:[15, -12]"
       },
       "c": {
-        "start": 459,
-        "end": 478,
+        "start": 467,
+        "end": 495,
         "selector": "def:forward_pos offset:[28, -39]"
       }
     },
@@ -184,8 +184,8 @@
         "selector": "section:Initialize the parameters"
       },
       "c": {
-        "start": 410,
-        "end": 428,
+        "start": 418,
+        "end": 436,
         "selector": "def:init_weights"
       }
     },
@@ -196,8 +196,8 @@
         "selector": "def:rmsnorm"
       },
       "c": {
-        "start": 204,
-        "end": 241,
+        "start": 212,
+        "end": 249,
         "selector": "def:rmsnorm_fwd"
       }
     },
@@ -208,8 +208,8 @@
         "selector": "def:softmax"
       },
       "c": {
-        "start": 275,
-        "end": 289,
+        "start": 283,
+        "end": 297,
         "selector": "def:softmax_fwd"
       }
     },
@@ -220,8 +220,8 @@
         "selector": "section:Let there be a Tokenizer"
       },
       "c": {
-        "start": 382,
-        "end": 393,
+        "start": 390,
+        "end": 401,
         "selector": "def:load_data offset:[27, -9]"
       }
     },
@@ -232,8 +232,8 @@
         "selector": "section:Repeat in sequence"
       },
       "c": {
-        "start": 882,
-        "end": 956,
+        "start": 884,
+        "end": 959,
         "selector": "def:main offset:[12, -48]"
       }
     }

@@ -935,11 +935,18 @@ class TestTheBriefIsWrittenForWhicheverTrackIsRunning(unittest.TestCase):
                 self.assertIn(track.lint_command, brief)
 
     def test_it_never_tells_one_track_to_satisfy_another_track_toolchain(self) -> None:
+        # A row for every track, not just an entry for the newest one. A missing
+        # key raised KeyError on the new name, which is at least loud, but it
+        # also meant the new track's brief was never checked at all -- so a row is
+        # owed for each track, and the set is asserted against TRACKS so the next
+        # track cannot be added without one.
         foreign = {
-            "rust": ("`go.mod`", "`npx tsc"),
-            "go": ("Cargo.toml", "cargo clippy", "npx tsc"),
-            "typescript": ("Cargo.toml", "cargo clippy", "`go.mod`"),
+            "rust": ("`go.mod`", "npx tsc", "`-lm`", "`cc "),
+            "go": ("Cargo.toml", "cargo clippy", "npx tsc", "`-lm`", "`cc "),
+            "typescript": ("Cargo.toml", "cargo clippy", "`go.mod`", "`-lm`", "`cc "),
+            "c": ("Cargo.toml", "cargo clippy", "npx tsc", "`go.mod`"),
         }
+        self.assertEqual(set(foreign), set(ar.TRACKS))
         for track in ar.TRACKS.values():
             for needle in foreign[track.name]:
                 with self.subTest(track=track.name, needle=needle):
@@ -949,6 +956,7 @@ class TestTheBriefIsWrittenForWhicheverTrackIsRunning(unittest.TestCase):
                         f"the {track.name} brief tells the model about {needle}, "
                         f"which belongs to another track",
                     )
+
 
     def test_a_new_placeholder_would_be_caught_rather_than_sent(self) -> None:
         """The failure mode of substituting into a document by hand.
