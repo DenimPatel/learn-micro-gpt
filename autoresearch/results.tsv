@@ -283,3 +283,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0281	0f64cecb85586c3ad6d7f868d9005e35456d73dd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: IncompleteRead(88 bytes read)	the model returned nothing usable
 0282	d03eede146db7ccdda7f5c9ed3c969ceedc7d118	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: IncompleteRead(22 bytes read)	the model returned nothing usable
 0283	b418573e97837a2d01ec5084860def8a9e406c30	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: <urlopen error [Errno 8] nodename nor servname provided, or not known>	the model returned nothing usable
+0284	14149041a3cc65cf410601b6ed20134c9dd71a86	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: The read operation timed out	the model returned nothing usable
