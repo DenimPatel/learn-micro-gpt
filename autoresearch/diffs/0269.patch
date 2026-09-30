@@ -1,0 +1,16 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -338,8 +338,6 @@ static inline void rmsnorm_fwd(const float *__restrict__ x,
+   float32x2_t est = vrsqrte_f32(v2);
+   est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
+-  est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
+   float scale = vget_lane_f32(est, 0);
+   *rms_scale = scale;
+   /* NEON broadcast multiply */
+@@ -411,8 +409,6 @@ static inline void adam_update(float *__restrict__ param,
+     rsqrt_est = vmulq_f32(rsqrt_est,
+                           vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
+-    rsqrt_est = vmulq_f32(rsqrt_est,
+-                          vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
+     /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
+     float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));

@@ -214,7 +214,15 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -302,7 +433,7 @@
+@@ -231,7 +362,6 @@
+   float val = ms + 1e-5f;
+   float32x2_t v2 = vdup_n_f32(val);
+   float32x2_t est = vrsqrte_f32(v2);
+-  est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
+   est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
+   float scale = vget_lane_f32(est, 0);
+   *rms_scale = scale;
+@@ -302,7 +432,7 @@
                                 float *__restrict__ m_buf,
                                 float *__restrict__ v_buf, int n, float lr_t,
                                 float b1c, float b2c) {
@@ -223,7 +231,16 @@
    const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
    const float eps = 1e-8f;
    const float inv_b1c = 1.0f / b1c;
-@@ -417,9 +548,10 @@
+@@ -335,8 +465,6 @@
+     float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
+     rsqrt_est = vmulq_f32(rsqrt_est,
+                           vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
+-    rsqrt_est = vmulq_f32(rsqrt_est,
+-                          vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
+     /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
+     float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
+     p = vsubq_f32(p, update);
+@@ -417,9 +545,10 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -235,7 +252,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -429,7 +561,8 @@
+@@ -429,7 +558,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -245,7 +262,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -530,6 +663,8 @@
+@@ -530,6 +660,8 @@
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
    linear_fwd(x, lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
@@ -254,7 +271,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -557,8 +692,11 @@
+@@ -557,8 +689,11 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -268,7 +285,7 @@
  
      /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
      memset(dx, 0, sizeof(float) * N_EMBD);
-@@ -630,18 +768,7 @@
+@@ -630,18 +765,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -287,7 +304,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +780,7 @@
+@@ -653,7 +777,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -296,7 +313,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +804,13 @@
+@@ -677,22 +801,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -322,7 +339,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -829,6 +947,8 @@
+@@ -829,6 +944,8 @@
    }
  
    linear_fwd(x, lm_head, logits_out, vocab_size, N_EMBD);
@@ -331,7 +348,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,7 +1000,7 @@
+@@ -880,7 +997,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -340,7 +357,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -903,6 +1023,7 @@
+@@ -903,6 +1020,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -348,7 +365,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -930,14 +1051,21 @@
+@@ -930,14 +1048,21 @@
      /* Backward pass */
      backward_all(tokens, n);
  

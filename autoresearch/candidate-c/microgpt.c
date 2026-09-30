@@ -363,7 +363,6 @@ static inline void rmsnorm_fwd(const float *__restrict__ x,
   float32x2_t v2 = vdup_n_f32(val);
   float32x2_t est = vrsqrte_f32(v2);
   est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
-  est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
   float scale = vget_lane_f32(est, 0);
   *rms_scale = scale;
   /* NEON broadcast multiply */
@@ -464,8 +463,6 @@ static inline void adam_update(float *__restrict__ param,
     vhat = vaddq_f32(vhat, veps);
     /* Fast inverse sqrt via NEON with Newton refinement */
     float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
-    rsqrt_est = vmulq_f32(rsqrt_est,
-                          vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
     rsqrt_est = vmulq_f32(rsqrt_est,
                           vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
     /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
