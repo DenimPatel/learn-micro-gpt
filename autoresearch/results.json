@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
+      "candidate_sha256": "ebcda65b1f5919c92d8eee76d7125a8956553d90de261058ab6da37dd17cb618",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -205,11 +205,23 @@
       "reason": "",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node"
     },
-    "c": null
+    "c": {
+      "run_id": "0235",
+      "parent": "02822a92883b69a35424321801f6f05e1f281f5e",
+      "track": "c",
+      "loss": 2.331976,
+      "steps_per_sec": 36736.568644,
+      "loss_gain": 0.002032,
+      "speed_gain": 1.793862,
+      "grad_ratio": 0.995413,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow the MLP from 64 to 48 to trade excess width for double-digit speed"
+    }
   },
   "counts": {
-    "experiments": 231,
-    "keep": 101,
+    "experiments": 232,
+    "keep": 102,
     "discard": 8,
     "crash": 122
   },
@@ -239,7 +251,7 @@
       "0232"
     ],
     "c": [
-      "0233"
+      "0235"
     ]
   },
   "runs": [
@@ -3766,6 +3778,21 @@
       "reason": "no axis improved materially: discarded: loss -0.1%, speed -2.3%; failing loss_material, speed_material",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
       "measured": "2026-09-30T05:12:07Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0235",
+      "parent": "02822a92883b69a35424321801f6f05e1f281f5e",
+      "track": "c",
+      "loss": 2.331976,
+      "steps_per_sec": 36736.568644,
+      "loss_gain": 0.002032,
+      "speed_gain": 1.793862,
+      "grad_ratio": 0.995413,
+      "status": "keep",
+      "reason": "",
+      "description": "Narrow the MLP from 64 to 48 to trade excess width for double-digit speed",
+      "measured": "2026-09-30T05:35:40Z",
       "has_record": true
     }
   ],

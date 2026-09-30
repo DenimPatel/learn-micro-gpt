@@ -234,3 +234,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0232	424c23ddbc8d3df5e2246d7831d2745931b4928d	typescript	2.309063	245.589919	+0.000000	+3.342140	0.722129	keep		Fuse each linear row into one exact ordered product-sum autograd node
 0233	7e91c5386a1dfc807b59326700684b9c43196647	c	2.336724	27428.853855	+0.000000	+0.000000	1.005086	baseline	frozen implementations/c, re-measured this session	the frozen C track, unmodified, as this session's comparator
 0234	7545b5990d110adebe072a309b790c56af3c32b5	c	2.339288	26623.861882	-0.001097	-0.022928	1.005086	discard	no axis improved materially: discarded: loss -0.1%, speed -2.3%; failing loss_material, speed_material	Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation
+0235	02822a92883b69a35424321801f6f05e1f281f5e	c	2.331976	36736.568644	+0.002032	+1.793862	0.995413	keep		Narrow the MLP from 64 to 48 to trade excess width for double-digit speed
