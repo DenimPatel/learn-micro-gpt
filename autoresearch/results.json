@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 287,
+    "experiments": 288,
     "keep": 116,
     "discard": 19,
-    "crash": 152
+    "crash": 153
   },
   "pareto": {
     "rust": [
@@ -4620,6 +4620,21 @@
       "reason": "the patch did not apply",
       "description": "Seed output-class biases from smoothed training-token frequencies",
       "measured": "2026-09-30T23:47:31Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0291",
+      "parent": "af02508aa28f73c6e70a4ac8896291fc15a7e5b0",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use three width-4 attention heads with corrected inverse-square-root scaling",
+      "measured": "2026-09-30T23:51:01Z",
       "has_record": true
     }
   ],
