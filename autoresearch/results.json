@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 234,
+    "experiments": 235,
     "keep": 104,
     "discard": 8,
-    "crash": 122
+    "crash": 123
   },
   "pareto": {
     "rust": [
@@ -3824,6 +3824,21 @@
       "reason": "",
       "description": "Narrow the MLP from 32 to 16 for a further speed gain",
       "measured": "2026-09-30T05:36:56Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0238",
+      "parent": "4d8c0c9e247b2aadca58629a814ed280a550e0d4",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-30T05:46:24Z",
       "has_record": true
     }
   ],
