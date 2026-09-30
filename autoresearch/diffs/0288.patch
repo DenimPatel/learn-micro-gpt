@@ -1,0 +1,11 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -31,7 +31,7 @@
+ 
+ /* ── Hyperparameters (compile-time constants for loop unrolling) ──────── */
+ #define N_EMBD 12
+-#define N_HEAD 4
++#define N_HEAD 1
+ #define N_LAYER 1
+ #define BLOCK_SIZE 16
+ #define HEAD_DIM (N_EMBD / N_HEAD) /* 3 */

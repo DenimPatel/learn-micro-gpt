@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 284,
+    "experiments": 285,
     "keep": 116,
-    "discard": 17,
+    "discard": 18,
     "crash": 151
   },
   "pareto": {
@@ -4575,6 +4575,21 @@
       "reason": "no axis improved materially: discarded: loss -20.2%, speed +281.0%; failing learned, loss_material, loss_tolerance",
       "description": "Select the 50 shortest shuffled-prefix documents for the final curriculum window",
       "measured": "2026-09-30T23:38:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0288",
+      "parent": "d595218e89e3d86c77a001d71e04300cf9ed46c6",
+      "track": "c",
+      "loss": 2.535384,
+      "steps_per_sec": 48340.317617,
+      "loss_gain": -0.085016,
+      "speed_gain": 2.676342,
+      "grad_ratio": 1.005775,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -8.5%, speed +267.6%; failing loss_material, loss_tolerance",
+      "description": "Use one full-width attention head to reduce repeated softmax work",
+      "measured": "2026-09-30T23:39:45Z",
       "has_record": true
     }
   ],
