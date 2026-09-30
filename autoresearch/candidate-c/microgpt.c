@@ -26,16 +26,16 @@
 #include <time.h>
 
 /* ── Hyperparameters (compile-time constants for loop unrolling) ──────── */
-#define N_EMBD 16
+#define N_EMBD 12
 #define N_HEAD 4
 #define N_LAYER 1
 #define BLOCK_SIZE 16
-#define HEAD_DIM (N_EMBD / N_HEAD) /* 4 */
+#define HEAD_DIM (N_EMBD / N_HEAD) /* 3 */
 #define MLP_DIM 16
 #define MAX_DOCS 40000
 #define MAX_DOC_LEN 20
 #define NUM_STEPS 1000
-#define INV_SQRT_HD 0.5f /* 1/sqrt(HEAD_DIM=4) */
+#define INV_SQRT_HD 0.57735027f /* 1/sqrt(HEAD_DIM=3) */
 
 /* Alignment for M-series 128-byte cache lines */
 #define ALIGN128 __attribute__((aligned(128)))

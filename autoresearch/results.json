@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "ab980e5282fccff84e748cc80efd7b37dadf03d8dd7c0502c431317962f48a16",
+      "candidate_sha256": "7bab2026c7f80b4ef9694b04e543ab5bcb9e35cee763125eb157bf9bf88a5ce9",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 235,
-    "keep": 104,
+    "experiments": 236,
+    "keep": 105,
     "discard": 8,
     "crash": 123
   },
@@ -252,7 +252,8 @@
     ],
     "c": [
       "0235",
-      "0237"
+      "0237",
+      "0239"
     ]
   },
   "runs": [
@@ -3839,6 +3840,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-30T05:46:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0239",
+      "parent": "530a0c518c97c4f47f14e51eb744ca25c4cd55db",
+      "track": "c",
+      "loss": 2.34848,
+      "steps_per_sec": 40076.947728,
+      "loss_gain": -0.005031,
+      "speed_gain": 2.047902,
+      "grad_ratio": 0.988592,
+      "status": "keep",
+      "reason": "",
+      "description": "Shrink embedding width to 12 and update attention scaling for head dimension 3",
+      "measured": "2026-09-30T05:48:36Z",
       "has_record": true
     }
   ],
