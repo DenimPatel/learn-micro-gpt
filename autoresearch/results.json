@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 274,
+    "experiments": 275,
     "keep": 116,
-    "discard": 14,
+    "discard": 15,
     "crash": 144
   },
   "pareto": {
@@ -4425,6 +4425,21 @@
       "reason": "the patch did not apply",
       "description": "Remove the remaining Newton refinement from vector RMSNorm and Adam reciprocal square roots",
       "measured": "2026-09-30T19:54:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0278",
+      "parent": "9b7c592a7b87f411ed3566a1af7fcb8d06036e20",
+      "track": "c",
+      "loss": 2.47575,
+      "steps_per_sec": 51794.350503,
+      "loss_gain": -0.059496,
+      "speed_gain": 2.939025,
+      "grad_ratio": 0.988406,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -5.9%, speed +293.9%; failing loss_material, loss_tolerance",
+      "description": "Narrow the MLP hidden width from 16 to 12",
+      "measured": "2026-09-30T20:02:52Z",
       "has_record": true
     }
   ],
