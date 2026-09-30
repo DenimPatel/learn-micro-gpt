@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 251,
+    "experiments": 252,
     "keep": 108,
     "discard": 9,
-    "crash": 134
+    "crash": 135
   },
   "pareto": {
     "rust": [
@@ -4080,6 +4080,21 @@
       "reason": "the patch did not apply",
       "description": "Use a seventh-order range-reduced NEON exponential in softmax",
       "measured": "2026-09-30T06:40:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0255",
+      "parent": "c5391cc05226006f7c57f6e8d3f152d5caf5c840",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a fixed smoothed unigram logit prior to output logits",
+      "measured": "2026-09-30T06:45:12Z",
       "has_record": true
     }
   ],
