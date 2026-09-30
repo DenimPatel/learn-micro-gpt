@@ -285,3 +285,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0283	b418573e97837a2d01ec5084860def8a9e406c30	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: <urlopen error [Errno 8] nodename nor servname provided, or not known>	the model returned nothing usable
 0284	14149041a3cc65cf410601b6ed20134c9dd71a86	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: The read operation timed out	the model returned nothing usable
 0285	9c9a8a1d837f29f7e1d512722a86c2fb92040125	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable
+0286	22e0953b8706bbd37102424f01471c8a9bef815e	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace softmax expf with a safely range-reduced degree-six approximation
