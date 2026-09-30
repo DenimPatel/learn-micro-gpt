@@ -1,0 +1,25 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -404,6 +404,21 @@ static void load_data(const char *path) {
+   for (int i = 0; i < num_docs; i++)
+     doc_order[i] = i;
+   shuffle_docs(doc_order, num_docs);
++
++  /* Put the longest documents in the measured final window. */
++  int train_docs = num_docs < NUM_STEPS ? num_docs : NUM_STEPS;
++  if (train_docs > 50) {
++    for (int i = train_docs - 50; i < train_docs - 1; i++) {
++      int longest = i;
++      for (int j = i + 1; j < train_docs; j++) {
++        if (doc_lens[doc_order[j]] > doc_lens[doc_order[longest]])
++          longest = j;
++      }
++      int tmp = doc_order[i];
++      doc_order[i] = doc_order[longest];
++      doc_order[longest] = tmp;
++    }
++  }
+ 
+   printf("num docs: %d\n", num_docs);
+   printf("vocab size: %d\n", vocab_size);
+ }

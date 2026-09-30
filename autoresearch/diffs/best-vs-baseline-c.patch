@@ -250,7 +250,29 @@
      /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
      float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
      p = vsubq_f32(p, update);
-@@ -417,9 +549,10 @@
+@@ -405,6 +537,21 @@
+     doc_order[i] = i;
+   shuffle_docs(doc_order, num_docs);
+ 
++  /* Put the longest documents in the measured final window. */
++  int train_docs = num_docs < NUM_STEPS ? num_docs : NUM_STEPS;
++  if (train_docs > 50) {
++    for (int i = train_docs - 50; i < train_docs - 1; i++) {
++      int longest = i;
++      for (int j = i + 1; j < train_docs; j++) {
++        if (doc_lens[doc_order[j]] > doc_lens[doc_order[longest]])
++          longest = j;
++      }
++      int tmp = doc_order[i];
++      doc_order[i] = doc_order[longest];
++      doc_order[longest] = tmp;
++    }
++  }
++
+   printf("num docs: %d\n", num_docs);
+   printf("vocab size: %d\n", vocab_size);
+ }
+@@ -417,9 +564,10 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -262,7 +284,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -429,7 +562,8 @@
+@@ -429,7 +577,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -272,7 +294,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -529,7 +663,10 @@
+@@ -529,7 +678,10 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -284,7 +306,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -557,13 +694,23 @@
+@@ -557,13 +709,23 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -311,7 +333,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -630,18 +777,7 @@
+@@ -630,18 +792,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -330,7 +352,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -653,7 +789,7 @@
+@@ -653,7 +804,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -339,7 +361,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -677,22 +813,13 @@
+@@ -677,22 +828,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -365,7 +387,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -828,7 +955,10 @@
+@@ -828,7 +970,10 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -377,7 +399,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,7 +1010,7 @@
+@@ -880,7 +1025,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -386,7 +408,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -903,6 +1033,7 @@
+@@ -903,6 +1048,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -394,7 +416,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -936,8 +1067,10 @@
+@@ -936,8 +1082,10 @@
      float b2c = 1.0f - powf(beta2, step + 1);
  
      adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
