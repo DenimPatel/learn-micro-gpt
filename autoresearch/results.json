@@ -208,9 +208,9 @@
     "c": null
   },
   "counts": {
-    "experiments": 230,
+    "experiments": 231,
     "keep": 101,
-    "discard": 7,
+    "discard": 8,
     "crash": 122
   },
   "pareto": {
@@ -3751,6 +3751,21 @@
       "reason": "frozen implementations/c, re-measured this session",
       "description": "the frozen C track, unmodified, as this session's comparator",
       "measured": "2026-09-30T05:08:08Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0234",
+      "parent": "7545b5990d110adebe072a309b790c56af3c32b5",
+      "track": "c",
+      "loss": 2.339288,
+      "steps_per_sec": 26623.861882,
+      "loss_gain": -0.001097,
+      "speed_gain": -0.022928,
+      "grad_ratio": 1.005086,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -0.1%, speed -2.3%; failing loss_material, speed_material",
+      "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "measured": "2026-09-30T05:12:07Z",
       "has_record": true
     }
   ],
