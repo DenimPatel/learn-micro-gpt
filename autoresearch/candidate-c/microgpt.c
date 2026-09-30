@@ -696,7 +696,7 @@ static void backward_all(const int *tokens, int n) {
     float dlogits[MAX_VOCAB];
     for (int i = 0; i < vocab_size; i++) {
       float d = (saved_probs[pos][i] - (i == target_id ? 1.0f : 0.0f)) * inv_n;
-      dlogits[i] = d + g_lm_bias[i];
+      dlogits[i] = d;
       g_lm_bias[i] += d;
     }
 
