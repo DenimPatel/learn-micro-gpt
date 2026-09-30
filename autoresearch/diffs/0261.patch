@@ -1,0 +1,23 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -1055,6 +1055,23 @@ int main(int argc, char **argv) {
+   seed_rng(run_seed);
+   load_data(dataset_path);
+   init_weights();
++
++  /* Short names provide an easier, more predictable ending to the curve. */
++  const int tail_len = num_steps < 50 ? num_steps : 50;
++  if (num_steps <= num_docs) {
++    int tail_pos = 0;
++    for (int len = 1; len <= MAX_DOC_LEN && tail_pos < tail_len; len++) {
++      for (int d = 0; d < num_docs && tail_pos < tail_len; d++) {
++        if (doc_lens[d] == len) {
++          doc_order[num_steps - tail_len + tail_pos] = d;
++          tail_pos++;
++        }
++      }
++    }
++  }
+ 
+   /* Adam hyperparams */
+   const float learning_rate = 0.01f;

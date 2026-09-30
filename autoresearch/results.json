@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 257,
+    "experiments": 258,
     "keep": 111,
-    "discard": 9,
+    "discard": 10,
     "crash": 137
   },
   "pareto": {
@@ -4170,6 +4170,21 @@
       "reason": "the model request failed: The read operation timed out",
       "description": "the model returned nothing usable",
       "measured": "2026-09-30T18:46:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0261",
+      "parent": "12586c3caa849c11d452706350cb3c2109bbad44",
+      "track": "c",
+      "loss": 3.637526,
+      "steps_per_sec": 54238.270676,
+      "loss_gain": -0.556678,
+      "speed_gain": 3.124888,
+      "grad_ratio": 0.988592,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -55.7%, speed +312.5%; failing learned, loss_material, loss_tolerance",
+      "description": "Fine tune on the shortest documents during the final 50 updates",
+      "measured": "2026-09-30T18:48:50Z",
       "has_record": true
     }
   ],
