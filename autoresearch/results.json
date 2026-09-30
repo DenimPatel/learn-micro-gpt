@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 267,
+    "experiments": 268,
     "keep": 114,
     "discard": 11,
-    "crash": 142
+    "crash": 143
   },
   "pareto": {
     "rust": [
@@ -4320,6 +4320,21 @@
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
       "measured": "2026-09-30T19:30:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0271",
+      "parent": "6fd4b522fc416f4b2645e35619f23161b37b609b",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use a range-reduced polynomial exponential in softmax to raise speed",
+      "measured": "2026-09-30T19:34:20Z",
       "has_record": true
     }
   ],
