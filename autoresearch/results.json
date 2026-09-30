@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 236,
+    "experiments": 237,
     "keep": 105,
-    "discard": 8,
+    "discard": 9,
     "crash": 123
   },
   "pareto": {
@@ -3855,6 +3855,21 @@
       "reason": "",
       "description": "Shrink embedding width to 12 and update attention scaling for head dimension 3",
       "measured": "2026-09-30T05:48:36Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0240",
+      "parent": "ba0669206c7825a0bf99ef7c7881abe899358a77",
+      "track": "c",
+      "loss": 2.354312,
+      "steps_per_sec": 8344.218437,
+      "loss_gain": -0.007527,
+      "speed_gain": -0.365412,
+      "grad_ratio": 0.981992,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -0.8%, speed -36.5%; failing loss_material, speed_material, speed_tolerance",
+      "description": "Halve the MLP width from 16 to 8 for another model FLOP reduction",
+      "measured": "2026-09-30T05:50:43Z",
       "has_record": true
     }
   ],
