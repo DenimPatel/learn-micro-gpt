@@ -244,3 +244,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0242	238b753aa0077f46242f1d7cf5fa14afceee53e1	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restore embedding width 16 and attention scale 0.5
 0243	514eea964230a5231de593049291980dc1331495	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a smoothed corpus-frequency logit bias with Adam updates
 0244	892b0953e42ee9bcd5eb692f93eadbd2a58c28d2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Remove the redundant pre-layer RMSNorm and accumulate attention gradients in place to reduce per-step work
+0245	c3d8d271f10330eaf920a6fe0c8a37a576ba6e65	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one 12-dimensional attention head and update its scaling constant

@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 241,
+    "experiments": 242,
     "keep": 105,
     "discard": 9,
-    "crash": 127
+    "crash": 128
   },
   "pareto": {
     "rust": [
@@ -3930,6 +3930,21 @@
       "reason": "the patch did not apply",
       "description": "Remove the redundant pre-layer RMSNorm and accumulate attention gradients in place to reduce per-step work",
       "measured": "2026-09-30T06:06:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0245",
+      "parent": "c3d8d271f10330eaf920a6fe0c8a37a576ba6e65",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use one 12-dimensional attention head and update its scaling constant",
+      "measured": "2026-09-30T06:10:16Z",
       "has_record": true
     }
   ],
