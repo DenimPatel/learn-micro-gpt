@@ -273,3 +273,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0271	6fd4b522fc416f4b2645e35619f23161b37b609b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use a range-reduced polynomial exponential in softmax to raise speed
 0272	8da5a0f78567606bac3a6a40e988ac703f11bc4e	c	2.445680	55149.721089	-0.046628	+3.194205	0.991694	keep		Add a final RMSNorm before the language-model head in training and inference
 0273	274d52aa0e192b217cfcfd19004d1994479fef2d	c	2.448044	54258.868100	-0.047639	+3.126455	1.005573	keep		Use the normalized final activation for lm_head weight gradients
+0274	cfc1f5cd6c1d22c06218fde882ffc9ecf17babca	c	2.106902	3552.965320	+0.098352	-0.729793	1.005573	discard	no axis improved materially: discarded: loss +9.8%, speed -73.0%; failing speed_material, speed_tolerance	Sort the first shuffled training pass by ascending document length

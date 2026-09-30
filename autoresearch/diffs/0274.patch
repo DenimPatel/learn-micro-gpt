@@ -1,0 +1,20 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -1000,6 +1000,17 @@ int main(int argc, char **argv) {
+ 
+   seed_rng(run_seed);
+   load_data(dataset_path);
++  int ordered_docs = num_docs < num_steps ? num_steps : num_docs;
++  for (int i = 1; i < ordered_docs; i++) {
++    int current = doc_order[i];
++    int j = i;
++    while (j > 0 && doc_lens[doc_order[j - 1]] > doc_lens[current]) {
++      doc_order[j] = doc_order[j - 1];
++      j--;
++    }
++    doc_order[j] = current;
++  }
++
+   init_weights();
+ 
+   /* Adam hyperparams */

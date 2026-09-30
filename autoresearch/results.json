@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 270,
+    "experiments": 271,
     "keep": 116,
-    "discard": 11,
+    "discard": 12,
     "crash": 143
   },
   "pareto": {
@@ -4365,6 +4365,21 @@
       "reason": "",
       "description": "Use the normalized final activation for lm_head weight gradients",
       "measured": "2026-09-30T19:38:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0274",
+      "parent": "cfc1f5cd6c1d22c06218fde882ffc9ecf17babca",
+      "track": "c",
+      "loss": 2.106902,
+      "steps_per_sec": 3552.96532,
+      "loss_gain": 0.098352,
+      "speed_gain": -0.729793,
+      "grad_ratio": 1.005573,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +9.8%, speed -73.0%; failing speed_material, speed_tolerance",
+      "description": "Sort the first shuffled training pass by ascending document length",
+      "measured": "2026-09-30T19:42:40Z",
       "has_record": true
     }
   ],
