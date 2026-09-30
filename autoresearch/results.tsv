@@ -252,3 +252,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0250	b0ab2e9690f70c723d22eefd957cab2a50df140c	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one full-width attention head to cut attention softmax overhead
 0251	bcfdda4f6987405ccb4bd9cf853b4556711d4568	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention mixtures and reuse dx to speed up backward without changing loss
 0252	3c127905c19cc901068f5ce7f8f5a52e6f5400e4	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Average gradients over three documents per Adam update
+0253	70317bf917aa2dabfeb054099bc487e0a2171f9a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Polynomial softmax exponential and fewer reciprocal-square-root passes with Adam leaving gradient clearing to the training loop

@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 249,
+    "experiments": 250,
     "keep": 108,
     "discard": 9,
-    "crash": 132
+    "crash": 133
   },
   "pareto": {
     "rust": [
@@ -4050,6 +4050,21 @@
       "reason": "the patch did not apply",
       "description": "Average gradients over three documents per Adam update",
       "measured": "2026-09-30T06:29:09Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0253",
+      "parent": "70317bf917aa2dabfeb054099bc487e0a2171f9a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Polynomial softmax exponential and fewer reciprocal-square-root passes with Adam leaving gradient clearing to the training loop",
+      "measured": "2026-09-30T06:36:55Z",
       "has_record": true
     }
   ],
