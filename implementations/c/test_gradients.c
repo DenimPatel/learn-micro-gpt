@@ -238,34 +238,31 @@ static int total_params(void) {
 }
 
 /*
- * The known defect, as a number.
+ * The directional-derivative ratio, now a real assertion.
  *
- * `backward_all` does not correctly propagate the key and value gradients of
- * *earlier* positions back through those positions' own computation to their
- * embeddings. The consequence is not a small scale error: projected on a random
- * direction over all 4,192 parameters, the analytic gradient is about -0.12x
- * the true directional derivative -- the wrong sign, and an order of magnitude
- * off. Only the output head's gradient is correct, and it is verified here and
- * does match.
+ * This used to lock a *known defect* at -0.12. Two separate bugs were behind it,
+ * and only the smaller of the two is the one the file used to describe:
  *
- * The model still trains, and its loss curve still lands inside the parity
- * band, which is the interesting part: see docs/KNOWN-ISSUES.md.
+ *   1. `forward_pos` ran its residual stream through `saved_x_embed[pos_id]`
+ *      itself, so the pre-layer rmsnorm overwrote the embedding sum with its own
+ *      normalised output. `backward_all`'s last call then differentiated that
+ *      corrupted vector. This one dominated: it put the embedding block ~60x out
+ *      and sign-flipped it, while wq/wk/wv/wo and the MLP weights -- which never
+ *      read `saved_x_embed` on the way back -- were already correct.
+ *   2. The key and value gradients of earlier positions were never propagated
+ *      back through those positions' own computation. The old code noticed this
+ *      in a comment, banked the gradients, and then pushed them into the
+ *      embeddings directly at the end of the pass, skipping the attention output
+ *      projection, the MLP, and every layer below.
  *
- * The lock is deliberate. This is recorded as a *measured* known failure rather
- * than a passing test, so that:
- *
- *   - the number cannot silently change, which would mean the gradient code was
- *     edited without anyone re-checking it, and
- *   - the day the path is fixed, the ratio moves toward 1.0 and this check
- *     fails, which is the prompt to flip it to a real assertion and delete this
- *     comment.
- *
- * The permitted band is deliberately wide (1.40 +/- 0.20). A tight band would
- * make the test fail for any incidental change, and a test that fails for
- * incidental reasons stops being read.
+ * Fixed together they move the ratio from -0.12 to 1.00, so the lock is gone and
+ * this is an ordinary assertion with a band. The band is set by the measurement,
+ * not by taste: a central difference in float32 at h = 1e-2 over 4,192 weights
+ * carries a few percent, and the two step sizes below agree to about 2%, so
+ * anything tighter would be asserting that the finite difference is exact.
  */
-static const float KNOWN_DIRECTIONAL_RATIO = -0.12f;
-static const float KNOWN_DIRECTIONAL_TOLERANCE = 0.20f;
+static const float EXPECTED_DIRECTIONAL_RATIO = 1.00f;
+static const float DIRECTIONAL_RATIO_TOLERANCE = 0.06f;
 
 static void test_gradients(void) {
   /* Re-seed and re-initialise rather than relying on being called first. The
@@ -350,16 +347,13 @@ static void test_gradients(void) {
   ok_close(head, head_expected, 0.02f * (head < 0 ? -head : head), label);
 
   const float ratio = analytic != 0.0f ? numeric / analytic : 0.0f;
-  printf("\n  KNOWN DEFECT -- read docs/KNOWN-ISSUES.md\n");
-  printf("  The analytic gradient is NOT a correct gradient for the embedding,\n");
-  printf("  attention and MLP parameters. Correct would be a ratio of 1.000.\n");
-  printf("  Only the output head's gradient is right, and it is verified above.\n");
-  printf("  Measured ratio numeric/analytic = %.3f (expected %.2f +/- %.2f).\n", ratio,
-         KNOWN_DIRECTIONAL_RATIO, KNOWN_DIRECTIONAL_TOLERANCE);
-  const float deviation = ratio - KNOWN_DIRECTIONAL_RATIO;
-  ok(deviation < 0.0f ? -deviation <= KNOWN_DIRECTIONAL_TOLERANCE
-                      : deviation <= KNOWN_DIRECTIONAL_TOLERANCE,
-     "the known gradient defect has not changed");
+  printf("\n  end-to-end directional derivative over all %d parameters\n", n);
+  printf("  Measured ratio numeric/analytic = %.4f (expected %.2f +/- %.2f).\n",
+         ratio, EXPECTED_DIRECTIONAL_RATIO, DIRECTIONAL_RATIO_TOLERANCE);
+  const float deviation = ratio - EXPECTED_DIRECTIONAL_RATIO;
+  ok(deviation < 0.0f ? -deviation <= DIRECTIONAL_RATIO_TOLERANCE
+                      : deviation <= DIRECTIONAL_RATIO_TOLERANCE,
+     "the hand-written backward pass is a correct gradient, end to end");
 }
 
 /* ------------------------------------------------------------------------ */

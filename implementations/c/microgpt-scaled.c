@@ -192,6 +192,14 @@ static float saved_probs[BLOCK_SIZE][MAX_VOCAB];
 static float ALIGN128 dx[N_EMBD];
 static float ALIGN128 dtmp2[MLP_DIM];
 
+/* dL/dk[t] and dL/dv[t], banked per key position. Every query at position t'
+ * reads the keys and values of positions 0..t', so the gradient on key t is
+ * only complete once the query loop has been past t. The loop walks queries
+ * from the last position down to the first, which is what makes it safe to
+ * consume dk_pending[t] inside position t's own pass; see the note there. */
+static float ALIGN128 dk_pending[BLOCK_SIZE][N_EMBD];
+static float ALIGN128 dv_pending[BLOCK_SIZE][N_EMBD];
+
 /* ── NEON-vectorized helpers (N_EMBD=16 = 4x float32x4) ─────────────── */
 
 static inline void linear_fwd(const float *__restrict__ x,
@@ -444,7 +452,13 @@ static void init_weights(void) {
 
 /* ── Forward pass (single position, causal attention via KV cache) ─── */
 static void forward_pos(int token_id, int pos_id, int seq_len) {
-  float *x = saved_x_embed[pos_id];
+  /* `x` is the running residual stream, and it is a local on purpose. It used to
+   * alias saved_x_embed[pos_id], and the pre-layer rmsnorm below wrote its
+   * normalised output straight back over that array -- so the only record of the
+   * norm's *input* was the norm's *output*, and the backward pass's final call
+   * fed that corrupted vector to rmsnorm_bwd as the input it differentiates.
+   * See microgpt.c for the full account; the same line was wrong in both. */
+  float ALIGN128 x[N_EMBD];
 
   /* Token + position embedding — NEON add */
   const float *__restrict__ te = wte + token_id * N_EMBD;
@@ -452,6 +466,7 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
   for (int i = 0; i < N_EMBD; i += 4) {
     float32x4_t a = vld1q_f32(te + i);
     float32x4_t b = vld1q_f32(pe + i);
+    vst1q_f32(saved_x_embed[pos_id] + i, vaddq_f32(a, b));
     vst1q_f32(x + i, vaddq_f32(a, b));
   }
 
@@ -537,6 +552,13 @@ static void backward_all(const int *tokens, int n) {
    * dL/d(logits_i) = probs_i - (i == target ? 1 : 0)   [scaled by 1/n]
    */
   float inv_n = 1.0f / n;
+
+  /* Zero the per-key gradient banks for this pass. They are read exactly once
+   * each -- by the pass for the position that produced the key -- so clearing
+   * them here rather than at the end of the last position is what makes a
+   * second backward_all call see a clean slate. */
+  memset(dk_pending, 0, sizeof(dk_pending));
+  memset(dv_pending, 0, sizeof(dv_pending));
 
   /* We process positions in reverse for causal attention gradient accumulation
    */
@@ -673,7 +695,29 @@ static void backward_all(const int *tokens, int n) {
         }
       }
 
-      /* Backward through Q, K, V linear projections */
+      /* Bank this query's contribution to every key and value it read. Query
+       * pos reads keys and values 0..pos, so d_k_pending[t] and d_v_pending[t]
+       * are final the moment the outer loop reaches position t -- no query
+       * before t can see them. That is the whole ordering argument, and it is
+       * why this pass may consume position pos's own bank immediately below. */
+      for (int t = 0; t < num_keys; t++) {
+        for (int i = 0; i < N_EMBD; i++) {
+          dk_pending[t][i] += d_k_accum[t][i];
+          dv_pending[t][i] += d_v_accum[t][i];
+        }
+      }
+
+      /* Backward through Q, K, V linear projections.
+       *
+       * This is the path the C port was missing, and it is worth being precise
+       * about why it is not optional. In the Python reference, k[t] and v[t]
+       * are Value objects built during an earlier call to gpt(), so the tape
+       * already contains the route from them back to that position's own
+       * x_normed and embeddings, and backward() follows it for free. C has no
+       * tape, so the route has to be written down. It used to be deferred to
+       * the end of the whole pass and then pushed straight into the embeddings,
+       * which skipped everything in between -- the attention output projection,
+       * the MLP, and any layer below this one. */
       float d_x_normed_attn[N_EMBD];
       memset(d_x_normed_attn, 0, N_EMBD * sizeof(float));
 
@@ -682,108 +726,17 @@ static void backward_all(const int *tokens, int n) {
                    N_EMBD, N_EMBD);
       linear_bwd_x(d_q, attn_wq[li], d_x_normed_attn, N_EMBD, N_EMBD);
 
-      /* K: k[pos] = linear(x_normed[pos], wk) — only this position's K was
-       * produced here */
-      linear_bwd_w(d_k_accum[pos], saved_x_normed_attn[pos],
+      /* K: k[pos] = linear(x_normed[pos], wk) */
+      linear_bwd_w(dk_pending[pos], saved_x_normed_attn[pos],
                    g_attn_wk[li], N_EMBD, N_EMBD);
-      linear_bwd_x(d_k_accum[pos], attn_wk[li], d_x_normed_attn,
-                   N_EMBD, N_EMBD);
+      linear_bwd_x(dk_pending[pos], attn_wk[li], d_x_normed_attn, N_EMBD,
+                   N_EMBD);
 
       /* V: v[pos] = linear(x_normed[pos], wv) */
-      linear_bwd_w(d_v_accum[pos], saved_x_normed_attn[pos],
+      linear_bwd_w(dv_pending[pos], saved_x_normed_attn[pos],
                    g_attn_wv[li], N_EMBD, N_EMBD);
-      linear_bwd_x(d_v_accum[pos], attn_wv[li], d_x_normed_attn,
-                   N_EMBD, N_EMBD);
-
-      /* But we also need to propagate d_k and d_v back to earlier positions'
-       * x_normed, which were computed in earlier forward_pos calls. Since those
-       * share the same weight matrices, we accumulate weight grads, and we need
-       * to propagate dx back through those positions' rmsnorm -> residual ->
-       * etc.
-       *
-       * HOWEVER, in the Python code the gradients from k[t] and v[t] for t <
-       * pos DO flow back to earlier positions' embeddings. This is handled by
-       * autograd. For manual backprop, we need to handle this.
-       *
-       * We accumulate the weight grads for K and V from all query positions,
-       * but we ALSO need to push d_k[t] and d_v[t] back through position t's
-       * computation. We'll handle this after processing all query positions.
-       */
-      /* For now, accumulate d_k and d_v for positions OTHER than current pos
-       * into separate accumulators that we'll process later. */
-      /* Actually, since each position t<pos already had its own forward saved,
-       * and we need to push gradients back through those, let's accumulate into
-       * global arrays and process them after all positions. */
-
-      /* Store K/V grads for other positions — accumulate into the saved arrays
-       */
-      /* We use static arrays for this */
-      static float dk_global[BLOCK_SIZE][N_EMBD];
-      static float dv_global[BLOCK_SIZE][N_EMBD];
-      static int dk_dv_initialized = 0;
-
-      /* On first call per backward pass (pos == n-1), zero out */
-      if (pos == n - 1 && !dk_dv_initialized) {
-        for (int t = 0; t < n; t++) {
-          memset(dk_global[t], 0, N_EMBD * sizeof(float));
-          memset(dv_global[t], 0, N_EMBD * sizeof(float));
-        }
-        dk_dv_initialized = 1;
-      }
-
-      /* Accumulate for all positions */
-      for (int t = 0; t < num_keys; t++) {
-        if (t == pos)
-          continue; /* already handled above */
-        /* Weight grads for K and V at position t */
-        linear_bwd_w(d_k_accum[t], saved_x_normed_attn[t],
-                     g_attn_wk[li], N_EMBD, N_EMBD);
-        linear_bwd_w(d_v_accum[t], saved_x_normed_attn[t],
-                     g_attn_wv[li], N_EMBD, N_EMBD);
-        /* Accumulate dx for position t */
-        for (int i = 0; i < N_EMBD; i++) {
-          dk_global[t][i] += d_k_accum[t][i];
-          dv_global[t][i] += d_v_accum[t][i];
-        }
-      }
-
-      /* If this is the last (pos==0) position being processed,
-       * push all accumulated dk/dv grads back through earlier positions */
-      if (pos == 0) {
-        for (int t = 0; t < n; t++) {
-          /* dk_global[t] needs to go back through wk -> x_normed_attn[t] ->
-           * rmsnorm -> ... */
-          float d_xn_kv[N_EMBD];
-          memset(d_xn_kv, 0, N_EMBD * sizeof(float));
-          linear_bwd_x(dk_global[t], attn_wk[li], d_xn_kv, N_EMBD,
-                       N_EMBD);
-          linear_bwd_x(dv_global[t], attn_wv[li], d_xn_kv, N_EMBD,
-                       N_EMBD);
-
-          /* Back through rmsnorm into x_residual_attn[t] */
-          float d_x_res[N_EMBD];
-          memset(d_x_res, 0, N_EMBD * sizeof(float));
-          rmsnorm_bwd(d_xn_kv, saved_x_residual_attn[t], d_x_res,
-                      saved_rms_attn[t], N_EMBD);
-
-          /* This goes back to x before attention = output of previous layer or
-           * embedding. For simplicity with 1 layer, this goes back to the
-           * embedding. Propagate to wte and wpe. */
-          /* Back through pre-layer rmsnorm */
-          float d_x_pre_rms[N_EMBD];
-          memset(d_x_pre_rms, 0, N_EMBD * sizeof(float));
-          rmsnorm_bwd(d_x_res, saved_x_embed[t], d_x_pre_rms, saved_rms_pre[t],
-                      N_EMBD);
-
-          /* Back to wte and wpe */
-          int tok_t = tokens[t];
-          for (int i = 0; i < N_EMBD; i++) {
-            g_wte[tok_t * N_EMBD + i] += d_x_pre_rms[i];
-            g_wpe[t * N_EMBD + i] += d_x_pre_rms[i];
-          }
-        }
-        dk_dv_initialized = 0; /* reset for next backward call */
-      }
+      linear_bwd_x(dv_pending[pos], attn_wv[li], d_x_normed_attn, N_EMBD,
+                   N_EMBD);
 
       /* Backward through rmsnorm before attention */
       /* dx already contains d(x_residual_attn) from residual */
