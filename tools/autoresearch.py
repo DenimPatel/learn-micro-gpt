@@ -439,7 +439,7 @@ TRACKS: dict[str, Track] = {
         tool_hint="Install Node from https://nodejs.org/",
         fence="typescript",
         build_hint="`npx tsc --noEmit`",
-        loss_parse="stdout",
+        loss_parse="trace",
     ),
     "c": Track(
         name="c",
@@ -876,6 +876,33 @@ def train_once(
                 "reads that line, and so does tools/parity.py, which is why all five "
                 "tracks print it. Whatever replaced it, put it back:\n"
                 f"{(completed.stdout or '')[-1500:]}"
+            )
+        # The mirror of the trace branch's count check, and it is here because of
+        # what it catches.
+        #
+        # The TypeScript track's `loss_parse` was once "stdout" when it should have
+        # been "trace". Nothing threw. That track prints the first 5 steps and then
+        # every hundredth -- sparse on purpose, so a human watching a laptop does not
+        # sit through 1,000 lines -- so the parse succeeded, produced 15 points, and
+        # the loss axis was quietly computed as the mean of those 15. It recorded
+        # 2.8047 where the real last-50 window is 2.3091, a 21% error, and it did so
+        # in a way that still passed every check: the ledger was internally
+        # consistent, the baseline and the candidate agreed with each other, and
+        # `verify` re-measured the same wrong number and found it unchanged.
+        #
+        # A declared parse mode is a claim about a program this harness does not
+        # control, and a claim that silently degrades is worse than a wrong one that
+        # throws. Fewer points than the window needs is not a measurement.
+        if len(losses) < TREND_WINDOW:
+            raise ResearchError(
+                f"the {track.name} track declares loss_parse='stdout' and its stdout "
+                f"yielded {len(losses)} `step N / M | loss X` lines, fewer than the "
+                f"{TREND_WINDOW}-step window the loss axis is defined over. Either the "
+                f"track has started printing sparsely -- in which case its "
+                f"`loss_parse` should be 'trace' and it should write one -- or it has "
+                f"stopped printing the per-step line altogether. A window taken from "
+                f"fewer points than the window is wide is a number about the wrong "
+                f"steps, and it is worse than no number because it looks like one."
             )
     reported = REPORTED_SPEED_RE.search(completed.stdout)
     reported_sps = float(reported.group("sps")) if reported else None

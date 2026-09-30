@@ -61,7 +61,7 @@ import type {
  * it for the whole module's life.
  */
 
-const TRACKS: readonly ResearchTrack[] = ['rust', 'go', 'typescript']
+const TRACKS: readonly ResearchTrack[] = ['rust', 'go', 'typescript', 'c']
 
 /**
  * `vi.hoisted` because the mock factory is hoisted above the imports, and the
@@ -177,10 +177,15 @@ function attempt(
  * Every required field is present, including the ones this page never reads
  * (`objective`), because a fixture that satisfies the type is the cheapest way
  * to notice that a field was added and this test was not updated.
- * `tracks` carries all three languages, because `tracks()` is
+ * `tracks` carries every language, because `tracks()` is
  * `Object.keys(research.tracks)` and the switcher is one button per entry -- a
  * single-track fixture would render a page that could never fail the multi-track
  * e2e tests if it ever reached a browser.
+ *
+ * `TRACKS` is the single place the list is written, and `tracks` and `pareto` are
+ * the two objects that have to be spelled out because they are keyed by it. That
+ * is three places to update for a new language, and the cost of missing one is a
+ * typecheck error rather than a wrong number, which is the good kind of cost.
  */
 function buildFixture(runs: ResearchRow[]): ResearchResults {
   const perTrack = (pick: (row: ResearchRow) => boolean) =>
@@ -212,6 +217,13 @@ function buildFixture(runs: ResearchRow[]): ResearchResults {
         source: 'src/index.ts',
         probe: 'src/probe.ts',
         build: '`npx tsc --noEmit`',
+      },
+      c: {
+        language: 'C',
+        candidate_dir: 'candidate-c',
+        source: 'microgpt.c',
+        probe: 'probe.c',
+        build: '`cc -O3 -o microgpt microgpt.c -lm`',
       },
     },
     provenance_of: Object.fromEntries(
@@ -261,7 +273,7 @@ function buildFixture(runs: ResearchRow[]): ResearchResults {
       discard: runs.filter((row) => row.status === 'discard').length,
       crash: runs.filter((row) => row.status === 'crash').length,
     },
-    pareto: { rust: [], go: [], typescript: [] },
+    pareto: { rust: [], go: [], typescript: [], c: [] },
     runs,
     caveats: ['every number here is a fixture, and none of it was measured'],
   }

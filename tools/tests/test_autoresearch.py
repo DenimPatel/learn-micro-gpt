@@ -935,11 +935,6 @@ class TestTheBriefIsWrittenForWhicheverTrackIsRunning(unittest.TestCase):
                 self.assertIn(track.lint_command, brief)
 
     def test_it_never_tells_one_track_to_satisfy_another_track_toolchain(self) -> None:
-        # A row for every track, not just an entry for the newest one. A missing
-        # key raised KeyError on the new name, which is at least loud, but it
-        # also meant the new track's brief was never checked at all -- so a row is
-        # owed for each track, and the set is asserted against TRACKS so the next
-        # track cannot be added without one.
         foreign = {
             "rust": ("`go.mod`", "npx tsc", "`-lm`", "`cc "),
             "go": ("Cargo.toml", "cargo clippy", "npx tsc", "`-lm`", "`cc "),
@@ -1031,6 +1026,14 @@ class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
 
         It would invite a change already tried, and worse, it implies the two are
         competing on one axis.
+
+        Matched on run id rather than on description, and that is not a
+        preference. Descriptions repeat: the model independently proposes
+        "Lower Adam beta2 from 0.99 to 0.98" on the Rust track twice, on Go once,
+        on TypeScript twice and on C once, so a description-based cross-track
+        assertion fails as soon as the same idea lands on two tracks within the
+        15-row window -- which is what adding a fourth track did. The ids are
+        unique across the whole ledger, so they cannot collide.
         """
         for track in ar.TRACKS.values():
             with self.subTest(track=track.name):
@@ -1039,11 +1042,13 @@ class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
                     ar.read_ledger(),
                     {"loss": 2.4, "steps_per_sec": 90.0, "grad_ratio": 1.0},
                 )
-                mine = [r for r in ar.read_ledger() if r.track == track.name]
+                ledger = ar.read_ledger()
+                mine = [r for r in ledger if r.track == track.name]
+                self.assertTrue(mine, f"the {track.name} track has no rows at all")
                 for row in mine[-15:]:
-                    self.assertIn(row.description[:30], prompt)
-                for row in [r for r in ar.read_ledger() if r.track != track.name][-15:]:
-                    self.assertNotIn(row.description[:30], prompt)
+                    self.assertIn(row.run_id, prompt)
+                for row in [r for r in ledger if r.track != track.name][-15:]:
+                    self.assertNotIn(row.run_id, prompt)
 
     def test_the_thresholds_and_the_session_baseline_are_included(self) -> None:
         for value in (
