@@ -281,3 +281,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0279	2e3a7cf5ba325ed9ffdbb542bf45939adc0b62fa	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	cc failed	Select the 50 shortest sampled documents into the final curriculum window once at load time
 0280	f9c352f7a64c39e41b27c0257906c78ceda8cd9c	c	2.918246	50153.384066	-0.248862	+2.814228	1.005573	discard	no axis improved materially: discarded: loss -24.9%, speed +281.4%; failing learned, loss_material, loss_tolerance	One-time ascending length count sort of the shuffled 1000-document training prefix
 0281	0f64cecb85586c3ad6d7f868d9005e35456d73dd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: IncompleteRead(88 bytes read)	the model returned nothing usable
+0282	d03eede146db7ccdda7f5c9ed3c969ceedc7d118	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: IncompleteRead(22 bytes read)	the model returned nothing usable

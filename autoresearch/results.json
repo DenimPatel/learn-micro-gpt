@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 278,
+    "experiments": 279,
     "keep": 116,
     "discard": 16,
-    "crash": 146
+    "crash": 147
   },
   "pareto": {
     "rust": [
@@ -4485,6 +4485,21 @@
       "reason": "the model request failed: IncompleteRead(88 bytes read)",
       "description": "the model returned nothing usable",
       "measured": "2026-09-30T21:13:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0282",
+      "parent": "d03eede146db7ccdda7f5c9ed3c969ceedc7d118",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the model request failed: IncompleteRead(22 bytes read)",
+      "description": "the model returned nothing usable",
+      "measured": "2026-09-30T22:14:43Z",
       "has_record": true
     }
   ],
