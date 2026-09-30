@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 246,
+    "experiments": 247,
     "keep": 108,
     "discard": 9,
-    "crash": 129
+    "crash": 130
   },
   "pareto": {
     "rust": [
@@ -4005,6 +4005,21 @@
       "reason": "",
       "description": "Accumulate attention key and value gradients directly in reverse-order banks to remove stack zeroing and copy overhead",
       "measured": "2026-09-30T06:20:29Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0250",
+      "parent": "b0ab2e9690f70c723d22eefd957cab2a50df140c",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use one full-width attention head to cut attention softmax overhead",
+      "measured": "2026-09-30T06:21:55Z",
       "has_record": true
     }
   ],

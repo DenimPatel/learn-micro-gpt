@@ -249,3 +249,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0247	b9bc1d9a32cc4dd155cc69f3533defb42d654a4d	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Accumulate linear backward input gradients in registers before updating dx
 0248	c0b1db851ea61a90cd67ea7afc4441273dc6b284	c	2.348480	55826.288273	-0.005031	+3.245659	0.988592	keep		Keep linear backward input gradients in fixed NEON registers across output rows
 0249	1c85defd631a7abee559b762c3fb178ec1cb12b7	c	2.348480	56384.485888	-0.005031	+3.288111	0.988592	keep		Accumulate attention key and value gradients directly in reverse-order banks to remove stack zeroing and copy overhead
+0250	b0ab2e9690f70c723d22eefd957cab2a50df140c	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one full-width attention head to cut attention softmax overhead
