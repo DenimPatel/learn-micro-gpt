@@ -220,9 +220,9 @@
     }
   },
   "counts": {
-    "experiments": 271,
+    "experiments": 272,
     "keep": 116,
-    "discard": 12,
+    "discard": 13,
     "crash": 143
   },
   "pareto": {
@@ -4380,6 +4380,21 @@
       "reason": "no axis improved materially: discarded: loss +9.8%, speed -73.0%; failing speed_material, speed_tolerance",
       "description": "Sort the first shuffled training pass by ascending document length",
       "measured": "2026-09-30T19:42:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0275",
+      "parent": "3edbbef577250bb942aabc1e43c79b7edea7b4c3",
+      "track": "c",
+      "loss": 2.918246,
+      "steps_per_sec": 58233.910887,
+      "loss_gain": -0.248862,
+      "speed_gain": 3.428762,
+      "grad_ratio": 1.005573,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -24.9%, speed +342.9%; failing learned, loss_material, loss_tolerance",
+      "description": "Count-sort the visited shuffled document prefix by length so the final window uses the longest documents",
+      "measured": "2026-09-30T19:51:41Z",
       "has_record": true
     }
   ],

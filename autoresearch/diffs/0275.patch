@@ -1,0 +1,28 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -958,6 +958,25 @@ int main(int argc, char **argv) {
+ 
+   seed_rng(run_seed);
+   load_data(dataset_path);
++
++  int order_count = num_steps < num_docs ? num_steps : num_docs;
++  int sorted_prefix[MAX_DOCS];
++  int bucket[MAX_DOC_LEN + 1] = {0};
++  for (int i = 0; i < order_count; i++) {
++    sorted_prefix[i] = doc_order[i];
++    bucket[doc_lens[sorted_prefix[i]]]++;
++  }
++  int offset = 0;
++  for (int len = 0; len <= MAX_DOC_LEN; len++) {
++    int count = bucket[len];
++    bucket[len] = offset;
++    offset += count;
++  }
++  for (int i = 0; i < order_count; i++) {
++    int idx = sorted_prefix[i];
++    doc_order[bucket[doc_lens[idx]]++] = idx;
++  }
++
+   init_weights();
+ 
+   /* Adam hyperparams */
