@@ -116,3 +116,57 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
+@@ -630,18 +692,7 @@
+ 
+       /* Backward through multi-head attention */
+       float d_q[N_EMBD] = {0};
+-      /* d_k and d_v accumulate across positions — we use saved_k/saved_v arrays
+-       */
+-      /* But since we process one query position at a time, we accumulate into
+-       * per-position grads */
+-      float d_k_accum[BLOCK_SIZE][N_EMBD]; /* we'll add to these */
+-      float d_v_accum[BLOCK_SIZE][N_EMBD];
+-      /* Initialize only what we need */
+       int num_keys = pos + 1;
+-      for (int t = 0; t < num_keys; t++) {
+-        memset(d_k_accum[t], 0, N_EMBD * sizeof(float));
+-        memset(d_v_accum[t], 0, N_EMBD * sizeof(float));
+-      }
+ 
+       for (int h = 0; h < N_HEAD; h++) {
+         int hs = h * HEAD_DIM;
+@@ -653,7 +704,7 @@
+         for (int t = 0; t < num_keys; t++) {
+           float dot = 0.0f;
+           for (int j = 0; j < HEAD_DIM; j++) {
+-            d_v_accum[t][hs + j] +=
++            dv_pending[t][hs + j] +=
+                 saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
+             dot += d_x_attn[hs + j] * saved_v[t][hs + j];
+           }
+@@ -677,22 +728,13 @@
+           float dl = d_logits_attn[t] * INV_SQRT_HD;
+           for (int j = 0; j < HEAD_DIM; j++) {
+             d_q[hs + j] += dl * saved_k[t][hs + j];
+-            d_k_accum[t][hs + j] += dl * saved_q[pos][hs + j];
++            dk_pending[t][hs + j] += dl * saved_q[pos][hs + j];
+           }
+         }
+       }
+ 
+-      /* Bank this query's contribution to every key and value it read. Query
+-       * pos reads keys and values 0..pos, so d_k_pending[t] and d_v_pending[t]
+-       * are final the moment the outer loop reaches position t -- no query
+-       * before t can see them. That is the whole ordering argument, and it is
+-       * why this pass may consume position pos's own bank immediately below. */
+-      for (int t = 0; t < num_keys; t++) {
+-        for (int i = 0; i < N_EMBD; i++) {
+-          dk_pending[t][i] += d_k_accum[t][i];
+-          dv_pending[t][i] += d_v_accum[t][i];
+-        }
+-      }
++      /* Reverse query order makes bank pos complete once the current position
++       * has added its contribution, so it can be consumed immediately below. */
+ 
+       /* Backward through Q, K, V linear projections.
+        *

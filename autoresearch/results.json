@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "0d67ceb20f1e5e391047a703b94df8606339597198b466a7f7c1a443e6d61a8f",
+      "candidate_sha256": "7b254c329e2f2e6e74cd89cd4b2bf660156bb324e6fe603dac8c7ac559ca0392",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 245,
-    "keep": 107,
+    "experiments": 246,
+    "keep": 108,
     "discard": 9,
     "crash": 129
   },
@@ -253,7 +253,7 @@
     "c": [
       "0235",
       "0237",
-      "0248"
+      "0249"
     ]
   },
   "runs": [
@@ -3990,6 +3990,21 @@
       "reason": "",
       "description": "Keep linear backward input gradients in fixed NEON registers across output rows",
       "measured": "2026-09-30T06:17:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0249",
+      "parent": "1c85defd631a7abee559b762c3fb178ec1cb12b7",
+      "track": "c",
+      "loss": 2.34848,
+      "steps_per_sec": 56384.485888,
+      "loss_gain": -0.005031,
+      "speed_gain": 3.288111,
+      "grad_ratio": 0.988592,
+      "status": "keep",
+      "reason": "",
+      "description": "Accumulate attention key and value gradients directly in reverse-order banks to remove stack zeroing and copy overhead",
+      "measured": "2026-09-30T06:20:29Z",
       "has_record": true
     }
   ],
