@@ -182,10 +182,10 @@
     "c": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol."
   },
   "counts": {
-    "experiments": 309,
+    "experiments": 310,
     "keep": 132,
     "discard": 20,
-    "crash": 157
+    "crash": 158
   },
   "pareto": {
     "rust": [
@@ -5353,6 +5353,22 @@
       "description": "Tie output embeddings to token embeddings by summing both gradients and copying the shared update",
       "val_loss": 2.459913,
       "measured": "2026-10-01T23:37:42Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0321",
+      "parent": "37c67ec57a131da726f7e8fe053c6c22ad6976c4",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Widen the MLP to 16 while tying token and output embeddings",
+      "val_loss": null,
+      "measured": "2026-10-01T23:44:01Z",
       "has_record": true
     }
   ],
