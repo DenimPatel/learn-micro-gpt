@@ -1,0 +1,93 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -91,6 +91,10 @@ static float ALIGN128 lm_head[MAX_VOCAB * N_EMBD];
+ /* Direct output-class prior learned alongside the language model. */
+ static float ALIGN128 lm_bias[MAX_VOCAB];
+ 
++/* Fixed conditional log-prior estimated from the non-held-out training
++ * sequences and combined with the trainable unigram bias at inference. */
++static float ALIGN128 bigram_prior[MAX_VOCAB * MAX_VOCAB];
++
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
+@@ -489,6 +493,7 @@ static void init_weights(void) {
+ static void init_weights(void) {
+   const float std = 0.08f;
+   float target_counts[MAX_VOCAB] = {0};
++  float bigram_counts[MAX_VOCAB * MAX_VOCAB] = {0};
+   float target_total = 0.0f;
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+@@ -499,8 +504,11 @@ static void init_weights(void) {
+     if (n_targets > BLOCK_SIZE)
+       n_targets = BLOCK_SIZE;
+     target_total += (float)n_targets;
+     for (int i = 0; i < n_targets; i++) {
+-      int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+-                              : BOS_TOKEN;
+-      target_counts[token] += 1.0f;
++      int target = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
++                               : BOS_TOKEN;
++      int context = i == 0 ? BOS_TOKEN
++                           : char_to_idx[(int)docs_raw[doc_id][i - 1]];
++      target_counts[target] += 1.0f;
++      bigram_counts[context * vocab_size + target] += 1.0f;
+     }
+   }
+   if (target_total > 0.0f) {
+@@ -510,8 +518,27 @@ static void init_weights(void) {
+     float denominator = target_total + alpha * (float)vocab_size;
+     for (int i = 0; i < vocab_size; i++)
+       lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++
++    const float bigram_alpha = 10.0f;
++    for (int context = 0; context < vocab_size; context++) {
++      float context_total = 0.0f;
++      for (int target = 0; target < vocab_size; target++)
++        context_total +=
++            bigram_counts[context * vocab_size + target];
++      float denominator = context_total + bigram_alpha;
++      for (int target = 0; target < vocab_size; target++) {
++        float unigram_probability = expf(lm_bias[target]);
++        float conditional_probability =
++            (bigram_counts[context * vocab_size + target] +
++             bigram_alpha * unigram_probability) /
++            denominator;
++        bigram_prior[context * vocab_size + target] =
++            logf(conditional_probability) - lm_bias[target];
++      }
++    }
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
++    for (int context = 0; context < vocab_size; context++)
++      for (int target = 0; target < vocab_size; target++)
++        bigram_prior[context * vocab_size + target] =
++            -logf((float)vocab_size) - lm_bias[target];
+   }
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+@@ -615,8 +642,10 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++  {
++    const float *prior = bigram_prior + token_id * vocab_size;
++    for (int i = 0; i < vocab_size; i++)
++      saved_logits[pos_id][i] += lm_bias[i] + prior[i];
++  }
+   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
+ }
+@@ -887,8 +916,10 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+ 
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++  {
++    const float *prior = bigram_prior + token_id * vocab_size;
++    for (int i = 0; i < vocab_size; i++)
++      logits_out[i] += lm_bias[i] + prior[i];
++  }
+ }

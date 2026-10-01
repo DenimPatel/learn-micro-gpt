@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 312,
+    "experiments": 313,
     "keep": 134,
-    "discard": 20,
+    "discard": 21,
     "crash": 158
   },
   "pareto": {
@@ -5414,6 +5414,22 @@
       "description": "Widen the single MLP from 12 to 16 hidden units",
       "val_loss": 2.379219,
       "measured": "2026-10-01T23:51:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0324",
+      "parent": "99491184a3bd19b9a70bdc77928270f46f7f3d84",
+      "track": "c",
+      "loss": 2.330538,
+      "steps_per_sec": 45879.803347,
+      "loss_gain": 0.004058,
+      "speed_gain": 0.927648,
+      "grad_ratio": 1.004761,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.4%, speed +92.8%; failing learned, loss_material",
+      "description": "Add a smoothed training-only bigram log-prior to output logits",
+      "val_loss": 2.321815,
+      "measured": "2026-10-01T23:56:20Z",
       "has_record": true
     }
   ],
