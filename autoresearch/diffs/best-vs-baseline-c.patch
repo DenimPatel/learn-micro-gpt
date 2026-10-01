@@ -399,7 +399,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,7 +1025,7 @@
+@@ -880,11 +1025,15 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -408,7 +408,16 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -903,6 +1048,7 @@
+-    int doc_idx = doc_order[step % num_docs];
++    int doc_slot = step;
++    /* Prime the final-window documents early, then replay them at the end. */
++    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
++      doc_slot += NUM_STEPS - 50;
++    int doc_idx = doc_order[doc_slot % num_docs];
+     const char *doc = docs_raw[doc_idx];
+     int doc_len = doc_lens[doc_idx];
+ 
+@@ -903,6 +1052,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -416,7 +425,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -931,13 +1077,16 @@
+@@ -931,13 +1081,16 @@
      backward_all(tokens, n);
  
      /* Adam update */

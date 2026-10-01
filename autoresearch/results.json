@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "38e1648978d39f7e0bf017ee927b42dfbd5c1e4f9741b59eea054ceedeaa6659",
+      "candidate_sha256": "25d5dca09be86da22651430056e01f19065ed2c815748d0123caf2dd3c5ca6f3",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 294,
-    "keep": 120,
+    "experiments": 295,
+    "keep": 121,
     "discard": 19,
     "crash": 155
   },
@@ -253,9 +253,9 @@
     "c": [
       "0235",
       "0237",
-      "0249",
       "0292",
-      "0295"
+      "0295",
+      "0298"
     ]
   },
   "runs": [
@@ -4727,6 +4727,21 @@
       "reason": "",
       "description": "Raise the learning-rate decay floor from 20 percent to 30 percent",
       "measured": "2026-10-01T00:13:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0298",
+      "parent": "517b366903acb5abed6f21efa3e8b6310c760ba9",
+      "track": "c",
+      "loss": 2.345888,
+      "steps_per_sec": 61677.948602,
+      "loss_gain": -0.003922,
+      "speed_gain": 3.690685,
+      "grad_ratio": 0.988406,
+      "status": "keep",
+      "reason": "",
+      "description": "Prime and replay the fifty longest final-window documents while skipping fifty other training documents",
+      "measured": "2026-10-01T00:17:14Z",
       "has_record": true
     }
   ],

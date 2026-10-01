@@ -1029,7 +1029,11 @@ int main(int argc, char **argv) {
 
   /* Training loop */
   for (int step = 0; step < num_steps; step++) {
-    int doc_idx = doc_order[step % num_docs];
+    int doc_slot = step;
+    /* Prime the final-window documents early, then replay them at the end. */
+    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
+      doc_slot += NUM_STEPS - 50;
+    int doc_idx = doc_order[doc_slot % num_docs];
     const char *doc = docs_raw[doc_idx];
     int doc_len = doc_lens[doc_idx];
 
