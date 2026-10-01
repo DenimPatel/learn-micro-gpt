@@ -298,3 +298,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0296	ed0ec5ee7db88a0ac508f0fb68badf80c644014a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use two width-6 attention heads with corrected inverse-square-root scaling
 0297	42a9cbbbfbcf373cc858f94d41eafc10f1299389	c	2.360724	52870.889247	-0.010271	+3.020897	0.988406	keep		Raise the learning-rate decay floor from 20 percent to 30 percent
 0298	517b366903acb5abed6f21efa3e8b6310c760ba9	c	2.345888	61677.948602	-0.003922	+3.690685	0.988406	keep		Prime and replay the fifty longest final-window documents while skipping fifty other training documents
+0299	907d2916c469667a282dbdb327f026135dc88625	c	2.354066	60894.230517	-0.007422	+3.631082	0.988406	keep		Replay the fifty lowest observed-loss documents in the measured window

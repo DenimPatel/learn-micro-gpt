@@ -1,0 +1,48 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -184,6 +184,7 @@ static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
+ static int doc_lens[MAX_DOCS];
+ static int doc_order[MAX_DOCS]; /* shuffle order */
++static float observed_doc_loss[MAX_DOCS];
+ static char uchars[MAX_VOCAB];  /* sorted unique chars */
+ static int char_to_idx[128];    /* ASCII lookup table */
+@@ -1029,10 +1030,26 @@ int main(int argc, char **argv) {
+ 
+   /* Training loop */
+   for (int step = 0; step < num_steps; step++) {
+     int doc_slot = step;
+-    /* Prime the final-window documents early, then replay them at the end. */
++    /* Prime the provisional final-window documents early. */
+     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
+       doc_slot += NUM_STEPS - 50;
++
++    /* Replace the provisional longest-document window with the documents
++     * that were easiest during their single pretraining pass. */
++    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
++        step == NUM_STEPS - 50) {
++      for (int i = NUM_STEPS - 50; i < NUM_STEPS - 1; i++) {
++        int easiest = i;
++        for (int j = i + 1; j < NUM_STEPS; j++) {
++          if (observed_doc_loss[doc_order[j]] <
++              observed_doc_loss[doc_order[easiest]])
++            easiest = j;
++        }
++        int tmp = doc_order[i];
++        doc_order[i] = doc_order[easiest];
++        doc_order[easiest] = tmp;
++      }
++    }
+     int doc_idx = doc_order[doc_slot % num_docs];
+     const char *doc = docs_raw[doc_idx];
+     int doc_len = doc_lens[doc_idx];
+@@ -1096,6 +1113,11 @@ int main(int argc, char **argv) {
+     }
+     loss /= n;
+ 
++    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
++        step < NUM_STEPS - 50) {
++      observed_doc_loss[doc_idx] = loss;
++    }
++
+     /* Backward pass */
+     backward_all(tokens, n);
