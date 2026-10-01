@@ -62,9 +62,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -86,9 +86,9 @@ jobs:
     timeout-minutes: 10
     needs: provenance
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -124,18 +124,18 @@ jobs:
     timeout-minutes: 25
     needs: provenance
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.24'
           cache-dependency-path: implementations/go/go.sum
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -287,9 +287,9 @@ jobs:
     timeout-minutes: 20
     needs: [provenance, content]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -361,7 +361,7 @@ jobs:
         working-directory: visualizer
         run: npx playwright test
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -375,7 +375,7 @@ jobs:
       # download had nothing to find. The report above is the one that should
       # only exist when something broke; the build is the one that should only
       # exist when nothing did.
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: visualizer/dist
@@ -406,21 +406,21 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Download the build that was tested
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: dist
           path: site
           run-id: ${{ github.run_id }}
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
         id: pages
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   # --------------------------------------------------------------------------
   # Nightly: regenerate the benchmarks on a known runner and offer a PR.
@@ -434,17 +434,17 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: '1.24'
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
@@ -472,7 +472,7 @@ jobs:
         # at, because the numbers end up quoted in the site and in the docs, and
         # "the benchmark went down by 3%" and "the benchmark is now measuring
         # something else" look identical in a diff.
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: chore/nightly-benchmarks
           base: main
