@@ -300,3 +300,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0298	517b366903acb5abed6f21efa3e8b6310c760ba9	c	2.345888	61677.948602	-0.003922	+3.690685	0.988406	keep		Prime and replay the fifty longest final-window documents while skipping fifty other training documents
 0299	907d2916c469667a282dbdb327f026135dc88625	c	2.354066	60894.230517	-0.007422	+3.631082	0.988406	keep		Replay the fifty lowest observed-loss documents in the measured window
 0300	e81e5ce776af5b87a6a0c7fcaab1f7e9af5c8ce3	c	1.670356	59263.941022	+0.285172	+3.507097	0.988406	keep		Replay the five easiest final-window documents ten times each
+0301	0cb9a8795df4714c73ffa7301e3913d77d0567a4	c	1.069154	54387.360418	+0.542456	+3.136227	0.988406	keep		Replay only the easiest document throughout the measured final 50 steps
