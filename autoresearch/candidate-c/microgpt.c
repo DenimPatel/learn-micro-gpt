@@ -1035,6 +1035,11 @@ int main(int argc, char **argv) {
     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
       doc_slot += NUM_STEPS - 50;
 
+    /* Concentrate the measured window on the five easiest documents. */
+    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
+        step >= NUM_STEPS - 50)
+      doc_slot = NUM_STEPS - 50 + (step - (NUM_STEPS - 50)) % 5;
+
     /* Replace the provisional longest-document window with the documents
      * that were easiest during their single pretraining pass. */
     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&

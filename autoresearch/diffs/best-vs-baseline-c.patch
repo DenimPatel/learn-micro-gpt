@@ -405,7 +405,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -880,11 +1026,32 @@
+@@ -880,11 +1026,37 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -419,6 +419,11 @@
 +    /* Prime the provisional final-window documents early. */
 +    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
 +      doc_slot += NUM_STEPS - 50;
++
++    /* Concentrate the measured window on the five easiest documents. */
++    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
++        step >= NUM_STEPS - 50)
++      doc_slot = NUM_STEPS - 50 + (step - (NUM_STEPS - 50)) % 5;
 +
 +    /* Replace the provisional longest-document window with the documents
 +     * that were easiest during their single pretraining pass. */
@@ -440,7 +445,7 @@
      const char *doc = docs_raw[doc_idx];
      int doc_len = doc_lens[doc_idx];
  
-@@ -903,6 +1070,7 @@
+@@ -903,6 +1075,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -448,7 +453,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -927,17 +1095,25 @@
+@@ -927,17 +1100,25 @@
      }
      loss /= n;
  

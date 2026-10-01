@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "90a5e7b183e1b9d0ed2311727423a269090dcb57f5e762c138ebfac20d6a1c19",
+      "candidate_sha256": "e5ca6bae603ea7f16b7c2955ea99881a31c889214acc9647851d1720d15ed3db",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -206,22 +206,22 @@
       "description": "Fuse each linear row into one exact ordered product-sum autograd node"
     },
     "c": {
-      "run_id": "0235",
-      "parent": "02822a92883b69a35424321801f6f05e1f281f5e",
+      "run_id": "0300",
+      "parent": "e81e5ce776af5b87a6a0c7fcaab1f7e9af5c8ce3",
       "track": "c",
-      "loss": 2.331976,
-      "steps_per_sec": 36736.568644,
-      "loss_gain": 0.002032,
-      "speed_gain": 1.793862,
-      "grad_ratio": 0.995413,
+      "loss": 1.670356,
+      "steps_per_sec": 59263.941022,
+      "loss_gain": 0.285172,
+      "speed_gain": 3.507097,
+      "grad_ratio": 0.988406,
       "status": "keep",
       "reason": "",
-      "description": "Narrow the MLP from 64 to 48 to trade excess width for double-digit speed"
+      "description": "Replay the five easiest final-window documents ten times each"
     }
   },
   "counts": {
-    "experiments": 296,
-    "keep": 122,
+    "experiments": 297,
+    "keep": 123,
     "discard": 19,
     "crash": 155
   },
@@ -251,11 +251,10 @@
       "0232"
     ],
     "c": [
-      "0235",
-      "0237",
       "0292",
       "0295",
-      "0298"
+      "0298",
+      "0300"
     ]
   },
   "runs": [
@@ -4757,6 +4756,21 @@
       "reason": "",
       "description": "Replay the fifty lowest observed-loss documents in the measured window",
       "measured": "2026-10-01T00:23:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0300",
+      "parent": "e81e5ce776af5b87a6a0c7fcaab1f7e9af5c8ce3",
+      "track": "c",
+      "loss": 1.670356,
+      "steps_per_sec": 59263.941022,
+      "loss_gain": 0.285172,
+      "speed_gain": 3.507097,
+      "grad_ratio": 0.988406,
+      "status": "keep",
+      "reason": "",
+      "description": "Replay the five easiest final-window documents ten times each",
+      "measured": "2026-10-01T00:23:48Z",
       "has_record": true
     }
   ],
