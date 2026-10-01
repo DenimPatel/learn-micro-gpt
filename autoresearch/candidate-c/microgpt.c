@@ -1044,7 +1044,7 @@ int main(int argc, char **argv) {
      * that were easiest during their single pretraining pass. */
     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
         step == NUM_STEPS - 500) {
-      for (int i = NUM_STEPS - 50; i < NUM_STEPS - 1; i++) {
+      for (int i = NUM_STEPS - 500; i < NUM_STEPS - 1; i++) {
         int easiest = i;
         for (int j = i + 1; j < NUM_STEPS; j++) {
           if (observed_doc_loss[doc_order[j]] <
