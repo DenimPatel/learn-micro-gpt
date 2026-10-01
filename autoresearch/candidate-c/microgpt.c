@@ -1078,7 +1078,7 @@ int main(int argc, char **argv) {
 
     /* Adam update */
     float lr_t = learning_rate *
-                 (0.2f + 0.8f * (1.0f - (float)step / num_steps));
+                 (0.3f + 0.7f * (1.0f - (float)step / num_steps));
     float b1c = 1.0f - powf(beta1, step + 1);
     float b2c = 1.0f - powf(beta2, step + 1);
 

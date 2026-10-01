@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "7ae01330fdd517b4536e0e52395642c6511199f9f913492a318ada1fb8406d11",
+      "candidate_sha256": "38e1648978d39f7e0bf017ee927b42dfbd5c1e4f9741b59eea054ceedeaa6659",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 293,
-    "keep": 119,
+    "experiments": 294,
+    "keep": 120,
     "discard": 19,
     "crash": 155
   },
@@ -4712,6 +4712,21 @@
       "reason": "the patch did not apply",
       "description": "Use two width-6 attention heads with corrected inverse-square-root scaling",
       "measured": "2026-10-01T00:08:07Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0297",
+      "parent": "42a9cbbbfbcf373cc858f94d41eafc10f1299389",
+      "track": "c",
+      "loss": 2.360724,
+      "steps_per_sec": 52870.889247,
+      "loss_gain": -0.010271,
+      "speed_gain": 3.020897,
+      "grad_ratio": 0.988406,
+      "status": "keep",
+      "reason": "",
+      "description": "Raise the learning-rate decay floor from 20 percent to 30 percent",
+      "measured": "2026-10-01T00:13:00Z",
       "has_record": true
     }
   ],

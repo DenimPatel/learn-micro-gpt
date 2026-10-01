@@ -296,3 +296,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0294	d7a62cdad7773cce8876280b7a34e7cab5513d1f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replay the fifty longest documents once while caching the attention vector for speed
 0295	fbc2c4d8266b9d1236d3ad5c6e195a5a9fdf213c	c	2.364078	102549.640964	-0.011706	+6.799028	0.988406	keep		Add a 20 percent learning rate floor to the linear decay
 0296	ed0ec5ee7db88a0ac508f0fb68badf80c644014a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use two width-6 attention heads with corrected inverse-square-root scaling
+0297	42a9cbbbfbcf373cc858f94d41eafc10f1299389	c	2.360724	52870.889247	-0.010271	+3.020897	0.988406	keep		Raise the learning-rate decay floor from 20 percent to 30 percent
