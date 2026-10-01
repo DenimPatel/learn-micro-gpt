@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 307,
+    "experiments": 308,
     "keep": 132,
     "discard": 19,
-    "crash": 156
+    "crash": 157
   },
   "pareto": {
     "rust": [
@@ -4919,6 +4919,21 @@
       "reason": "the patch did not apply",
       "description": "Collapse four 3-dimensional heads into one 12-dimensional head and correct the attention scale",
       "measured": "2026-10-01T00:45:50Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0311",
+      "parent": "e8ece5589f2af75ff0fdc2adc33fce88f8aebaaa",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Use a range-reduced polynomial exponential in softmax",
+      "measured": "2026-10-01T00:49:04Z",
       "has_record": true
     }
   ],
