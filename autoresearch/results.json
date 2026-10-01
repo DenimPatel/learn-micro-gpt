@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "a29dc30a0d93539dc0406d0be914826e951390e09305d3435b4f8a81a213baf8",
+      "candidate_sha256": "983f834c49a663804e938ca519f7729515321d859861fce1080a5e56adf73ed8",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0322",
-      "parent": "d34e7843e5a99e092d1a2d3e8f6f45a7977c6409",
+      "run_id": "0323",
+      "parent": "acb44d885ea81c9033460f744675687c39eefa67",
       "track": "c",
-      "loss": 2.376446,
-      "steps_per_sec": 44308.156611,
-      "loss_gain": -0.01556,
-      "speed_gain": 0.861615,
-      "grad_ratio": 0.988062,
+      "loss": 2.382372,
+      "steps_per_sec": 43840.101815,
+      "loss_gain": -0.018093,
+      "speed_gain": 0.841949,
+      "grad_ratio": 1.004978,
       "status": "keep",
       "reason": "",
-      "description": "Seed the output bias from smoothed training target frequencies",
-      "val_loss": 2.374148
+      "description": "Widen the single MLP from 12 to 16 hidden units",
+      "val_loss": 2.379219
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 311,
-    "keep": 133,
+    "experiments": 312,
+    "keep": 134,
     "discard": 20,
     "crash": 158
   },
@@ -5398,6 +5398,22 @@
       "description": "Seed the output bias from smoothed training target frequencies",
       "val_loss": 2.374148,
       "measured": "2026-10-01T23:47:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0323",
+      "parent": "acb44d885ea81c9033460f744675687c39eefa67",
+      "track": "c",
+      "loss": 2.382372,
+      "steps_per_sec": 43840.101815,
+      "loss_gain": -0.018093,
+      "speed_gain": 0.841949,
+      "grad_ratio": 1.004978,
+      "status": "keep",
+      "reason": "",
+      "description": "Widen the single MLP from 12 to 16 hidden units",
+      "val_loss": 2.379219,
+      "measured": "2026-10-01T23:51:10Z",
       "has_record": true
     }
   ],
