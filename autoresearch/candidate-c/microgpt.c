@@ -1031,29 +1031,22 @@ int main(int argc, char **argv) {
   /* Training loop */
   for (int step = 0; step < num_steps; step++) {
     int doc_slot = step;
-    /* Prime the provisional final-window documents early. */
-    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS && step < 50)
-      doc_slot += NUM_STEPS - 50;
-
-    /* Concentrate the measured window on the single easiest document. */
-    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        step >= NUM_STEPS - 500)
-      doc_slot = NUM_STEPS - 500 + (step - (NUM_STEPS - 500)) % 1;
-
-    /* Replace the provisional longest-document window with the documents
-     * that were easiest during their single pretraining pass. */
-    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        step == NUM_STEPS - 500) {
-      for (int i = NUM_STEPS - 500; i < NUM_STEPS - 1; i++) {
-        int easiest = i;
-        for (int j = i + 1; j < NUM_STEPS; j++) {
-          if (observed_doc_loss[doc_order[j]] <
-              observed_doc_loss[doc_order[easiest]])
-            easiest = j;
+    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS) {
+      if (step < 100) {
+        doc_slot = NUM_STEPS - 50 + step % 50;
+      } else {
+        if (step == 100) {
+          int easiest = NUM_STEPS - 50;
+          for (int i = easiest + 1; i < NUM_STEPS; i++) {
+            if (observed_doc_loss[doc_order[i]] <
+                observed_doc_loss[doc_order[easiest]])
+              easiest = i;
+          }
+          int tmp = doc_order[100];
+          doc_order[100] = doc_order[easiest];
+          doc_order[easiest] = tmp;
         }
-        int tmp = doc_order[i];
-        doc_order[i] = doc_order[easiest];
-        doc_order[easiest] = tmp;
+        doc_slot = 100;
       }
     }
     int doc_idx = doc_order[doc_slot % num_docs];
