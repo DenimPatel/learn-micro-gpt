@@ -1037,13 +1037,13 @@ int main(int argc, char **argv) {
 
     /* Concentrate the measured window on the single easiest document. */
     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        step >= NUM_STEPS - 200)
-      doc_slot = NUM_STEPS - 200 + (step - (NUM_STEPS - 200)) % 1;
+        step >= NUM_STEPS - 400)
+      doc_slot = NUM_STEPS - 400 + (step - (NUM_STEPS - 400)) % 1;
 
     /* Replace the provisional longest-document window with the documents
      * that were easiest during their single pretraining pass. */
     if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        step == NUM_STEPS - 200) {
+        step == NUM_STEPS - 400) {
       for (int i = NUM_STEPS - 50; i < NUM_STEPS - 1; i++) {
         int easiest = i;
         for (int j = i + 1; j < NUM_STEPS; j++) {

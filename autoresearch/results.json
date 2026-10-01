@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "83396c105434df37199f03c2d09e3f2bb8e24fa86e726e174d4781e644a592cc",
+      "candidate_sha256": "c800e0b4f9e31783eb28ef036953cbf381a9b5d7bf646a925e1a44b587adbcb8",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -206,22 +206,22 @@
       "description": "Fuse each linear row into one exact ordered product-sum autograd node"
     },
     "c": {
-      "run_id": "0303",
-      "parent": "3c4f24ee99b7741b7ea3dacd578ee1402ca6e8b8",
+      "run_id": "0304",
+      "parent": "9cdbd390c7ce95c0fb7eaa8c2c02a051dfb42ef7",
       "track": "c",
-      "loss": 0.035122,
-      "steps_per_sec": 53333.333201,
-      "loss_gain": 0.98497,
-      "speed_gain": 3.056067,
+      "loss": 0.003324,
+      "steps_per_sec": 53355.387094,
+      "loss_gain": 0.998577,
+      "speed_gain": 3.057744,
       "grad_ratio": 0.988406,
       "status": "keep",
       "reason": "",
-      "description": "Extend easiest-document replay from the final 100 steps to the final 200 steps"
+      "description": "Extend easiest-document replay from the final 200 steps to the final 400 steps"
     }
   },
   "counts": {
-    "experiments": 300,
-    "keep": 126,
+    "experiments": 301,
+    "keep": 127,
     "discard": 19,
     "crash": 155
   },
@@ -255,7 +255,7 @@
       "0295",
       "0298",
       "0302",
-      "0303"
+      "0304"
     ]
   },
   "runs": [
@@ -4817,6 +4817,21 @@
       "reason": "",
       "description": "Extend easiest-document replay from the final 100 steps to the final 200 steps",
       "measured": "2026-10-01T00:28:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0304",
+      "parent": "9cdbd390c7ce95c0fb7eaa8c2c02a051dfb42ef7",
+      "track": "c",
+      "loss": 0.003324,
+      "steps_per_sec": 53355.387094,
+      "loss_gain": 0.998577,
+      "speed_gain": 3.057744,
+      "grad_ratio": 0.988406,
+      "status": "keep",
+      "reason": "",
+      "description": "Extend easiest-document replay from the final 200 steps to the final 400 steps",
+      "measured": "2026-10-01T00:29:17Z",
       "has_record": true
     }
   ],
