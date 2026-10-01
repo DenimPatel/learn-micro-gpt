@@ -1,0 +1,10 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -1080,7 +1080,8 @@
+ 
+     /* Adam update */
+-    float lr_t = learning_rate * (1.0f - (float)step / num_steps);
++    float lr_t = learning_rate *
++                 (0.2f + 0.8f * (1.0f - (float)step / num_steps));
+     float b1c = 1.0f - powf(beta1, step + 1);
+     float b2c = 1.0f - powf(beta2, step + 1);

@@ -294,3 +294,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0292	496a3dfe1725df4197c591bc7dfbd53ce624d41e	c	2.359370	75971.481592	-0.009691	+4.777726	0.988406	keep		Untie the output head while narrowing the MLP to width 12
 0293	e58f2ddaef4a07f05785683c964aeb09927ec6cd	c	2.363152	53009.503189	-0.011310	+3.031439	0.988406	keep		Select the 50 longest shuffled-prefix documents for the final window
 0294	d7a62cdad7773cce8876280b7a34e7cab5513d1f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replay the fifty longest documents once while caching the attention vector for speed
+0295	fbc2c4d8266b9d1236d3ad5c6e195a5a9fdf213c	c	2.364078	102549.640964	-0.011706	+6.799028	0.988406	keep		Add a 20 percent learning rate floor to the linear decay

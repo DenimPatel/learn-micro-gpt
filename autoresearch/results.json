@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "51f07681be13085945db3d8bf7485b42065cbe945b324503b9c0fad59778c323",
+      "candidate_sha256": "7ae01330fdd517b4536e0e52395642c6511199f9f913492a318ada1fb8406d11",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -220,8 +220,8 @@
     }
   },
   "counts": {
-    "experiments": 291,
-    "keep": 118,
+    "experiments": 292,
+    "keep": 119,
     "discard": 19,
     "crash": 154
   },
@@ -254,7 +254,8 @@
       "0235",
       "0237",
       "0249",
-      "0292"
+      "0292",
+      "0295"
     ]
   },
   "runs": [
@@ -4681,6 +4682,21 @@
       "reason": "the patch did not apply",
       "description": "Replay the fifty longest documents once while caching the attention vector for speed",
       "measured": "2026-10-01T00:03:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0295",
+      "parent": "fbc2c4d8266b9d1236d3ad5c6e195a5a9fdf213c",
+      "track": "c",
+      "loss": 2.364078,
+      "steps_per_sec": 102549.640964,
+      "loss_gain": -0.011706,
+      "speed_gain": 6.799028,
+      "grad_ratio": 0.988406,
+      "status": "keep",
+      "reason": "",
+      "description": "Add a 20 percent learning rate floor to the linear decay",
+      "measured": "2026-10-01T00:05:52Z",
       "has_record": true
     }
   ],
