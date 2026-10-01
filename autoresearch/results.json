@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "f8ecd4e35d1ee5729e7c4f00397ee250e20a0c1de09fbc655113c851400cb9d8",
+      "candidate_sha256": "a29dc30a0d93539dc0406d0be914826e951390e09305d3435b4f8a81a213baf8",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -173,17 +173,30 @@
     "rust": null,
     "go": null,
     "typescript": null,
-    "c": null
+    "c": {
+      "run_id": "0322",
+      "parent": "d34e7843e5a99e092d1a2d3e8f6f45a7977c6409",
+      "track": "c",
+      "loss": 2.376446,
+      "steps_per_sec": 44308.156611,
+      "loss_gain": -0.01556,
+      "speed_gain": 0.861615,
+      "grad_ratio": 0.988062,
+      "status": "keep",
+      "reason": "",
+      "description": "Seed the output bias from smoothed training target frequencies",
+      "val_loss": 2.374148
+    }
   },
   "best_status": {
     "rust": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
     "go": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
     "typescript": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
-    "c": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol."
+    "c": ""
   },
   "counts": {
-    "experiments": 310,
-    "keep": 132,
+    "experiments": 311,
+    "keep": 133,
     "discard": 20,
     "crash": 158
   },
@@ -5369,6 +5382,22 @@
       "description": "Widen the MLP to 16 while tying token and output embeddings",
       "val_loss": null,
       "measured": "2026-10-01T23:44:01Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0322",
+      "parent": "d34e7843e5a99e092d1a2d3e8f6f45a7977c6409",
+      "track": "c",
+      "loss": 2.376446,
+      "steps_per_sec": 44308.156611,
+      "loss_gain": -0.01556,
+      "speed_gain": 0.861615,
+      "grad_ratio": 0.988062,
+      "status": "keep",
+      "reason": "",
+      "description": "Seed the output bias from smoothed training target frequencies",
+      "val_loss": 2.374148,
+      "measured": "2026-10-01T23:47:04Z",
       "has_record": true
     }
   ],

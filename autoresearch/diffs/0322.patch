@@ -1,0 +1,33 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -596,7 +596,7 @@
+ 
+ static void init_weights(void) {
+   const float std = 0.08f;
+-  memset(lm_bias, 0, sizeof(lm_bias));
++  float target_counts[MAX_VOCAB] = {0};
++  float target_total = 0.0f;
++  for (int di = 0; di < num_train_docs; di++) {
++    int doc_id = doc_order[di];
++    int doc_len = doc_lens[doc_id];
++    int n_targets = doc_len + 1;
++    if (n_targets > BLOCK_SIZE)
++      n_targets = BLOCK_SIZE;
++    target_total += (float)n_targets;
++    for (int i = 0; i < n_targets; i++) {
++      int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
++                              : BOS_TOKEN;
++      target_counts[token] += 1.0f;
++    }
++  }
++  if (target_total > 0.0f) {
++    const float alpha = 0.1f;
++    float denominator = target_total + alpha * (float)vocab_size;
++    for (int i = 0; i < vocab_size; i++)
++      lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++  } else {
++    memset(lm_bias, 0, sizeof(lm_bias));
++  }
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+   memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));

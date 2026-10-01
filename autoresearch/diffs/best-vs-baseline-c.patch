@@ -250,11 +250,33 @@
      /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
      float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
      p = vsubq_f32(p, update);
-@@ -467,9 +599,10 @@
+@@ -467,9 +599,32 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
-+  memset(lm_bias, 0, sizeof(lm_bias));
++  float target_counts[MAX_VOCAB] = {0};
++  float target_total = 0.0f;
++  for (int di = 0; di < num_train_docs; di++) {
++    int doc_id = doc_order[di];
++    int doc_len = doc_lens[doc_id];
++    int n_targets = doc_len + 1;
++    if (n_targets > BLOCK_SIZE)
++      n_targets = BLOCK_SIZE;
++    target_total += (float)n_targets;
++    for (int i = 0; i < n_targets; i++) {
++      int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
++                              : BOS_TOKEN;
++      target_counts[token] += 1.0f;
++    }
++  }
++  if (target_total > 0.0f) {
++    const float alpha = 0.1f;
++    float denominator = target_total + alpha * (float)vocab_size;
++    for (int i = 0; i < vocab_size; i++)
++      lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++  } else {
++    memset(lm_bias, 0, sizeof(lm_bias));
++  }
    init_matrix(wte, vocab_size, N_EMBD, std);
    init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
 -  init_matrix(lm_head, vocab_size, N_EMBD, std);
@@ -262,7 +284,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -479,7 +612,8 @@
+@@ -479,7 +634,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -272,7 +294,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -579,7 +713,10 @@
+@@ -579,7 +735,10 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -284,7 +306,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -607,13 +744,23 @@
+@@ -607,13 +766,23 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -311,7 +333,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -680,18 +827,7 @@
+@@ -680,18 +849,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -330,7 +352,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -703,7 +839,7 @@
+@@ -703,7 +861,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -339,7 +361,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -727,22 +863,13 @@
+@@ -727,22 +885,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -365,7 +387,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -878,7 +1005,10 @@
+@@ -878,7 +1027,10 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -377,7 +399,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -942,7 +1072,7 @@
+@@ -942,7 +1094,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -386,7 +408,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -965,6 +1095,7 @@
+@@ -965,6 +1117,7 @@
      memset(g_wte, 0, sizeof(g_wte));
      memset(g_wpe, 0, sizeof(g_wpe));
      memset(g_lm_head, 0, sizeof(g_lm_head));
@@ -394,7 +416,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -998,8 +1129,10 @@
+@@ -998,8 +1151,10 @@
      float b2c = 1.0f - powf(beta2, step + 1);
  
      adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
