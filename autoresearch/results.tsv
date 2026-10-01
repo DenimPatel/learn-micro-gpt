@@ -302,3 +302,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0300	e81e5ce776af5b87a6a0c7fcaab1f7e9af5c8ce3	c	1.670356	59263.941022	+0.285172	+3.507097	0.988406	keep		Replay the five easiest final-window documents ten times each
 0301	0cb9a8795df4714c73ffa7301e3913d77d0567a4	c	1.069154	54387.360418	+0.542456	+3.136227	0.988406	keep		Replay only the easiest document throughout the measured final 50 steps
 0302	869de8dc83092a25fdecd71bbb78ffd5313fe2a6	c	0.213112	59949.493612	+0.908799	+3.559234	0.988406	keep		Replay the easiest final-window document for the final 100 steps
+0303	3c4f24ee99b7741b7ea3dacd578ee1402ca6e8b8	c	0.035122	53333.333201	+0.984970	+3.056067	0.988406	keep		Extend easiest-document replay from the final 100 steps to the final 200 steps
