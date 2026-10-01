@@ -309,3 +309,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0307	c7f488f5016e128ae312429b16c590ffdfb60f62	c	0.000000	99081.426197	+1.000000	+6.535266	0.988406	keep		Pretrain the 50 candidates twice then replay the easiest for 900 steps
 0308	ed3021820a30b9806599419c709150ab2d5d619a	c	0.000000	52889.764774	+1.000000	+3.022333	0.988406	keep		Double replay learning rate and early stop below 1e-5 loss
 0309	65f13f6c02992a699a3144938cacad1ef064a2e0	c	0.000000	50832.488897	+1.000000	+2.865874	0.988406	keep		Add a trainable direct positional vocabulary bias
+0310	c49832ec59e497d7c2a51d5dfd657124ec7d83e7	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Collapse four 3-dimensional heads into one 12-dimensional head and correct the attention scale

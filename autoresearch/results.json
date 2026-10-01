@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 306,
+    "experiments": 307,
     "keep": 132,
     "discard": 19,
-    "crash": 155
+    "crash": 156
   },
   "pareto": {
     "rust": [
@@ -4904,6 +4904,21 @@
       "reason": "",
       "description": "Add a trainable direct positional vocabulary bias",
       "measured": "2026-10-01T00:44:26Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0310",
+      "parent": "c49832ec59e497d7c2a51d5dfd657124ec7d83e7",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Collapse four 3-dimensional heads into one 12-dimensional head and correct the attention scale",
+      "measured": "2026-10-01T00:45:50Z",
       "has_record": true
     }
   ],
