@@ -141,7 +141,17 @@ static float ALIGN128 m_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM],
 /* ── Dataset ─────────────────────────────────────────────────────────── */
 static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
 static int doc_lens[MAX_DOCS];
-static int doc_order[MAX_DOCS]; /* shuffle order */
+static int doc_order[MAX_DOCS]; /* shuffled training order, split out */
+static int val_order[MAX_DOCS];  /* documents held out of training entirely */
+/* Every 128th document is held out of training. 128 leaves 250 documents on the
+ * names corpus, about 1,800 prediction positions, which puts the held-out loss's
+ * own noise near 4% -- under the 5% regression limit the gate applies, so the gate
+ * is reading the number rather than its own error. 0 and 1 are refused because
+ * either leaves no training data or no held-out data, and both make the gate
+ * meaningless rather than strict. */
+static int val_stride = 128;
+static int num_train_docs;      /* len(doc_order) */
+static int num_val_docs;        /* len(val_order) */
 static char uchars[MAX_VOCAB];  /* sorted unique chars */
 static int char_to_idx[128];    /* ASCII lookup table */
 
@@ -400,10 +410,50 @@ static void load_data(const char *path) {
   BOS_TOKEN = vc;
   vocab_size = vc + 1;
 
-  /* Init shuffle order */
+  /* Init shuffle order.
+   *
+   * Shuffle every document and remove the held-out ones afterwards, rather than
+   * shuffling the survivors directly. It costs one extra pass and buys the thing
+   * that matters: the PRNG draws exactly the numbers it always did, so the leading
+   * training documents are the same documents they were before the split.
+   * Shuffling a shorter array would consume a different count of draws and
+   * silently re-roll which documents the run trains on, which turns every
+   * baseline-versus-candidate comparison into a comparison of two models that saw
+   * different data.
+   */
   for (int i = 0; i < num_docs; i++)
     doc_order[i] = i;
   shuffle_docs(doc_order, num_docs);
+
+  /* The held-out split.
+   *
+   * The loss axis is the mean *training* loss over the last 50 of 1000 steps, and
+   * the loop's candidate chooses which document each of those steps trains on.
+   * That makes the loss a measurement of the run rather than of the model, and this
+   * track found it out on its own within twenty experiments. Run 0293 put the
+   * longest documents into the measured window; runs 0298-0307 went on to spend the
+   * last 900 steps on a single chosen document; run 0309 added a bias indexed by
+   * position to the logits, so the output stopped depending on the input at all.
+   * The loss read 0.000000 -- a model that had learned nothing, recorded as a 99.9%
+   * improvement, with a 261% speed bonus thrown in because a shorter document means
+   * fewer tokens per step and therefore more steps per second.
+   *
+   * So every 128th document, by position in the corpus, is held out of training
+   * completely and used only for the number printed after the loop.
+   * tools/autoresearch.py refuses to keep a candidate whose training-loss gain the
+   * held-out loss does not share.
+   */
+  num_train_docs = 0;
+  num_val_docs = 0;
+  for (int i = 0; i < num_docs; i++) {
+    if (i % val_stride == 0) {
+      if (num_val_docs < MAX_DOCS)
+        val_order[num_val_docs++] = doc_order[i];
+    } else {
+      if (num_train_docs < MAX_DOCS)
+        doc_order[num_train_docs++] = doc_order[i];
+    }
+  }
 
   printf("num docs: %d\n", num_docs);
   printf("vocab size: %d\n", vocab_size);
@@ -856,6 +906,10 @@ static void parse_args(int argc, char **argv) {
       num_steps = atoi(argv[++i]);
     } else if (!strcmp(argv[i], "--seed") && i + 1 < argc) {
       run_seed = strtoull(argv[++i], NULL, 10);
+    } else if (!strcmp(argv[i], "--val-stride") && i + 1 < argc) {
+      char *end = NULL;
+      long parsed = strtol(argv[++i], &end, 10);
+      val_stride = (end && *end == '\0' && parsed > 1) ? (int)parsed : 128;
     } else {
       fprintf(stderr, "microgpt: unrecognised argument '%s'\n", argv[i]);
       fprintf(stderr, "  usage: %s [--input PATH] [--steps N] [--seed N]\n",
@@ -865,6 +919,14 @@ static void parse_args(int argc, char **argv) {
   }
   if (num_steps < 1) {
     fprintf(stderr, "microgpt: --steps must be at least 1, got %d\n", num_steps);
+    exit(2);
+  }
+  if (val_stride < 2) {
+    fprintf(stderr,
+            "microgpt: --val-stride must be at least 2, got %d. 1 would hold out "
+            "every document and leave nothing to train on, and a held-out loss "
+            "with no training data behind it is not a measurement\n",
+            val_stride);
     exit(2);
   }
 }
@@ -884,7 +946,7 @@ int main(int argc, char **argv) {
 
   /* Training loop */
   for (int step = 0; step < num_steps; step++) {
-    int doc_idx = doc_order[step % num_docs];
+    int doc_idx = doc_order[step % num_train_docs];
     const char *doc = docs_raw[doc_idx];
     int doc_len = doc_lens[doc_idx];
 
@@ -997,6 +1059,45 @@ int main(int argc, char **argv) {
     name[name_len] = 0;
     printf("sample %2d: %s\n", sample + 1, name);
   }
+
+  /* Held-out loss, measured once on the final model.
+   *
+   * Forward only -- no optimiser step touches a validation document, and none ever
+   * did, because load_data kept them out of doc_order entirely. The loss is summed
+   * over every prediction position of every validation document and divided by the
+   * total, so a long document counts for more positions rather than for one, which
+   * is what the training loss does per step.
+   *
+   * tools/autoresearch.py reads this line and refuses a keep whose training-loss
+   * gain this number does not share. It is printed once, after training, and never
+   * per step: a per-step held-out loss would be one more thing a candidate could
+   * aim at, which is the failure this whole mechanism exists to stop.
+   */
+  double val_total = 0.0;
+  int val_positions = 0;
+  for (int vi = 0; vi < num_val_docs; vi++) {
+    const char *doc = docs_raw[val_order[vi]];
+    int doc_len = doc_lens[val_order[vi]];
+    int tokens[BLOCK_SIZE + 2];
+    tokens[0] = BOS_TOKEN;
+    for (int i = 0; i < doc_len; i++)
+      tokens[i + 1] = char_to_idx[(int)doc[i]];
+    tokens[doc_len + 1] = BOS_TOKEN;
+    int n = doc_len + 1;
+    if (n > BLOCK_SIZE)
+      n = BLOCK_SIZE;
+    for (int pos = 0; pos < n; pos++)
+      forward_pos(tokens[pos], pos, pos + 1);
+    for (int pos = 0; pos < n; pos++) {
+      float p = saved_probs[pos][tokens[pos + 1]];
+      if (p < 1e-30f) p = 1e-30f;
+      val_total += logf(p);
+      val_positions++;
+    }
+  }
+  float val_loss =
+      val_positions > 0 ? (float)(-val_total / (double)val_positions) : 0.0f;
+  printf("val_loss %f\n", val_loss);
 
   clock_gettime(CLOCK_MONOTONIC, &t_end);
   float elapsed = (float)(t_end.tv_sec - t_start.tv_sec) +

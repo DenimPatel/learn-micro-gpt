@@ -247,6 +247,12 @@ export interface ResearchRow {
   status: ResearchVerdict
   reason: string
   description: string
+  /** Loss on documents held out of training, or null for a run that predates the
+   *  split. Never 0.0 for "missing" -- an absent measurement and a loss of zero are
+   *  the two numbers this column exists to keep apart, and keeping them the same is
+   *  how the C track once recorded 0.000000 as a 99.9% improvement. See
+   *  docs/KNOWN-ISSUES.md issue 7. */
+  val_loss?: number | null
   measured?: string
   has_record?: boolean
 }
@@ -326,6 +332,13 @@ export interface ResearchResults {
   /** Per track, and null for a track that has not been seeded yet. */
   baselines: Record<ResearchTrack, ResearchRow | null>
   bests: Record<ResearchTrack, ResearchRow | null>
+  /** Why a best is missing, per track, when one is. "" when it is not.
+   *
+   *  A track whose best panel is empty looks like a broken page. This says
+   *  whether the honest answer is "nothing kept yet" or "every recorded keep
+   *  predates the current protocol, or has been rolled back" -- which is the
+   *  state after a protocol change, and a state that comes with a way out. */
+  best_status?: Record<ResearchTrack, string>
   counts: { experiments: number; keep: number; discard: number; crash: number }
   /** Per track. Run ids on the frontier: nothing measured is both faster and
    *  lower-loss *for that track's comparator*. */

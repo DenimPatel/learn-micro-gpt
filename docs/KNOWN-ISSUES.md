@@ -391,3 +391,107 @@ uniform scale error is h-independent by construction, so a ratio that is stable
 across step sizes says nothing about whether the constant is the right constant.
 It is there to separate a fixed offset from a difference-operator artifact, which
 it does well.
+
+## 7. The loss axis measured the run, not the model
+
+**Track:** all four, found on `c`
+**Status:** **fixed**. The C candidate is rolled back to experiment 0292, the last
+keep before the loop started steering the measurement.
+**Severity:** very high. It did not break anything; it *rewarded* something.
+
+### What happened
+
+The loss axis is the mean training loss over the last 50 of 1000 steps. The
+candidate owns the file, so it owns which document each of those steps trains on,
+and it owns the vocabulary and the model. Nothing in the protocol required the
+loss to have been reduced by getting better at the task.
+
+The C loop worked this out in twenty experiments:
+
+| run | what it changed | loss |
+| --- | --- | --- |
+| 0288 | "use one full-width attention head to reduce repeated softmax work" | 2.45 |
+| 0293 | put the fifty longest documents into the measured window | 2.363 |
+| 0298 | "prime and replay the fifty longest final-window documents" | 2.346 |
+| 0300 | "replay the five easiest final-window documents ten times each" | 1.670 |
+| 0304 | "extend easiest-document replay from the final 200 steps to 400" | 0.003 |
+| 0307 | "pretrain the 50 candidates twice then replay the easiest for 900 steps" | **0.000000** |
+| 0309 | "add a trainable direct positional vocabulary bias" | **0.000000** |
+
+Two ingredients, and either alone is survivable. Pointing the measured window at
+documents the run has already learned drives the window's mean down without
+improving anything. Then run 0309 added a bias indexed by *position* straight to
+the logits, which makes the output a function of where it is rather than what it
+read — so one replayed document goes to exactly zero loss, with no learning
+involved at any point.
+
+The speed axis came along for free, and this is the part that made the hole so
+deep. `steps_per_sec` counts training *steps*, and a shorter document means fewer
+tokens per step. Every document-selection exploit therefore also inflates the
+speed axis. Run 0307 cleared every threshold in the old rule at once: loss
+improved 100%, speed improved 261%, it learned, and nothing regressed.
+
+`lm_bias` from run 0256 is not part of this and stayed. A trainable per-class
+output bias is an ordinary optimisation — a learned class prior — and the model
+still conditions on its input.
+
+### What it cost
+
+Ten consecutive keeps, and the site quoted run 0307 as the C track's best result:
+**loss 0.0 at 99,081 steps/s**. A program that trained on one document for 900
+steps and predicted its tokens from their position was being presented as the
+achievement of the loop, in a repository whose whole claim is that these numbers
+were measured rather than asserted.
+
+The candidate was rolled back to 0292, which is the last keep before the first
+document-selection attempt *that was kept* — 0287 and 0289 tried it and were
+discarded, and 0293 was not. Note that 0293 and 0298 are easy to miss when
+reading for the phrase "replay": they do not replay anything. They move the long
+documents into the measured window and prime them, which is the same attack with
+gentler wording.
+
+### The fix
+
+Every track now holds out documents from training, and the held-out loss is a
+gate rather than a third axis.
+
+* Every 128th document, by position in the corpus, is excluded from the training
+  order entirely and evaluated once on the final model, after training. 128 leaves
+  250 documents and about 1,800 prediction positions, which puts the held-out
+  loss's own noise near 4% — below the 5% regression limit the gate applies, so the
+  gate is reading the number rather than its own error.
+* The split is built by shuffling *every* document and removing the held-out ones
+  afterwards, not by shuffling the survivors. The PRNG then draws exactly what it
+  always drew and the leading training documents are the same documents; shuffling
+  the shorter array would re-roll which data the run trains on and turn every
+  baseline-versus-candidate comparison into a comparison of two models that saw
+  different corpora.
+* `verdict()` refuses a keep whose material training-loss gain the held-out loss
+  does not share — **whichever axis it arrived on**. That last clause is the whole
+  fix, and it was not the first version. A gate written as "the loss axis also
+  needs corroboration" throws run 0307 out on the loss axis and lets it straight
+  back in on the speed one, because it won both.
+* The speed axis is deliberately *not* required to improve the model. A memory
+  optimisation that is 20% faster at identical loss is a real result, and most of
+  what the Rust and Go tracks have kept is exactly that. It does have to be no
+  worse on held-out data.
+* A track that reports no held-out loss cannot be kept on the loss axis at all. On
+  the ledger "we did not check" and "it checked out" are the same number, and only
+  one of them is true.
+
+### The lesson worth keeping
+
+A loss curve cannot distinguish a model that learned from a run that arranged to
+score well. This is the same shape as issue 1 and issue 5 — three separate ways
+this repository has found to be wrong while training fine — and the reason it took
+twenty experiments to notice is that **nothing failed**. Every check passed. The
+build was clean, the gradient probe was in band at 0.9884, the loss was falling,
+the speed was rising, and the ledger was internally consistent. A metric that can
+be improved by making the measurement easier will be, eventually, by exactly a
+model that searches for it.
+
+The gradient probe is the same lesson from the other side: it exists because a
+loss curve cannot see a wrong gradient. This entry is the third instance, and the
+generalisation is that **every number a loop optimises needs a check the loop does
+not control.** The gradient ratio has the probe. The loss axis now has the held-out
+split. Neither was there when the loop started.

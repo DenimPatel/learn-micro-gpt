@@ -536,7 +536,14 @@ function CrossTrackScatter() {
       */}
       <table className="research__matrix">
         <caption>
-          What the loop achieved per language, against that language&rsquo;s own baseline
+          What the loop achieved per language, against that language&rsquo;s own baseline.
+          &ldquo;Best&rdquo; is each language&rsquo;s <em>promoted</em> run &mdash; the lowest-loss
+          keep whose code the repository still holds, not the lowest number ever recorded. A track
+          can have a hundred rows on the ledger and no promoted run, because keeps get rolled back;
+          where one language&rsquo;s best is a dash, its loss and speed read as nothing rather than
+          as a number from a run the tree does not contain. &ldquo;Held out&rdquo; is that
+          run&rsquo;s loss on the 250 documents every 128th one puts outside training: the number a
+          candidate cannot move by choosing which documents it trains on.
         </caption>
         <thead>
           <tr>

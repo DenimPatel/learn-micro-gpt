@@ -3149,3 +3149,17 @@ select:hover {
     box-shadow: inset 0 0 0 1px #ccc;
   }
 }
+
+/* A number that was never measured, in the cross-language table. Quieter than a
+   zero and quieter than a dash on its own, because "not measured" is a fact
+   about the protocol's history and not about the track's performance. */
+.research__matrix-absent {
+  color: var(--faint);
+}
+
+/* The run id behind a "best" figure, so a number in the cross-language table can
+   be traced to the row it came from rather than taken on trust. */
+.research__matrix-run {
+  color: var(--faint);
+  font-size: var(--text-sm);
+}

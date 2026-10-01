@@ -675,12 +675,48 @@ struct Args {
     config: Config,
     input: String,
     seed: u64,
+    /// How often a document is held out rather than how many: every
+    /// `val_stride`th document of the corpus is validation, and every other
+    /// document goes into the shuffled training order. See
+    /// [`DEFAULT_VAL_STRIDE`] for why there is a second number to read at all.
+    val_stride: usize,
 }
+
+/// One in every `DEFAULT_VAL_STRIDE` documents is held out of training and used
+/// only for the `val_loss` measurement at the end of the run.
+///
+/// This is the default rather than a requirement because the loss axis reads the
+/// *training* loss, and a training loss is a measurement of the run rather than
+/// of the model -- and which documents the run trains on is the candidate's to
+/// choose. The C track worked that out inside twenty experiments. Run 0307 --
+/// "Pretrain the 50 candidates twice then replay the easiest for 900 steps" --
+/// put the measured window on documents it had already learned and then spent 900
+/// of its 1,000 steps on the single easiest one. Its loss read 0.000000, which
+/// the ledger recorded as a 100% gain, and it won the speed axis at the same
+/// time: a shorter document is fewer tokens per step, so the same run is 653%
+/// faster for the same non-result. A model that had learned nothing, reported as
+/// the track's best run so far. Run 0309 added a trainable position-indexed
+/// logit bias on top of it and read the same 0.000000.
+///
+/// So the run now reports two numbers. The training loss says what the run did,
+/// which is a thing the loop is allowed to change. The held-out loss says what
+/// the model can do on documents the run never reached, which is a thing the run
+/// is not allowed to change, because the held-out documents are not in the
+/// training pool at all. The harness reads the second one and refuses a keep
+/// whose training loss moved while its held-out loss did not follow; 0307's
+/// signature is precisely that gap, a training loss that fell 100% and a held-out
+/// loss flat to 0.4%.
+///
+/// 128 holds out 251 of the 32,033 documents in `data/input.txt` -- about 1,758
+/// prediction positions -- which is enough documents that the measurement's own
+/// noise is smaller than the 5% the harness treats as a regression.
+const DEFAULT_VAL_STRIDE: usize = 128;
 
 fn parse_args() -> Args {
     let mut config = Config::default();
     let mut input = String::from("../../data/input.txt");
     let mut seed: u64 = 42;
+    let mut val_stride: usize = DEFAULT_VAL_STRIDE;
 
     let raw: Vec<String> = std::env::args().skip(1).collect();
     let mut i = 0;
@@ -699,6 +735,8 @@ fn parse_args() -> Args {
             input = v.to_string();
         } else if let Some(v) = next("--seed").and_then(|s| s.parse().ok()) {
             seed = v;
+        } else if let Some(v) = next("--val-stride").and_then(|s| s.parse().ok()) {
+            val_stride = v;
         } else if let Some(v) = next("--steps").and_then(|s| s.parse().ok()) {
             config.num_steps = v;
         } else if let Some(v) = next("--n-embd").and_then(|s| s.parse().ok()) {
@@ -716,10 +754,22 @@ fn parse_args() -> Args {
     }
 
     config.head_dim = config.n_embd / config.n_head;
+
+    // A stride of 0 is a remainder by zero and a stride of 1 holds out every
+    // document, leaving the training loop with an empty pool to index. Both would
+    // panic somewhere further down with a message about arithmetic rather than
+    // about the flag that caused it, and the whole point of this number is that
+    // it is not something a run should be able to make meaningless.
+    if val_stride < 2 {
+        eprintln!("--val-stride must be at least 2, got {val_stride}");
+        std::process::exit(2);
+    }
+
     Args {
         config,
         input,
         seed,
+        val_stride,
     }
 }
 
@@ -729,8 +779,11 @@ pub fn run() {
     let args = parse_args();
     let input = args.input;
     let mut config = args.config;
+    let val_stride = args.val_stride;
 
-    let mut docs = match load_docs(&input) {
+    // Not `mut` any more: the shuffle moved to the index vector below, so the
+    // documents themselves are only ever read from here on.
+    let docs = match load_docs(&input) {
         Ok(docs) => docs,
         Err(err) => {
             eprintln!("cannot read {input}: {err}");
@@ -753,13 +806,52 @@ pub fn run() {
     config.vocab_size = bos + 1;
 
     let mut rng = Rng::new(args.seed);
-    rng.shuffle(&mut docs);
+
+    // ─── The held-out split ───────────────────────────────────────────────────
+    //
+    // Every `val_stride`th document *of the corpus* -- that is, of the file as
+    // loaded, before any shuffling -- is validation. The rest are the training
+    // pool. The index is deliberately the pre-shuffle one: a split that followed
+    // the shuffle would move when the seed moved, which would make the held-out
+    // set a second thing the loop can choose, and choosing the split is exactly
+    // as much a choice as choosing the training documents was. Held out by
+    // position in the file, this set is the same 251 documents for every seed,
+    // every candidate and every run, so the two numbers are comparable.
+    //
+    // What is shuffled is the *indices*, not the documents, and that is not
+    // tidiness. `Rng::shuffle` draws once per element regardless of the element
+    // type, so shuffling indices consumes exactly the same PRNG stream as
+    // shuffling the documents themselves, and the parameter initialisation drawn
+    // immediately afterwards -- and therefore every training step -- is bit for
+    // bit what it was before this split existed. Shuffling the surviving
+    // documents instead would have drawn a different 4,192 gaussians and turned
+    // the comparison the harness makes between the frozen track and a candidate
+    // into a comparison between two different models.
+    let mut order: Vec<usize> = (0..docs.len()).collect();
+    rng.shuffle(&mut order);
+    let mut train_order: Vec<usize> = Vec::with_capacity(order.len());
+    let mut val_order: Vec<usize> = Vec::with_capacity(order.len() / val_stride + 1);
+    for index in order {
+        if index % val_stride == 0 {
+            val_order.push(index);
+        } else {
+            train_order.push(index);
+        }
+    }
 
     let mut model = Model::new(config.clone(), &mut rng);
     let params = model.params();
     println!("num docs: {}", docs.len());
     println!("vocab size: {}", config.vocab_size);
     println!("num params: {}", params.len());
+    // Both counts, because "num docs" is the size of the file and the size of the
+    // pool a step can draw from stopped being the same number at this change.
+    println!(
+        "held out: {} of {} docs (--val-stride {})",
+        val_order.len(),
+        docs.len(),
+        val_stride
+    );
 
     // Adam, with the reference's betas. The bias correction is what makes the
     // first step the same size as every other one.
@@ -772,7 +864,11 @@ pub fn run() {
 
     let started = std::time::Instant::now();
     for step in 0..config.num_steps {
-        let doc = &docs[step % docs.len()];
+        // The only line of the training loop this change touches. It reads the
+        // pool by position rather than the file, because a held-out document must
+        // not be reachable from a step, and it is otherwise the same expression
+        // against the same shuffled order.
+        let doc = &docs[train_order[step % train_order.len()]];
         let tokens = tokenize(doc, &char_index, bos);
         let n = config.block_size.min(tokens.len() - 1);
 
@@ -816,6 +912,73 @@ pub fn run() {
         );
     }
 
+    // ─── The held-out measurement ─────────────────────────────────────────────
+    //
+    // Forward passes only. No `backward`, no optimiser step, no parameter touched:
+    // this reads the model the training loop ended with and nothing else. The
+    // cross-entropy per position is the same expression the step above computes,
+    // written out again rather than factored into a helper, because a training
+    // step that had to call the helper would be a training step this change had
+    // edited.
+    //
+    // Summed over every prediction position of every held-out document and
+    // divided by how many prediction positions there were, which is a mean over
+    // the held-out set rather than a mean over documents: a document two
+    // characters longer would otherwise get half the vote of a short one, and the
+    // loss axis measures tokens, not names. The running sum is `f64` for that
+    // reason -- 1,758 additions in `f32` would lose more to rounding than the
+    // 5% the harness calls a regression -- while every individual cross-entropy
+    // is the `f32` the model itself computed.
+    //
+    // It is printed once, at the very end of the program, and not once per step.
+    // A per-step held-out loss would be a third number to watch, and a curve of
+    // them is a curve to fit: the C run at 0307 would have found it in a single
+    // experiment. The gate only needs to know what the finished model does with
+    // documents it has never seen, and that is one number.
+    let mut val_nll = 0.0f64;
+    let mut val_positions = 0usize;
+    for &index in &val_order {
+        let tokens = tokenize(&docs[index], &char_index, bos);
+        let n = config.block_size.min(tokens.len() - 1);
+
+        model.reset_cache();
+        for pos_id in 0..n {
+            let logits = model.forward(tokens[pos_id], pos_id);
+            let probs = Model::softmax(&logits);
+            let nll = Tensor::neg(Tensor::log(probs[tokens[pos_id + 1]]));
+            val_nll += Tensor::data(nll) as f64;
+            val_positions += 1;
+        }
+
+        // The graph for this document is dead the moment its numbers have been
+        // read: there is no backward pass in this loop that would want it and no
+        // optimiser step to consume it. So release it, one document at a time,
+        // rather than holding all 251 documents' worth of tape at once -- 1,758
+        // positions of an already-graph-heavy forward pass is roughly another
+        // gigabyte of arena on top of what the training loop already holds.
+        //
+        // This cannot change a number. The parameters are the arena's first
+        // `params.len()` nodes, because every matrix is built by pushing leaves
+        // in order, and nothing after them is ever read again; the assertion is
+        // there so that a future rewrite which allocates anything before the
+        // parameters fails loudly instead of quietly truncating the model.
+        debug_assert_eq!(
+            params.last().map(|handle| handle.0 + 1),
+            Some(params.len()),
+            "parameters must be the arena's first nodes for the reclaim below to be safe"
+        );
+        ARENA.with(|a| {
+            let mut arena = a.borrow_mut();
+            arena.nodes.truncate(params.len());
+            arena.visited.truncate(params.len());
+        });
+    }
+    // A stride that held out nothing would make this a division by zero, and one
+    // that held out everything would make it a mean of an untrained model. Both
+    // are refused above rather than reported, because a `val_loss` that is a
+    // number about nothing is worse than no `val_loss` at all.
+    let val_loss = val_nll / val_positions as f64;
+
     let elapsed = started.elapsed();
     println!("\n--- inference (new, hallucinated names) ---");
     let temperature: f32 = 0.5;
@@ -858,4 +1021,12 @@ pub fn run() {
         elapsed.as_secs_f64() * 1000.0,
         config.num_steps as f64 / elapsed.as_secs_f64()
     );
+
+    // The last line the program writes, on purpose. The harness matches it with
+    // `^val_loss\s+([0-9.]+)\s*$` on a line of its own, and a held-out loss with
+    // output after it is a line somebody will eventually want to move -- after the
+    // samples, after the timing, somewhere a future change can put a step. It is
+    // measured here and printed there, and the two are joined only by the fact
+    // that the inference block above does not train.
+    println!("val_loss {:.6}", val_loss);
 }

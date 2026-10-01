@@ -35,33 +35,33 @@
   "provenance_of": {
     "rust": {
       "baseline_source": "implementations/rust/src/lib.rs",
-      "baseline_sha256": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
+      "baseline_sha256": "f361642663c2f32ea538864923932ee94027552cc2f9711424f39f41a1f4a2cb",
       "candidate_source": "autoresearch/candidate/src/lib.rs",
-      "candidate_sha256": "99326ce38891f27483c0db2e0cb953f65c516f525ad81a2e167f4876a8c7c785",
+      "candidate_sha256": "2f98d7950c5a970ecd7f95cca83f72cb17ca7aa9b3224fd8900e7e7485cee4eb",
       "gradient_probe": "autoresearch/candidate/tests/gradient_check.rs",
       "gradient_probe_sha256": "b5beae0d11579987c954867846127d5119d4cb07ed2ea47078cf1c2e29807c6b"
     },
     "go": {
       "baseline_source": "implementations/go/main.go",
-      "baseline_sha256": "6cf98abcbdaf1f1ea9a32fd3d01bfa2cc4552edff9b11dbf3e27cf2875a99fdf",
+      "baseline_sha256": "01a84a049bb0a31c69391d1ba5b1ac28ad6e0279f5ba9acb2595ca911edcc27b",
       "candidate_source": "autoresearch/candidate-go/main.go",
-      "candidate_sha256": "589a279fd7f7623ce608a1b3bfefc31f705417bb32f93e721ea4bdfd2917a0f8",
+      "candidate_sha256": "ae7fadade6c5e200042e876daf6e0b6b1634b8b948850daf701c00ca1970e562",
       "gradient_probe": "autoresearch/candidate-go/probe_test.go",
       "gradient_probe_sha256": "d64b85b9006cbc36d67c57a29ae165969fd08456d5bb1e4f14ff4b5e3580dcc8"
     },
     "typescript": {
       "baseline_source": "implementations/typescript/src/index.ts",
-      "baseline_sha256": "3b5c7db87afbfb0873b7a5da0604ba587392ea93063555c0fe850b02ce16a658",
+      "baseline_sha256": "1aa1fc3011dc8fc0dc9de3a27410c14bc0b2b95926885a3433e214c7959373b4",
       "candidate_source": "autoresearch/candidate-ts/src/index.ts",
-      "candidate_sha256": "e6749a41c5fed34dfdcdfe3eec6f039e1b9f24840a12ff1f278e24927a4ad62c",
+      "candidate_sha256": "74c8f6e29e5069ffaf07eb13f5f20e5779d30451096ca428d2a76b104feacccc",
       "gradient_probe": "autoresearch/candidate-ts/src/probe.ts",
       "gradient_probe_sha256": "5c16a817ee3e391d29d0aefc1e1f67b008ad028be70a2521db582197e1084441"
     },
     "c": {
       "baseline_source": "implementations/c/microgpt.c",
-      "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
+      "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "38e1648978d39f7e0bf017ee927b42dfbd5c1e4f9741b59eea054ceedeaa6659",
+      "candidate_sha256": "f8ecd4e35d1ee5729e7c4f00397ee250e20a0c1de09fbc655113c851400cb9d8",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -105,119 +105,81 @@
     "os": "Darwin 25.1.0",
     "machine": "arm64",
     "processor": "arm",
-    "python": "3.11.8",
+    "python": "3.14.3",
     "rustc": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
-    "measured": "2026-09-27T06:41:06Z",
+    "measured": "2026-10-01T02:32:28Z",
     "note": "The speed axis is only comparable within a session. The baseline is rebuilt from source and re-measured every session for this reason; benchmarks/results.json was taken on a different machine and is not used."
   },
   "dataset_sha256": "0a30b5557f192f32ab962680889aac5f6fda0f4cecf40a6d0b5694f58ea8cc4d",
   "baselines": {
     "rust": {
-      "run_id": "0000",
-      "parent": "f942bd4ed5e6abb04a3dd47ef12b0ccfc88f7f52",
+      "run_id": "0316",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
       "track": "rust",
-      "loss": 2.433882,
-      "steps_per_sec": 95.382084,
+      "loss": 2.432972,
+      "steps_per_sec": 85.813116,
       "loss_gain": 0.0,
       "speed_gain": 0.0,
-      "grad_ratio": 1.06316,
+      "grad_ratio": 1.000259,
       "status": "baseline",
       "reason": "frozen implementations/rust, re-measured this session",
-      "description": "the frozen track, unmodified, as this session's comparator"
+      "description": "the frozen Rust track, unmodified, as this session's comparator",
+      "val_loss": 2.385351
     },
     "go": {
-      "run_id": "0104",
-      "parent": "13669cba9285b0d5a40374d3bb72cf71c49dcdee",
+      "run_id": "0317",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
       "track": "go",
-      "loss": 2.401178,
-      "steps_per_sec": 92.039399,
+      "loss": 2.411932,
+      "steps_per_sec": 83.009514,
       "loss_gain": 0.0,
       "speed_gain": 0.0,
-      "grad_ratio": 1.126874,
+      "grad_ratio": 0.999984,
       "status": "baseline",
       "reason": "frozen implementations/go, re-measured this session",
-      "description": "the frozen Go track, unmodified, as this session's comparator"
+      "description": "the frozen Go track, unmodified, as this session's comparator",
+      "val_loss": 2.398188
     },
     "typescript": {
-      "run_id": "0105",
-      "parent": "13669cba9285b0d5a40374d3bb72cf71c49dcdee",
+      "run_id": "0318",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
       "track": "typescript",
-      "loss": 2.309063,
-      "steps_per_sec": 92.083511,
+      "loss": 2.309025,
+      "steps_per_sec": 87.177476,
       "loss_gain": 0.0,
       "speed_gain": 0.0,
       "grad_ratio": 0.722129,
       "status": "baseline",
       "reason": "frozen implementations/typescript, re-measured this session",
-      "description": "the frozen TypeScript track, unmodified, as this session's comparator"
+      "description": "the frozen TypeScript track, unmodified, as this session's comparator",
+      "val_loss": 2.409746
     },
     "c": {
-      "run_id": "0233",
-      "parent": "7e91c5386a1dfc807b59326700684b9c43196647",
+      "run_id": "0319",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
       "track": "c",
-      "loss": 2.336724,
-      "steps_per_sec": 27428.853855,
+      "loss": 2.340034,
+      "steps_per_sec": 33819.345539,
       "loss_gain": 0.0,
       "speed_gain": 0.0,
-      "grad_ratio": 1.005086,
+      "grad_ratio": 0.988406,
       "status": "baseline",
       "reason": "frozen implementations/c, re-measured this session",
-      "description": "the frozen C track, unmodified, as this session's comparator"
+      "description": "the frozen C track, unmodified, as this session's comparator",
+      "val_loss": 2.35284
     }
   },
   "bests": {
-    "rust": {
-      "run_id": "0102",
-      "parent": "388cbe003f35660e91d88eabde1504269952f1d9",
-      "track": "rust",
-      "loss": 2.19014,
-      "steps_per_sec": 251.094495,
-      "loss_gain": 0.100145,
-      "speed_gain": 3.272913,
-      "grad_ratio": 1.000259,
-      "status": "keep",
-      "reason": "",
-      "description": "Restore the five-document Adam batch"
-    },
-    "go": {
-      "run_id": "0170",
-      "parent": "b509272993c012e8469dcc0b86ca2f037eae7574",
-      "track": "go",
-      "loss": 2.224834,
-      "steps_per_sec": 52.943912,
-      "loss_gain": 0.073441,
-      "speed_gain": 0.043219,
-      "grad_ratio": 0.999984,
-      "status": "keep",
-      "reason": "",
-      "description": "Halve the one-layer MLP width from 64 to 32"
-    },
-    "typescript": {
-      "run_id": "0232",
-      "parent": "424c23ddbc8d3df5e2246d7831d2745931b4928d",
-      "track": "typescript",
-      "loss": 2.309063,
-      "steps_per_sec": 245.589919,
-      "loss_gain": 0.0,
-      "speed_gain": 3.34214,
-      "grad_ratio": 0.722129,
-      "status": "keep",
-      "reason": "",
-      "description": "Fuse each linear row into one exact ordered product-sum autograd node"
-    },
-    "c": {
-      "run_id": "0297",
-      "parent": "42a9cbbbfbcf373cc858f94d41eafc10f1299389",
-      "track": "c",
-      "loss": 2.360724,
-      "steps_per_sec": 52870.889247,
-      "loss_gain": -0.010271,
-      "speed_gain": 3.020897,
-      "grad_ratio": 0.988406,
-      "status": "keep",
-      "reason": "",
-      "description": "Raise the learning-rate decay floor from 20 percent to 30 percent"
-    }
+    "rust": null,
+    "go": null,
+    "typescript": null,
+    "c": null
+  },
+  "best_status": {
+    "rust": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
+    "go": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
+    "typescript": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol.",
+    "c": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol."
   },
   "counts": {
     "experiments": 308,
@@ -248,7 +210,8 @@
       "0170"
     ],
     "typescript": [
-      "0232"
+      "0232",
+      "0314"
     ],
     "c": [
       "0295",
@@ -268,6 +231,7 @@
       "status": "baseline",
       "reason": "frozen implementations/rust, re-measured this session",
       "description": "the frozen track, unmodified, as this session's comparator",
+      "val_loss": null,
       "measured": "2026-09-26T22:33:50Z",
       "has_record": true
     },
@@ -283,6 +247,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +0.1%, speed -4.8%; failing loss_material, speed_material",
       "description": "Make RMSNorm differentiable through its mean square and inverse square root",
+      "val_loss": null,
       "measured": "2026-09-26T22:53:33Z",
       "has_record": true
     },
@@ -298,6 +263,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Collapse each linear layer output into one direct dot-product tape node",
+      "val_loss": null,
       "measured": "2026-09-26T22:55:39Z",
       "has_record": true
     },
@@ -313,6 +279,7 @@
       "status": "keep",
       "reason": "",
       "description": "Avoid cloning parent and local-gradient vectors during every backward pass",
+      "val_loss": null,
       "measured": "2026-09-27T06:33:42Z",
       "has_record": true
     },
@@ -328,6 +295,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse linear dot products into correctly differentiated tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T06:42:26Z",
       "has_record": true
     },
@@ -343,6 +311,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse attention score dot products into the existing linear tape node",
+      "val_loss": null,
       "measured": "2026-09-27T06:43:08Z",
       "has_record": true
     },
@@ -358,6 +327,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reset only graph nodes visited during each backward pass",
+      "val_loss": null,
       "measured": "2026-09-27T06:43:56Z",
       "has_record": true
     },
@@ -373,6 +343,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -7.0%, speed +1735.8%; failing learned, loss_material, loss_tolerance",
       "description": "Hold Adam at 0.01 for all 1000 steps instead of linearly annealing to zero",
+      "val_loss": null,
       "measured": "2026-09-27T06:45:21Z",
       "has_record": true
     },
@@ -388,6 +359,7 @@
       "status": "keep",
       "reason": "",
       "description": "Shifted logsumexp cross entropy skips unused vocabulary probabilities",
+      "val_loss": null,
       "measured": "2026-09-27T06:47:00Z",
       "has_record": true
     },
@@ -403,6 +375,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse constant affine operations into single tape nodes with identical arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T06:47:55Z",
       "has_record": true
     },
@@ -418,6 +391,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse attention value mixtures into one correctly differentiated tape node per output",
+      "val_loss": null,
       "measured": "2026-09-27T06:49:39Z",
       "has_record": true
     },
@@ -433,6 +407,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse shifted exponentials and sums into fewer correctly differentiated tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T06:51:20Z",
       "has_record": true
     },
@@ -448,6 +423,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Store tape dependencies in one allocation per node without changing arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T06:53:47Z",
       "has_record": true
     },
@@ -463,6 +439,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use a flat autograd edge arena and recycle the graph after each step with identical arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T06:58:40Z",
       "has_record": true
     },
@@ -478,6 +455,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse cross entropy and division and batch Adam arena updates",
+      "val_loss": null,
       "measured": "2026-09-27T07:02:02Z",
       "has_record": true
     },
@@ -493,6 +471,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse attention softmax normalization and cached value mixing into one tape node per head output",
+      "val_loss": null,
       "measured": "2026-09-27T07:05:57Z",
       "has_record": true
     },
@@ -508,6 +487,7 @@
       "status": "keep",
       "reason": "",
       "description": "Lower Adam beta2 to 0.98 for faster second-moment adaptation",
+      "val_loss": null,
       "measured": "2026-09-27T07:08:16Z",
       "has_record": true
     },
@@ -523,6 +503,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse analytically differentiated RMSNorm into one tape node per output",
+      "val_loss": null,
       "measured": "2026-09-27T07:08:48Z",
       "has_record": true
     },
@@ -538,6 +519,7 @@
       "status": "keep",
       "reason": "",
       "description": "Differentiate RMSNorm through its mean square and inverse scale on the autograd tape",
+      "val_loss": null,
       "measured": "2026-09-27T07:09:26Z",
       "has_record": true
     },
@@ -553,6 +535,7 @@
       "status": "keep",
       "reason": "",
       "description": "Hoist Adam bias corrections and fuse each parameter update into one arena borrow",
+      "val_loss": null,
       "measured": "2026-09-27T07:10:25Z",
       "has_record": true
     },
@@ -568,6 +551,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Share each softmax denominator and fuse its probability divisions into one tape node",
+      "val_loss": null,
       "measured": "2026-09-27T07:13:23Z",
       "has_record": true
     },
@@ -583,6 +567,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse RMSNorm scale and cross entropy into analytically differentiated tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T07:19:02Z",
       "has_record": true
     },
@@ -598,6 +583,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace the per-step topological DFS with reverse arena-order backpropagation",
+      "val_loss": null,
       "measured": "2026-09-27T07:22:30Z",
       "has_record": true
     },
@@ -613,6 +599,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Reduce repeated arena borrows in hot tensor primitives with identical arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T07:23:33Z",
       "has_record": true
     },
@@ -628,6 +615,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Share softmax reciprocals and reuse tape reduction scratch to accelerate training without changing model arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T07:28:25Z",
       "has_record": true
     },
@@ -643,6 +631,7 @@
       "status": "keep",
       "reason": "",
       "description": "Double Adam learning rate to 0.02 and restore beta2 to 0.99",
+      "val_loss": null,
       "measured": "2026-09-27T07:35:40Z",
       "has_record": true
     },
@@ -658,6 +647,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the peak Adam learning rate from 0.02 to 0.01",
+      "val_loss": null,
       "measured": "2026-09-27T07:36:20Z",
       "has_record": true
     },
@@ -673,6 +663,7 @@
       "status": "keep",
       "reason": "",
       "description": "Double default residual width to 32 and head dimension to 8",
+      "val_loss": null,
       "measured": "2026-09-27T07:38:48Z",
       "has_record": true
     },
@@ -688,6 +679,7 @@
       "status": "keep",
       "reason": "",
       "description": "Double the default model depth from one transformer block to two",
+      "val_loss": null,
       "measured": "2026-09-27T07:40:54Z",
       "has_record": true
     },
@@ -703,6 +695,7 @@
       "status": "keep",
       "reason": "",
       "description": "Remove the second transformer block to recover its speed cost and loss regression",
+      "val_loss": null,
       "measured": "2026-09-27T07:42:48Z",
       "has_record": true
     },
@@ -718,6 +711,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reset transient autograd nodes after each step to preserve loss and improve allocator locality",
+      "val_loss": null,
       "measured": "2026-09-27T07:44:11Z",
       "has_record": true
     },
@@ -733,6 +727,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch four shuffled documents into each Adam update",
+      "val_loss": null,
       "measured": "2026-09-27T07:47:20Z",
       "has_record": true
     },
@@ -748,6 +743,7 @@
       "status": "keep",
       "reason": "",
       "description": "Double the documents per Adam update from four to eight",
+      "val_loss": null,
       "measured": "2026-09-27T07:48:33Z",
       "has_record": true
     },
@@ -763,6 +759,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch nine shuffled documents per Adam update",
+      "val_loss": null,
       "measured": "2026-09-27T07:50:33Z",
       "has_record": true
     },
@@ -778,6 +775,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the per-update batch size from nine documents to eight",
+      "val_loss": null,
       "measured": "2026-09-27T07:52:03Z",
       "has_record": true
     },
@@ -793,6 +791,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse RMSNorm square and reduction tape nodes while retaining identical forward arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T07:54:30Z",
       "has_record": true
     },
@@ -808,6 +807,7 @@
       "status": "keep",
       "reason": "",
       "description": "Correct the fused RMSNorm sum-of-squares derivative",
+      "val_loss": null,
       "measured": "2026-09-27T07:55:37Z",
       "has_record": true
     },
@@ -823,6 +823,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch six documents per Adam update instead of eight",
+      "val_loss": null,
       "measured": "2026-09-27T08:00:09Z",
       "has_record": true
     },
@@ -838,6 +839,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace per-token string formatting and parameter lookups with direct deterministic state indexing",
+      "val_loss": null,
       "measured": "2026-09-27T08:02:05Z",
       "has_record": true
     },
@@ -853,6 +855,7 @@
       "status": "keep",
       "reason": "",
       "description": "Increase the Adam update batch size from six documents to seven",
+      "val_loss": null,
       "measured": "2026-09-27T08:04:49Z",
       "has_record": true
     },
@@ -868,6 +871,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the Adam update batch size from seven documents to six",
+      "val_loss": null,
       "measured": "2026-09-27T08:09:26Z",
       "has_record": true
     },
@@ -883,6 +887,7 @@
       "status": "keep",
       "reason": "",
       "description": "Increase Adam update batch size from six documents to eight",
+      "val_loss": null,
       "measured": "2026-09-27T08:10:43Z",
       "has_record": true
     },
@@ -898,6 +903,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch five shuffled documents per Adam update",
+      "val_loss": null,
       "measured": "2026-09-27T08:15:14Z",
       "has_record": true
     },
@@ -913,6 +919,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace autograd DFS and visited tracking with reverse arena-order backward propagation",
+      "val_loss": null,
       "measured": "2026-09-27T08:19:27Z",
       "has_record": true
     },
@@ -928,6 +935,7 @@
       "status": "keep",
       "reason": "",
       "description": "Lower positional embedding initialization standard deviation to 0.02",
+      "val_loss": null,
       "measured": "2026-09-27T08:24:13Z",
       "has_record": true
     },
@@ -943,6 +951,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replace linear learning-rate decay with cosine decay",
+      "val_loss": null,
       "measured": "2026-09-27T08:27:52Z",
       "has_record": true
     },
@@ -958,6 +967,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore linear learning-rate decay after cosine decay worsened loss",
+      "val_loss": null,
       "measured": "2026-09-27T08:28:45Z",
       "has_record": true
     },
@@ -973,6 +983,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace runtime parameter-name formatting and hash-map lookup with fixed state indices",
+      "val_loss": null,
       "measured": "2026-09-27T08:30:16Z",
       "has_record": true
     },
@@ -988,6 +999,7 @@
       "status": "keep",
       "reason": "",
       "description": "Hoist Adam arena borrowing out of the parameter loop for an identical-loss speedup",
+      "val_loss": null,
       "measured": "2026-09-27T08:32:41Z",
       "has_record": true
     },
@@ -1003,6 +1015,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Pack tape parent indices and local gradients into one allocation per node",
+      "val_loss": null,
       "measured": "2026-09-27T08:36:18Z",
       "has_record": true
     },
@@ -1018,6 +1031,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch four shuffled documents per Adam update instead of five",
+      "val_loss": null,
       "measured": "2026-09-27T08:38:26Z",
       "has_record": true
     },
@@ -1033,6 +1047,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore five shuffled documents per Adam update",
+      "val_loss": null,
       "measured": "2026-09-27T08:39:38Z",
       "has_record": true
     },
@@ -1048,6 +1063,7 @@
       "status": "keep",
       "reason": "",
       "description": "Keep the Adam learning rate constant throughout training",
+      "val_loss": null,
       "measured": "2026-09-27T08:41:52Z",
       "has_record": true
     },
@@ -1063,6 +1079,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore linear learning-rate decay",
+      "val_loss": null,
       "measured": "2026-09-27T08:42:48Z",
       "has_record": true
     },
@@ -1078,6 +1095,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Fuse elementwise autograd operations and reduce arena traversals",
+      "val_loss": null,
       "measured": "2026-09-27T08:46:17Z",
       "has_record": true
     },
@@ -1093,6 +1111,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Mark ancestors then backpropagate in reverse arena order",
+      "val_loss": null,
       "measured": "2026-09-27T08:48:28Z",
       "has_record": true
     },
@@ -1108,6 +1127,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a second transformer layer",
+      "val_loss": null,
       "measured": "2026-09-27T08:50:39Z",
       "has_record": true
     },
@@ -1123,6 +1143,7 @@
       "status": "keep",
       "reason": "",
       "description": "Remove the second transformer layer",
+      "val_loss": null,
       "measured": "2026-09-27T08:51:53Z",
       "has_record": true
     },
@@ -1138,6 +1159,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore fused multiply-add in linear and attention weighted-sum contractions",
+      "val_loss": null,
       "measured": "2026-09-27T08:56:12Z",
       "has_record": true
     },
@@ -1153,6 +1175,7 @@
       "status": "keep",
       "reason": "",
       "description": "Lower Adam beta2 from 0.99 to 0.98",
+      "val_loss": null,
       "measured": "2026-09-27T08:59:06Z",
       "has_record": true
     },
@@ -1168,6 +1191,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fold ReLU into the preceding FC1 autograd node to cut tape allocations without changing arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T09:04:55Z",
       "has_record": true
     },
@@ -1183,6 +1207,7 @@
       "status": "keep",
       "reason": "",
       "description": "Raise the peak Adam learning rate from 0.01 to 0.012",
+      "val_loss": null,
       "measured": "2026-09-27T09:13:59Z",
       "has_record": true
     },
@@ -1198,6 +1223,7 @@
       "status": "keep",
       "reason": "",
       "description": "Increase the Adam batch size from five documents to eight",
+      "val_loss": null,
       "measured": "2026-09-27T09:16:48Z",
       "has_record": true
     },
@@ -1213,6 +1239,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the peak Adam learning rate to 0.01 with the eight-document batch",
+      "val_loss": null,
       "measured": "2026-09-27T09:18:01Z",
       "has_record": true
     },
@@ -1228,6 +1255,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Restore five-document Adam batches and tie the token embedding to the output head",
+      "val_loss": null,
       "measured": "2026-09-27T09:24:44Z",
       "has_record": true
     },
@@ -1243,6 +1271,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the five-document batch that reached the best recorded loss",
+      "val_loss": null,
       "measured": "2026-09-27T09:28:49Z",
       "has_record": true
     },
@@ -1258,6 +1287,7 @@
       "status": "keep",
       "reason": "",
       "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations",
+      "val_loss": null,
       "measured": "2026-09-27T09:33:09Z",
       "has_record": true
     },
@@ -1273,6 +1303,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a 10% learning-rate floor to the linear decay",
+      "val_loss": null,
       "measured": "2026-09-27T09:34:21Z",
       "has_record": true
     },
@@ -1288,6 +1319,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reverse-order training backpropagation using tape allocation order",
+      "val_loss": null,
       "measured": "2026-09-27T09:36:04Z",
       "has_record": true
     },
@@ -1303,6 +1335,7 @@
       "status": "keep",
       "reason": "",
       "description": "Remove the learning-rate floor and restore full linear decay",
+      "val_loss": null,
       "measured": "2026-09-27T09:37:04Z",
       "has_record": true
     },
@@ -1318,6 +1351,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-27T09:43:50Z",
       "has_record": true
     },
@@ -1333,6 +1367,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Reuse autograd node storage and gradient vectors across training steps",
+      "val_loss": null,
       "measured": "2026-09-27T09:47:54Z",
       "has_record": true
     },
@@ -1348,6 +1383,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Pack autograd parents and local gradients into one compact allocation per node",
+      "val_loss": null,
       "measured": "2026-09-27T09:49:47Z",
       "has_record": true
     },
@@ -1363,6 +1399,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Omit tape parents and local gradients for inactive fused ReLU outputs",
+      "val_loss": null,
       "measured": "2026-09-27T09:55:34Z",
       "has_record": true
     },
@@ -1378,6 +1415,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reduce Adam batch size from five documents to four",
+      "val_loss": null,
       "measured": "2026-09-27T10:00:57Z",
       "has_record": true
     },
@@ -1393,6 +1431,7 @@
       "status": "keep",
       "reason": "",
       "description": "Widen the model from 32 to 48 embedding dimensions",
+      "val_loss": null,
       "measured": "2026-09-27T10:06:00Z",
       "has_record": true
     },
@@ -1408,6 +1447,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the 32-dimensional model and five-document Adam batch",
+      "val_loss": null,
       "measured": "2026-09-27T10:07:05Z",
       "has_record": true
     },
@@ -1423,6 +1463,7 @@
       "status": "keep",
       "reason": "",
       "description": "Properly tie token embeddings to the output head while deduplicating optimizer parameters and preserving the initialization RNG stream",
+      "val_loss": null,
       "measured": "2026-09-27T10:09:20Z",
       "has_record": true
     },
@@ -1438,6 +1479,7 @@
       "status": "crash",
       "reason": "cargo clippy failed with -D warnings",
       "description": "Fuse residual projections and training cross-entropy to cut tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T10:15:02Z",
       "has_record": true
     },
@@ -1453,6 +1495,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Restore an independently initialized untied language-model head",
+      "val_loss": null,
       "measured": "2026-09-27T10:17:35Z",
       "has_record": true
     },
@@ -1468,6 +1511,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-27T10:24:47Z",
       "has_record": true
     },
@@ -1483,6 +1527,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse residual additions and training cross entropy to cut tape nodes without changing forward arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T10:27:53Z",
       "has_record": true
     },
@@ -1498,6 +1543,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse residual additions and training cross entropy to cut tape traffic without changing forward arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T10:30:26Z",
       "has_record": true
     },
@@ -1513,6 +1559,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Store autograd edges in shared buffers written in place without changing arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T10:34:52Z",
       "has_record": true
     },
@@ -1528,6 +1575,7 @@
       "status": "keep",
       "reason": "",
       "description": "Increase the Adam batch size from five documents to six",
+      "val_loss": null,
       "measured": "2026-09-27T10:36:03Z",
       "has_record": true
     },
@@ -1543,6 +1591,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the faster five-document Adam batch",
+      "val_loss": null,
       "measured": "2026-09-27T10:36:43Z",
       "has_record": true
     },
@@ -1558,6 +1607,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse attention normalization and aggregation while removing per-edge bounds checks",
+      "val_loss": null,
       "measured": "2026-09-27T10:39:57Z",
       "has_record": true
     },
@@ -1573,6 +1623,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the independently initialized untied language model head",
+      "val_loss": null,
       "measured": "2026-09-27T10:41:39Z",
       "has_record": true
     },
@@ -1588,6 +1639,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-27T10:49:59Z",
       "has_record": true
     },
@@ -1603,6 +1655,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse attention softmax and training cross entropy into direct tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T10:52:32Z",
       "has_record": true
     },
@@ -1618,6 +1671,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reduce the Adam batch from five documents to four",
+      "val_loss": null,
       "measured": "2026-09-27T10:56:00Z",
       "has_record": true
     },
@@ -1633,6 +1687,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse scaled attention projections and softmax quotients into single tape nodes",
+      "val_loss": null,
       "measured": "2026-09-27T10:59:08Z",
       "has_record": true
     },
@@ -1648,6 +1703,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the terminal RMSNorm on the better five-document batch",
+      "val_loss": null,
       "measured": "2026-09-27T11:01:51Z",
       "has_record": true
     },
@@ -1663,6 +1719,7 @@
       "status": "keep",
       "reason": "",
       "description": "Cap default training contexts at eight characters to avoid long-name tail work",
+      "val_loss": null,
       "measured": "2026-09-27T11:05:24Z",
       "has_record": true
     },
@@ -1678,6 +1735,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Pack autograd edges reuse KV cache allocations and index model matrices directly",
+      "val_loss": null,
       "measured": "2026-09-27T11:10:02Z",
       "has_record": true
     },
@@ -1693,6 +1751,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse stable training cross entropy into one correctly differentiated tape node",
+      "val_loss": null,
       "measured": "2026-09-27T11:13:48Z",
       "has_record": true
     },
@@ -1708,6 +1767,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Store autograd edges as compact interleaved pairs to halve per-node allocation traffic without changing arithmetic",
+      "val_loss": null,
       "measured": "2026-09-27T11:18:18Z",
       "has_record": true
     },
@@ -1723,6 +1783,7 @@
       "status": "crash",
       "reason": "cargo build failed",
       "description": "Fuse reciprocal divisions and pairwise additions into one-node tape operations",
+      "val_loss": null,
       "measured": "2026-09-27T11:20:43Z",
       "has_record": true
     },
@@ -1738,6 +1799,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore 16-token contexts and remove the terminal RMSNorm to recover the best loss-first state",
+      "val_loss": null,
       "measured": "2026-09-27T11:22:44Z",
       "has_record": true
     },
@@ -1753,6 +1815,7 @@
       "status": "keep",
       "reason": "",
       "description": "Shrink model width from 32 to 28 for a lower-cost speed candidate",
+      "val_loss": null,
       "measured": "2026-09-27T11:25:17Z",
       "has_record": true
     },
@@ -1768,6 +1831,7 @@
       "status": "keep",
       "reason": "",
       "description": "Extend causal contexts and positional embeddings from 16 to 24 tokens",
+      "val_loss": null,
       "measured": "2026-09-27T11:29:14Z",
       "has_record": true
     },
@@ -1783,6 +1847,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reduce the Adam batch from five documents to four",
+      "val_loss": null,
       "measured": "2026-09-27T11:30:45Z",
       "has_record": true
     },
@@ -1798,6 +1863,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the five-document Adam batch",
+      "val_loss": null,
       "measured": "2026-09-27T11:38:08Z",
       "has_record": true
     },
@@ -1813,6 +1879,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Store tape parent-gradient pairs in one allocation per node to halve allocator traffic",
+      "val_loss": null,
       "measured": "2026-09-27T11:44:17Z",
       "has_record": true
     },
@@ -1828,6 +1895,7 @@
       "status": "baseline",
       "reason": "frozen implementations/go, re-measured this session",
       "description": "the frozen Go track, unmodified, as this session's comparator",
+      "val_loss": null,
       "measured": "2026-09-27T17:02:57Z",
       "has_record": true
     },
@@ -1843,6 +1911,7 @@
       "status": "baseline",
       "reason": "frozen implementations/typescript, re-measured this session",
       "description": "the frozen TypeScript track, unmodified, as this session's comparator",
+      "val_loss": null,
       "measured": "2026-09-27T17:04:05Z",
       "has_record": true
     },
@@ -1858,6 +1927,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +1.1%, speed -4.7%; failing loss_material, speed_material",
       "description": "Add tape-aware RMSNorm gradients through one shared scale node",
+      "val_loss": null,
       "measured": "2026-09-28T05:04:17Z",
       "has_record": true
     },
@@ -1873,6 +1943,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse each linear dot product into one correctly differentiated tape node",
+      "val_loss": null,
       "measured": "2026-09-28T05:06:05Z",
       "has_record": true
     },
@@ -1888,6 +1959,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse attention dot products and hoist Adam bias corrections to cut tape and scalar overhead",
+      "val_loss": null,
       "measured": "2026-09-28T05:10:05Z",
       "has_record": true
     },
@@ -1903,6 +1975,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse shifted exponentials normalization and division into fewer tape nodes",
+      "val_loss": null,
       "measured": "2026-09-28T05:12:27Z",
       "has_record": true
     },
@@ -1918,6 +1991,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse ReLU into the first MLP linear layer to reduce tape and allocation overhead",
+      "val_loss": null,
       "measured": "2026-09-28T05:13:49Z",
       "has_record": true
     },
@@ -1933,6 +2007,7 @@
       "status": "keep",
       "reason": "",
       "description": "Map-free topological marking with a 16K-node buffer",
+      "val_loss": null,
       "measured": "2026-09-28T05:16:54Z",
       "has_record": true
     },
@@ -1948,6 +2023,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Batch fused-node tape operands into shared backing arrays to cut allocation and garbage collection overhead without changing the graph",
+      "val_loss": null,
       "measured": "2026-09-28T05:21:57Z",
       "has_record": true
     },
@@ -1963,6 +2039,7 @@
       "status": "keep",
       "reason": "",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "val_loss": null,
       "measured": "2026-09-28T05:24:36Z",
       "has_record": true
     },
@@ -1978,6 +2055,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse final softmax cross entropy into one tape node",
+      "val_loss": null,
       "measured": "2026-09-28T05:28:10Z",
       "has_record": true
     },
@@ -1993,6 +2071,7 @@
       "status": "keep",
       "reason": "",
       "description": "Differentiate the shared RMSNorm scale and add a second transformer block to lower loss",
+      "val_loss": null,
       "measured": "2026-09-28T05:31:33Z",
       "has_record": true
     },
@@ -2008,6 +2087,7 @@
       "status": "keep",
       "reason": "",
       "description": "Remove the second transformer block for a large speedup with minimal additional loss",
+      "val_loss": null,
       "measured": "2026-09-28T05:32:08Z",
       "has_record": true
     },
@@ -2023,6 +2103,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse attention scaling and weighted value reduction into analytic tape nodes",
+      "val_loss": null,
       "measured": "2026-09-28T05:34:47Z",
       "has_record": true
     },
@@ -2038,6 +2119,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fold attention scaling into dot products to remove scalar tape nodes",
+      "val_loss": null,
       "measured": "2026-09-28T05:36:49Z",
       "has_record": true
     },
@@ -2053,6 +2135,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +0.4%, speed -22.4%; failing loss_material, speed_material, speed_tolerance",
       "description": "Restore beta2 0.99 and deepen the residual stack to four blocks",
+      "val_loss": null,
       "measured": "2026-09-28T05:41:35Z",
       "has_record": true
     },
@@ -2068,6 +2151,7 @@
       "status": "keep",
       "reason": "",
       "description": "Train on four-document minibatches to reduce gradient variance and improve final loss",
+      "val_loss": null,
       "measured": "2026-09-28T05:48:50Z",
       "has_record": true
     },
@@ -2083,6 +2167,7 @@
       "status": "keep",
       "reason": "",
       "description": "Parallelize the four per-document forward graphs to raise training throughput without changing the loss",
+      "val_loss": null,
       "measured": "2026-09-28T05:52:10Z",
       "has_record": true
     },
@@ -2098,6 +2183,7 @@
       "status": "keep",
       "reason": "",
       "description": "Increase the training minibatch from four documents to eight",
+      "val_loss": null,
       "measured": "2026-09-28T05:53:49Z",
       "has_record": true
     },
@@ -2113,6 +2199,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse residual additions into projection nodes to reduce tape and allocation overhead",
+      "val_loss": null,
       "measured": "2026-09-28T05:58:29Z",
       "has_record": true
     },
@@ -2128,6 +2215,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +5.3%, speed -6.0%; failing speed_material, speed_tolerance",
       "description": "Reduce the training minibatch from eight documents to four",
+      "val_loss": null,
       "measured": "2026-09-28T06:01:03Z",
       "has_record": true
     },
@@ -2143,6 +2231,7 @@
       "status": "crash",
       "reason": "go build failed",
       "description": "Batch fused projection and softmax tape operands into disjoint fixed-capacity backing arrays",
+      "val_loss": null,
       "measured": "2026-09-28T06:03:22Z",
       "has_record": true
     },
@@ -2158,6 +2247,7 @@
       "status": "keep",
       "reason": "",
       "description": "Use two attention heads of width eight instead of four heads of width four",
+      "val_loss": null,
       "measured": "2026-09-28T06:05:39Z",
       "has_record": true
     },
@@ -2173,6 +2263,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace fused ReLU MLP projections with exact GELU while preserving the analytic tape node",
+      "val_loss": null,
       "measured": "2026-09-28T06:09:49Z",
       "has_record": true
     },
@@ -2188,6 +2279,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +5.2%, speed -34.0%; failing speed_material, speed_tolerance",
       "description": "Replace explicit attention softmax and weighted sums with exact direct Jacobian nodes",
+      "val_loss": null,
       "measured": "2026-09-28T06:15:03Z",
       "has_record": true
     },
@@ -2203,6 +2295,7 @@
       "status": "keep",
       "reason": "",
       "description": "Use one full-width attention head instead of two half-width heads",
+      "val_loss": null,
       "measured": "2026-09-28T06:16:16Z",
       "has_record": true
     },
@@ -2218,6 +2311,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +5.8%, speed -27.0%; failing speed_material, speed_tolerance",
       "description": "Raise the Go garbage-collection target to 800 percent to reduce collection overhead without changing the loss",
+      "val_loss": null,
       "measured": "2026-09-28T06:20:03Z",
       "has_record": true
     },
@@ -2233,6 +2327,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Reuse backward topological scratch and merge slice restoration into the reverse pass",
+      "val_loss": null,
       "measured": "2026-09-28T06:23:47Z",
       "has_record": true
     },
@@ -2248,6 +2343,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse RMS scaling into projection nodes to remove normalization multiply nodes",
+      "val_loss": null,
       "measured": "2026-09-28T06:28:55Z",
       "has_record": true
     },
@@ -2263,6 +2359,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Collapse mean and batch softmax tape allocations to reduce Go overhead",
+      "val_loss": null,
       "measured": "2026-09-28T06:33:31Z",
       "has_record": true
     },
@@ -2278,6 +2375,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Batch linear projection tape operands into disjoint backing arrays",
+      "val_loss": null,
       "measured": "2026-09-28T06:35:21Z",
       "has_record": true
     },
@@ -2293,6 +2391,7 @@
       "status": "crash",
       "reason": "the model request failed: The read operation timed out",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-28T06:52:57Z",
       "has_record": true
     },
@@ -2308,6 +2407,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Batch projection tape operands into bounded backing arrays",
+      "val_loss": null,
       "measured": "2026-09-28T06:54:19Z",
       "has_record": true
     },
@@ -2323,6 +2423,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse vocabulary projection and cross entropy into one tape node",
+      "val_loss": null,
       "measured": "2026-09-28T06:56:44Z",
       "has_record": true
     },
@@ -2338,6 +2439,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-28T07:04:19Z",
       "has_record": true
     },
@@ -2353,6 +2455,7 @@
       "status": "keep",
       "reason": "",
       "description": "Reuse the initial RMSNorm in the first layer instead of normalizing it again",
+      "val_loss": null,
       "measured": "2026-09-28T07:06:36Z",
       "has_record": true
     },
@@ -2368,6 +2471,7 @@
       "status": "keep",
       "reason": "",
       "description": "Halve MLP hidden width from 4x to 2x embedding width",
+      "val_loss": null,
       "measured": "2026-09-28T07:12:28Z",
       "has_record": true
     },
@@ -2383,6 +2487,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow embedding attention and output widths from 16 to 12",
+      "val_loss": null,
       "measured": "2026-09-28T07:17:00Z",
       "has_record": true
     },
@@ -2398,6 +2503,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace per-row children and local-gradient slices with compact two-operand tape nodes",
+      "val_loss": null,
       "measured": "2026-09-28T07:22:07Z",
       "has_record": true
     },
@@ -2413,6 +2519,7 @@
       "status": "keep",
       "reason": "",
       "description": "Halve the MLP hidden width from 2x to 1x embedding width",
+      "val_loss": null,
       "measured": "2026-09-28T07:26:20Z",
       "has_record": true
     },
@@ -2428,6 +2535,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow the embedding attention output and 1x MLP widths from 12 to 10",
+      "val_loss": null,
       "measured": "2026-09-28T07:29:16Z",
       "has_record": true
     },
@@ -2443,6 +2551,7 @@
       "status": "crash",
       "reason": "training run failed (exit 2)",
       "description": "Rebalance to embedding width 8 with a 2x-wide MLP to reduce projection work",
+      "val_loss": null,
       "measured": "2026-09-28T07:33:52Z",
       "has_record": true
     },
@@ -2458,6 +2567,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a second width-10 transformer layer",
+      "val_loss": null,
       "measured": "2026-09-28T07:37:12Z",
       "has_record": true
     },
@@ -2473,6 +2583,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Add zero-initialized biases to every trainable projection",
+      "val_loss": null,
       "measured": "2026-09-28T07:44:03Z",
       "has_record": true
     },
@@ -2488,6 +2599,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Restore the 16-wide four-head 4x-MLP configuration behind the best observed loss",
+      "val_loss": null,
       "measured": "2026-09-28T07:46:51Z",
       "has_record": true
     },
@@ -2503,6 +2615,7 @@
       "status": "keep",
       "reason": "",
       "description": "Share tape backing arrays across projection rows to reduce allocations",
+      "val_loss": null,
       "measured": "2026-09-28T07:49:40Z",
       "has_record": true
     },
@@ -2518,6 +2631,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Add a zero-initialized vocabulary logit bias to learn token marginals directly",
+      "val_loss": null,
       "measured": "2026-09-28T07:52:56Z",
       "has_record": true
     },
@@ -2533,6 +2647,7 @@
       "status": "keep",
       "reason": "",
       "description": "Batch RMSNorm and softmax tape operands into bounded backing arrays",
+      "val_loss": null,
       "measured": "2026-09-28T07:57:40Z",
       "has_record": true
     },
@@ -2548,6 +2663,7 @@
       "status": "keep",
       "reason": "",
       "description": "Tie token embeddings to the vocabulary projection while preserving the initialization draw sequence",
+      "val_loss": null,
       "measured": "2026-09-28T07:59:26Z",
       "has_record": true
     },
@@ -2563,6 +2679,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the independent vocabulary projection matrix",
+      "val_loss": null,
       "measured": "2026-09-28T08:00:18Z",
       "has_record": true
     },
@@ -2578,6 +2695,7 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Scale the two-layer model to 16-wide four-head attention with a 2x MLP",
+      "val_loss": null,
       "measured": "2026-09-28T08:04:44Z",
       "has_record": true
     },
@@ -2593,6 +2711,7 @@
       "status": "keep",
       "reason": "",
       "description": "Remove the second transformer layer to gain speed with negligible loss regression",
+      "val_loss": null,
       "measured": "2026-09-28T08:05:52Z",
       "has_record": true
     },
@@ -2608,6 +2727,7 @@
       "status": "keep",
       "reason": "",
       "description": "Collapse the mean tape into one node to remove 127 add nodes and their allocations per step",
+      "val_loss": null,
       "measured": "2026-09-28T08:07:03Z",
       "has_record": true
     },
@@ -2623,6 +2743,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse attention mixing and vocabulary cross-entropy to cut tape nodes and allocations",
+      "val_loss": null,
       "measured": "2026-09-28T08:14:02Z",
       "has_record": true
     },
@@ -2638,6 +2759,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Batch hot-path Value records in contiguous arrays to reduce allocation and GC overhead",
+      "val_loss": null,
       "measured": "2026-09-28T08:15:42Z",
       "has_record": true
     },
@@ -2653,6 +2775,7 @@
       "status": "keep",
       "reason": "",
       "description": "Restore the 16-wide four-head one-layer 4x-MLP model with correctly shaped matrices",
+      "val_loss": null,
       "measured": "2026-09-28T08:18:13Z",
       "has_record": true
     },
@@ -2668,6 +2791,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use a 0.01 leaky-ReLU MLP activation to preserve gradients for negative preactivations",
+      "val_loss": null,
       "measured": "2026-09-28T08:20:25Z",
       "has_record": true
     },
@@ -2683,6 +2807,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse token and position addition into first RMSNorm",
+      "val_loss": null,
       "measured": "2026-09-28T08:22:45Z",
       "has_record": true
     },
@@ -2698,6 +2823,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Batch projection and attention output Values in contiguous arrays to reduce allocation and GC overhead",
+      "val_loss": null,
       "measured": "2026-09-28T08:24:50Z",
       "has_record": true
     },
@@ -2713,6 +2839,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow the one-layer model to 12 dimensions with four 3-dimensional attention heads",
+      "val_loss": null,
       "measured": "2026-09-28T08:28:01Z",
       "has_record": true
     },
@@ -2728,6 +2855,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use a 0.01 leaky ReLU in the fused MLP projection to retain negative-side gradients at negligible cost",
+      "val_loss": null,
       "measured": "2026-09-28T08:29:52Z",
       "has_record": true
     },
@@ -2743,6 +2871,7 @@
       "status": "keep",
       "reason": "",
       "description": "Widen the one-layer model to 24 dimensions with four 6-dimensional heads",
+      "val_loss": null,
       "measured": "2026-09-28T08:31:37Z",
       "has_record": true
     },
@@ -2758,6 +2887,7 @@
       "status": "keep",
       "reason": "",
       "description": "Halve the MLP width to reduce dominant projection work",
+      "val_loss": null,
       "measured": "2026-09-28T08:32:38Z",
       "has_record": true
     },
@@ -2773,6 +2903,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Raise the Go garbage-collection target to reduce autograd tape collection overhead",
+      "val_loss": null,
       "measured": "2026-09-28T08:38:16Z",
       "has_record": true
     },
@@ -2788,6 +2919,7 @@
       "status": "keep",
       "reason": "",
       "description": "Widen the one-layer model to 32 dimensions with four 8-dimensional attention heads",
+      "val_loss": null,
       "measured": "2026-09-28T08:41:09Z",
       "has_record": true
     },
@@ -2803,6 +2935,7 @@
       "status": "keep",
       "reason": "",
       "description": "Right-size the autograd topology buffer to reduce per-step GC pressure",
+      "val_loss": null,
       "measured": "2026-09-28T08:43:40Z",
       "has_record": true
     },
@@ -2818,6 +2951,7 @@
       "status": "keep",
       "reason": "",
       "description": "Halve the one-layer MLP width from 64 to 32",
+      "val_loss": null,
       "measured": "2026-09-28T10:52:08Z",
       "has_record": true
     },
@@ -2833,6 +2967,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Faster exact tape traversal with generation marks lean scalar nodes and hoisted softmax inverse math",
+      "val_loss": null,
       "measured": "2026-09-29T00:44:19Z",
       "has_record": true
     },
@@ -2848,6 +2983,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T00:54:02Z",
       "has_record": true
     },
@@ -2863,6 +2999,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Differentiate the shared RMSNorm scale node on the autograd tape",
+      "val_loss": null,
       "measured": "2026-09-29T00:55:10Z",
       "has_record": true
     },
@@ -2878,6 +3015,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Compact exact RMSNorm backward without tape expansion",
+      "val_loss": null,
       "measured": "2026-09-29T00:57:15Z",
       "has_record": true
     },
@@ -2893,6 +3031,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear dot products into one tape node with direct product-rule gradients",
+      "val_loss": null,
       "measured": "2026-09-29T00:58:04Z",
       "has_record": true
     },
@@ -2908,6 +3047,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Exact tape compaction and hoisted Adam bias correction",
+      "val_loss": null,
       "measured": "2026-09-29T01:05:24Z",
       "has_record": true
     },
@@ -2923,6 +3063,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Collapse constant operands and zero seeds in hot autograd accumulators",
+      "val_loss": null,
       "measured": "2026-09-29T01:07:06Z",
       "has_record": true
     },
@@ -2938,6 +3079,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T01:11:51Z",
       "has_record": true
     },
@@ -2953,6 +3095,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm through a shared scale node",
+      "val_loss": null,
       "measured": "2026-09-29T01:15:54Z",
       "has_record": true
     },
@@ -2968,6 +3111,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear dot products into exact product-rule tape nodes",
+      "val_loss": null,
       "measured": "2026-09-29T01:17:42Z",
       "has_record": true
     },
@@ -2983,6 +3127,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fused exact multiply-add graph nodes and unary scalar nodes for a large speed gain",
+      "val_loss": null,
       "measured": "2026-09-29T01:22:44Z",
       "has_record": true
     },
@@ -2998,6 +3143,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Shared differentiable RMSNorm scale with exact local derivatives",
+      "val_loss": null,
       "measured": "2026-09-29T01:25:04Z",
       "has_record": true
     },
@@ -3013,6 +3159,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T01:25:04Z",
       "has_record": true
     },
@@ -3028,6 +3175,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use direct scalar nodes and fan-in sums to shrink the exact autograd tape",
+      "val_loss": null,
       "measured": "2026-09-29T01:28:10Z",
       "has_record": true
     },
@@ -3043,6 +3191,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Construct differentiable RMSNorm with existing Value primitives and no custom nodes",
+      "val_loss": null,
       "measured": "2026-09-29T01:32:10Z",
       "has_record": true
     },
@@ -3058,6 +3207,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear-layer sums into exact n-ary autograd nodes",
+      "val_loss": null,
       "measured": "2026-09-29T01:33:30Z",
       "has_record": true
     },
@@ -3073,6 +3223,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse only the RMSNorm mean-square onto the tape with its exact 2x/n local derivative",
+      "val_loss": null,
       "measured": "2026-09-29T01:36:19Z",
       "has_record": true
     },
@@ -3088,6 +3239,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse hot dot products and reductions into exact nary autograd sums",
+      "val_loss": null,
       "measured": "2026-09-29T01:40:13Z",
       "has_record": true
     },
@@ -3103,6 +3255,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Added reference AdamW decoupled weight decay with betaW 0.1",
+      "val_loss": null,
       "measured": "2026-09-29T01:41:24Z",
       "has_record": true
     },
@@ -3118,6 +3271,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm differentiable with exact square mean scale gradients",
+      "val_loss": null,
       "measured": "2026-09-29T01:42:08Z",
       "has_record": true
     },
@@ -3133,6 +3287,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse sums into exact n-ary autograd nodes",
+      "val_loss": null,
       "measured": "2026-09-29T01:43:21Z",
       "has_record": true
     },
@@ -3148,6 +3303,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T01:43:21Z",
       "has_record": true
     },
@@ -3163,6 +3319,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T01:43:22Z",
       "has_record": true
     },
@@ -3178,6 +3335,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T01:43:23Z",
       "has_record": true
     },
@@ -3193,6 +3351,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster late-run gradient adaptation",
+      "val_loss": null,
       "measured": "2026-09-29T01:44:21Z",
       "has_record": true
     },
@@ -3208,6 +3367,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse hot accumulations into copied-child n-ary sum nodes",
+      "val_loss": null,
       "measured": "2026-09-29T01:48:59Z",
       "has_record": true
     },
@@ -3223,6 +3383,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse linear reductions into exact n-ary autograd sums",
+      "val_loss": null,
       "measured": "2026-09-29T01:50:51Z",
       "has_record": true
     },
@@ -3238,6 +3399,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Cut redundant tape nodes identity hashing and repeated optimizer work from the hot loop",
+      "val_loss": null,
       "measured": "2026-09-29T01:54:54Z",
       "has_record": true
     },
@@ -3253,6 +3415,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse RMSNorm onto the autograd tape with one shared exact mean-square node",
+      "val_loss": null,
       "measured": "2026-09-29T01:57:04Z",
       "has_record": true
     },
@@ -3268,6 +3431,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse hot reductions into exact nary autograd sums",
+      "val_loss": null,
       "measured": "2026-09-29T02:00:22Z",
       "has_record": true
     },
@@ -3283,6 +3447,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Differentiate RMSNorm through its mean square and fuse linear and softmax sums into exact n-ary Value nodes",
+      "val_loss": null,
       "measured": "2026-09-29T02:02:32Z",
       "has_record": true
     },
@@ -3298,6 +3463,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Replace Set topo visitation with per-Value epochs and compute Adam bias corrections once per step",
+      "val_loss": null,
       "measured": "2026-09-29T02:07:56Z",
       "has_record": true
     },
@@ -3313,6 +3479,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm normalization statistics",
+      "val_loss": null,
       "measured": "2026-09-29T02:09:41Z",
       "has_record": true
     },
@@ -3328,6 +3495,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm mean-square scaling",
+      "val_loss": null,
       "measured": "2026-09-29T02:12:05Z",
       "has_record": true
     },
@@ -3343,6 +3511,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm mean-square scaling differentiable with one fused exact reduction",
+      "val_loss": null,
       "measured": "2026-09-29T02:13:25Z",
       "has_record": true
     },
@@ -3358,6 +3527,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse differentiable RMSNorm mean and scale into two shared tape nodes",
+      "val_loss": null,
       "measured": "2026-09-29T02:14:55Z",
       "has_record": true
     },
@@ -3373,6 +3543,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse sum reductions into one n-ary autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T02:16:32Z",
       "has_record": true
     },
@@ -3388,6 +3559,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse sum reductions into one n-ary autograd node to cut allocation and traversal overhead",
+      "val_loss": null,
       "measured": "2026-09-29T02:17:10Z",
       "has_record": true
     },
@@ -3403,6 +3575,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T02:17:11Z",
       "has_record": true
     },
@@ -3418,6 +3591,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse hot linear and attention reductions into ordered exact n-ary sum nodes",
+      "val_loss": null,
       "measured": "2026-09-29T02:21:37Z",
       "has_record": true
     },
@@ -3433,6 +3607,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm statistics and scaling differentiable using the existing Value tape",
+      "val_loss": null,
       "measured": "2026-09-29T02:22:09Z",
       "has_record": true
     },
@@ -3448,6 +3623,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse hot fixed-scalar operations into unary autograd nodes for an unchanged loss curve",
+      "val_loss": null,
       "measured": "2026-09-29T02:23:32Z",
       "has_record": true
     },
@@ -3463,6 +3639,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm mean-square scaling",
+      "val_loss": null,
       "measured": "2026-09-29T02:25:58Z",
       "has_record": true
     },
@@ -3478,6 +3655,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T02:25:59Z",
       "has_record": true
     },
@@ -3493,6 +3671,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear and attention reductions into exact nary Value nodes",
+      "val_loss": null,
       "measured": "2026-09-29T02:28:13Z",
       "has_record": true
     },
@@ -3508,6 +3687,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse each RMSNorm scale into one exact shared n-ary Value node",
+      "val_loss": null,
       "measured": "2026-09-29T02:29:17Z",
       "has_record": true
     },
@@ -3523,6 +3703,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T02:38:11Z",
       "has_record": true
     },
@@ -3538,6 +3719,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm mean square and reciprocal scale differentiable",
+      "val_loss": null,
       "measured": "2026-09-29T02:40:08Z",
       "has_record": true
     },
@@ -3553,6 +3735,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm mean-square and reciprocal scaling",
+      "val_loss": null,
       "measured": "2026-09-29T02:46:58Z",
       "has_record": true
     },
@@ -3568,6 +3751,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Make RMSNorm mean-square and reciprocal scale differentiable with existing Value operations",
+      "val_loss": null,
       "measured": "2026-09-29T02:48:59Z",
       "has_record": true
     },
@@ -3583,6 +3767,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Cut autograd allocation and traversal overhead plus redundant Adam power calculations with an unchanged loss curve",
+      "val_loss": null,
       "measured": "2026-09-29T02:52:26Z",
       "has_record": true
     },
@@ -3598,6 +3783,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm mean-square scaling with shared Value operations",
+      "val_loss": null,
       "measured": "2026-09-29T02:55:39Z",
       "has_record": true
     },
@@ -3613,6 +3799,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse linear rows into exact ordered n-ary product-sum autograd nodes for speed",
+      "val_loss": null,
       "measured": "2026-09-29T02:59:52Z",
       "has_record": true
     },
@@ -3628,6 +3815,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse each linear row into one reverse-ordered exact n-ary autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T03:04:03Z",
       "has_record": true
     },
@@ -3643,6 +3831,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-29T03:04:04Z",
       "has_record": true
     },
@@ -3658,6 +3847,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Add a zero-initialized vocabulary logit bias",
+      "val_loss": null,
       "measured": "2026-09-29T03:06:25Z",
       "has_record": true
     },
@@ -3673,6 +3863,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Lower Adam beta2 from 0.99 to 0.98",
+      "val_loss": null,
       "measured": "2026-09-29T03:09:09Z",
       "has_record": true
     },
@@ -3688,6 +3879,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Restore differentiable RMSNorm using an exact fused mean-square autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T03:12:32Z",
       "has_record": true
     },
@@ -3703,6 +3895,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse each linear row into one exact product-sum autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T03:18:19Z",
       "has_record": true
     },
@@ -3718,6 +3911,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Keep Adam at a constant 0.01 learning rate",
+      "val_loss": null,
       "measured": "2026-09-29T03:19:10Z",
       "has_record": true
     },
@@ -3733,6 +3927,7 @@
       "status": "crash",
       "reason": "tsc --noEmit failed",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T03:23:25Z",
       "has_record": true
     },
@@ -3748,6 +3943,7 @@
       "status": "keep",
       "reason": "",
       "description": "Fuse each linear row into one exact ordered product-sum autograd node",
+      "val_loss": null,
       "measured": "2026-09-29T04:13:26Z",
       "has_record": true
     },
@@ -3763,6 +3959,7 @@
       "status": "baseline",
       "reason": "frozen implementations/c, re-measured this session",
       "description": "the frozen C track, unmodified, as this session's comparator",
+      "val_loss": null,
       "measured": "2026-09-30T05:08:08Z",
       "has_record": true
     },
@@ -3778,6 +3975,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -0.1%, speed -2.3%; failing loss_material, speed_material",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "val_loss": null,
       "measured": "2026-09-30T05:12:07Z",
       "has_record": true
     },
@@ -3793,6 +3991,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow the MLP from 64 to 48 to trade excess width for double-digit speed",
+      "val_loss": null,
       "measured": "2026-09-30T05:35:40Z",
       "has_record": true
     },
@@ -3808,6 +4007,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow the MLP from 48 to 32 for a larger speed gain",
+      "val_loss": null,
       "measured": "2026-09-30T05:36:33Z",
       "has_record": true
     },
@@ -3823,6 +4023,7 @@
       "status": "keep",
       "reason": "",
       "description": "Narrow the MLP from 32 to 16 for a further speed gain",
+      "val_loss": null,
       "measured": "2026-09-30T05:36:56Z",
       "has_record": true
     },
@@ -3838,6 +4039,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T05:46:24Z",
       "has_record": true
     },
@@ -3853,6 +4055,7 @@
       "status": "keep",
       "reason": "",
       "description": "Shrink embedding width to 12 and update attention scaling for head dimension 3",
+      "val_loss": null,
       "measured": "2026-09-30T05:48:36Z",
       "has_record": true
     },
@@ -3868,6 +4071,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -0.8%, speed -36.5%; failing loss_material, speed_material, speed_tolerance",
       "description": "Halve the MLP width from 16 to 8 for another model FLOP reduction",
+      "val_loss": null,
       "measured": "2026-09-30T05:50:43Z",
       "has_record": true
     },
@@ -3883,6 +4087,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Fuse attention projections and reuse the forward attention vector to reduce per-position overhead",
+      "val_loss": null,
       "measured": "2026-09-30T05:55:47Z",
       "has_record": true
     },
@@ -3898,6 +4103,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Restore embedding width 16 and attention scale 0.5",
+      "val_loss": null,
       "measured": "2026-09-30T05:58:03Z",
       "has_record": true
     },
@@ -3913,6 +4119,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Add a smoothed corpus-frequency logit bias with Adam updates",
+      "val_loss": null,
       "measured": "2026-09-30T06:01:59Z",
       "has_record": true
     },
@@ -3928,6 +4135,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Remove the redundant pre-layer RMSNorm and accumulate attention gradients in place to reduce per-step work",
+      "val_loss": null,
       "measured": "2026-09-30T06:06:43Z",
       "has_record": true
     },
@@ -3943,6 +4151,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use one 12-dimensional attention head and update its scaling constant",
+      "val_loss": null,
       "measured": "2026-09-30T06:10:16Z",
       "has_record": true
     },
@@ -3958,6 +4167,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replace tiny BLAS linear kernels with inline NEON loops to cut per-call overhead",
+      "val_loss": null,
       "measured": "2026-09-30T06:15:29Z",
       "has_record": true
     },
@@ -3973,6 +4183,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Accumulate linear backward input gradients in registers before updating dx",
+      "val_loss": null,
       "measured": "2026-09-30T06:16:43Z",
       "has_record": true
     },
@@ -3988,6 +4199,7 @@
       "status": "keep",
       "reason": "",
       "description": "Keep linear backward input gradients in fixed NEON registers across output rows",
+      "val_loss": null,
       "measured": "2026-09-30T06:17:30Z",
       "has_record": true
     },
@@ -4003,6 +4215,7 @@
       "status": "keep",
       "reason": "",
       "description": "Accumulate attention key and value gradients directly in reverse-order banks to remove stack zeroing and copy overhead",
+      "val_loss": null,
       "measured": "2026-09-30T06:20:29Z",
       "has_record": true
     },
@@ -4018,6 +4231,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use one full-width attention head to cut attention softmax overhead",
+      "val_loss": null,
       "measured": "2026-09-30T06:21:55Z",
       "has_record": true
     },
@@ -4033,6 +4247,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Cache attention mixtures and reuse dx to speed up backward without changing loss",
+      "val_loss": null,
       "measured": "2026-09-30T06:23:27Z",
       "has_record": true
     },
@@ -4048,6 +4263,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Average gradients over three documents per Adam update",
+      "val_loss": null,
       "measured": "2026-09-30T06:29:09Z",
       "has_record": true
     },
@@ -4063,6 +4279,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Polynomial softmax exponential and fewer reciprocal-square-root passes with Adam leaving gradient clearing to the training loop",
+      "val_loss": null,
       "measured": "2026-09-30T06:36:55Z",
       "has_record": true
     },
@@ -4078,6 +4295,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use a seventh-order range-reduced NEON exponential in softmax",
+      "val_loss": null,
       "measured": "2026-09-30T06:40:55Z",
       "has_record": true
     },
@@ -4093,6 +4311,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Add a fixed smoothed unigram logit prior to output logits",
+      "val_loss": null,
       "measured": "2026-09-30T06:45:12Z",
       "has_record": true
     },
@@ -4108,6 +4327,7 @@
       "status": "keep",
       "reason": "",
       "description": "Learn a zero-initialized output logit bias with Adam to capture class priors at low cost",
+      "val_loss": null,
       "measured": "2026-09-30T06:49:23Z",
       "has_record": true
     },
@@ -4123,6 +4343,7 @@
       "status": "keep",
       "reason": "",
       "description": "Block four linear outputs to reuse input vectors and expose FMA instruction level parallelism",
+      "val_loss": null,
       "measured": "2026-09-30T06:51:51Z",
       "has_record": true
     },
@@ -4138,6 +4359,7 @@
       "status": "keep",
       "reason": "",
       "description": "Stop feeding cumulative output-bias gradients into lm_head backpropagation",
+      "val_loss": null,
       "measured": "2026-09-30T06:54:41Z",
       "has_record": true
     },
@@ -4153,6 +4375,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Widen N_EMBD to 16 and update the head scaling and fixed-width gradient kernel",
+      "val_loss": null,
       "measured": "2026-09-30T06:57:39Z",
       "has_record": true
     },
@@ -4168,6 +4391,7 @@
       "status": "crash",
       "reason": "the model request failed: The read operation timed out",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T18:46:26Z",
       "has_record": true
     },
@@ -4183,6 +4407,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -55.7%, speed +312.5%; failing learned, loss_material, loss_tolerance",
       "description": "Fine tune on the shortest documents during the final 50 updates",
+      "val_loss": null,
       "measured": "2026-09-30T18:48:50Z",
       "has_record": true
     },
@@ -4198,6 +4423,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Skip every fourth backward and Adam update to trade a little learning for speed",
+      "val_loss": null,
       "measured": "2026-09-30T18:52:31Z",
       "has_record": true
     },
@@ -4213,6 +4439,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Narrow the residual stream from 12 to 10 and use two five-dimensional heads to reduce projection work",
+      "val_loss": null,
       "measured": "2026-09-30T18:56:15Z",
       "has_record": true
     },
@@ -4228,6 +4455,7 @@
       "status": "keep",
       "reason": "",
       "description": "Lower Adam beta2 from 0.99 to 0.98 for faster second-moment adaptation",
+      "val_loss": null,
       "measured": "2026-09-30T18:57:37Z",
       "has_record": true
     },
@@ -4243,6 +4471,7 @@
       "status": "keep",
       "reason": "",
       "description": "Tie the token embedding to the output head and update the shared matrix once with summed gradients",
+      "val_loss": null,
       "measured": "2026-09-30T19:00:14Z",
       "has_record": true
     },
@@ -4258,6 +4487,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +0.1%, speed +272.1%; failing learned, loss_material",
       "description": "Add a smoothed dataset bigram logit prior to the output distribution",
+      "val_loss": null,
       "measured": "2026-09-30T19:02:07Z",
       "has_record": true
     },
@@ -4273,6 +4503,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T19:07:31Z",
       "has_record": true
     },
@@ -4288,6 +4519,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Cut redundant hot-loop memory work and use one Newton rsqrt refinement per vector reciprocal square root",
+      "val_loss": null,
       "measured": "2026-09-30T19:15:22Z",
       "has_record": true
     },
@@ -4303,6 +4535,7 @@
       "status": "keep",
       "reason": "",
       "description": "Isolate the speedup by removing only the second Newton refinement from vector RMSNorm and Adam reciprocal square roots",
+      "val_loss": null,
       "measured": "2026-09-30T19:16:30Z",
       "has_record": true
     },
@@ -4318,6 +4551,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T19:30:24Z",
       "has_record": true
     },
@@ -4333,6 +4567,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use a range-reduced polynomial exponential in softmax to raise speed",
+      "val_loss": null,
       "measured": "2026-09-30T19:34:20Z",
       "has_record": true
     },
@@ -4348,6 +4583,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a final RMSNorm before the language-model head in training and inference",
+      "val_loss": null,
       "measured": "2026-09-30T19:37:24Z",
       "has_record": true
     },
@@ -4363,6 +4599,7 @@
       "status": "keep",
       "reason": "",
       "description": "Use the normalized final activation for lm_head weight gradients",
+      "val_loss": null,
       "measured": "2026-09-30T19:38:26Z",
       "has_record": true
     },
@@ -4378,6 +4615,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss +9.8%, speed -73.0%; failing speed_material, speed_tolerance",
       "description": "Sort the first shuffled training pass by ascending document length",
+      "val_loss": null,
       "measured": "2026-09-30T19:42:40Z",
       "has_record": true
     },
@@ -4393,6 +4631,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -24.9%, speed +342.9%; failing learned, loss_material, loss_tolerance",
       "description": "Count-sort the visited shuffled document prefix by length so the final window uses the longest documents",
+      "val_loss": null,
       "measured": "2026-09-30T19:51:41Z",
       "has_record": true
     },
@@ -4408,6 +4647,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -24.9%, speed +411.6%; failing learned, loss_material, loss_tolerance",
       "description": "Count-sort the visited shuffled prefix by ascending document length with linear-time bucketing",
+      "val_loss": null,
       "measured": "2026-09-30T19:52:49Z",
       "has_record": true
     },
@@ -4423,6 +4663,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Remove the remaining Newton refinement from vector RMSNorm and Adam reciprocal square roots",
+      "val_loss": null,
       "measured": "2026-09-30T19:54:55Z",
       "has_record": true
     },
@@ -4438,6 +4679,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -5.9%, speed +293.9%; failing loss_material, loss_tolerance",
       "description": "Narrow the MLP hidden width from 16 to 12",
+      "val_loss": null,
       "measured": "2026-09-30T20:02:52Z",
       "has_record": true
     },
@@ -4453,6 +4695,7 @@
       "status": "crash",
       "reason": "cc failed",
       "description": "Select the 50 shortest sampled documents into the final curriculum window once at load time",
+      "val_loss": null,
       "measured": "2026-09-30T20:05:01Z",
       "has_record": true
     },
@@ -4468,6 +4711,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -24.9%, speed +281.4%; failing learned, loss_material, loss_tolerance",
       "description": "One-time ascending length count sort of the shuffled 1000-document training prefix",
+      "val_loss": null,
       "measured": "2026-09-30T20:07:30Z",
       "has_record": true
     },
@@ -4483,6 +4727,7 @@
       "status": "crash",
       "reason": "the model request failed: IncompleteRead(88 bytes read)",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T21:13:43Z",
       "has_record": true
     },
@@ -4498,6 +4743,7 @@
       "status": "crash",
       "reason": "the model request failed: IncompleteRead(22 bytes read)",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T22:14:43Z",
       "has_record": true
     },
@@ -4513,6 +4759,7 @@
       "status": "crash",
       "reason": "the model request failed: <urlopen error [Errno 8] nodename nor servname provided, or not known>",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T22:17:03Z",
       "has_record": true
     },
@@ -4528,6 +4775,7 @@
       "status": "crash",
       "reason": "the model request failed: The read operation timed out",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T23:14:47Z",
       "has_record": true
     },
@@ -4543,6 +4791,7 @@
       "status": "crash",
       "reason": "the response contained no fenced code block, so there is no patch to apply.",
       "description": "the model returned nothing usable",
+      "val_loss": null,
       "measured": "2026-09-30T23:19:18Z",
       "has_record": true
     },
@@ -4558,6 +4807,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replace softmax expf with a safely range-reduced degree-six approximation",
+      "val_loss": null,
       "measured": "2026-09-30T23:27:30Z",
       "has_record": true
     },
@@ -4573,6 +4823,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -20.2%, speed +281.0%; failing learned, loss_material, loss_tolerance",
       "description": "Select the 50 shortest shuffled-prefix documents for the final curriculum window",
+      "val_loss": null,
       "measured": "2026-09-30T23:38:20Z",
       "has_record": true
     },
@@ -4588,6 +4839,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -8.5%, speed +267.6%; failing loss_material, loss_tolerance",
       "description": "Use one full-width attention head to reduce repeated softmax work",
+      "val_loss": null,
       "measured": "2026-09-30T23:39:45Z",
       "has_record": true
     },
@@ -4603,6 +4855,7 @@
       "status": "discard",
       "reason": "no axis improved materially: discarded: loss -5.0%, speed +285.0%; failing loss_material, loss_tolerance",
       "description": "Add a 10 percent learning rate floor to the linear decay",
+      "val_loss": null,
       "measured": "2026-09-30T23:42:17Z",
       "has_record": true
     },
@@ -4618,6 +4871,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Seed output-class biases from smoothed training-token frequencies",
+      "val_loss": null,
       "measured": "2026-09-30T23:47:31Z",
       "has_record": true
     },
@@ -4633,6 +4887,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use three width-4 attention heads with corrected inverse-square-root scaling",
+      "val_loss": null,
       "measured": "2026-09-30T23:51:01Z",
       "has_record": true
     },
@@ -4648,6 +4903,7 @@
       "status": "keep",
       "reason": "",
       "description": "Untie the output head while narrowing the MLP to width 12",
+      "val_loss": null,
       "measured": "2026-09-30T23:55:31Z",
       "has_record": true
     },
@@ -4663,6 +4919,7 @@
       "status": "keep",
       "reason": "",
       "description": "Select the 50 longest shuffled-prefix documents for the final window",
+      "val_loss": null,
       "measured": "2026-09-30T23:58:22Z",
       "has_record": true
     },
@@ -4678,6 +4935,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Replay the fifty longest documents once while caching the attention vector for speed",
+      "val_loss": null,
       "measured": "2026-10-01T00:03:00Z",
       "has_record": true
     },
@@ -4693,6 +4951,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a 20 percent learning rate floor to the linear decay",
+      "val_loss": null,
       "measured": "2026-10-01T00:05:52Z",
       "has_record": true
     },
@@ -4708,6 +4967,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Use two width-6 attention heads with corrected inverse-square-root scaling",
+      "val_loss": null,
       "measured": "2026-10-01T00:08:07Z",
       "has_record": true
     },
@@ -4723,6 +4983,7 @@
       "status": "keep",
       "reason": "",
       "description": "Raise the learning-rate decay floor from 20 percent to 30 percent",
+      "val_loss": null,
       "measured": "2026-10-01T00:13:00Z",
       "has_record": true
     },
@@ -4738,6 +4999,7 @@
       "status": "keep",
       "reason": "",
       "description": "Prime and replay the fifty longest final-window documents while skipping fifty other training documents",
+      "val_loss": null,
       "measured": "2026-10-01T00:17:14Z",
       "has_record": true
     },
@@ -4753,6 +5015,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replay the fifty lowest observed-loss documents in the measured window",
+      "val_loss": null,
       "measured": "2026-10-01T00:23:17Z",
       "has_record": true
     },
@@ -4768,6 +5031,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replay the five easiest final-window documents ten times each",
+      "val_loss": null,
       "measured": "2026-10-01T00:23:48Z",
       "has_record": true
     },
@@ -4783,6 +5047,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replay only the easiest document throughout the measured final 50 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:26:03Z",
       "has_record": true
     },
@@ -4798,6 +5063,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replay the easiest final-window document for the final 100 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:27:13Z",
       "has_record": true
     },
@@ -4813,6 +5079,7 @@
       "status": "keep",
       "reason": "",
       "description": "Extend easiest-document replay from the final 100 steps to the final 200 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:28:25Z",
       "has_record": true
     },
@@ -4828,6 +5095,7 @@
       "status": "keep",
       "reason": "",
       "description": "Extend easiest-document replay from the final 200 steps to the final 400 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:29:17Z",
       "has_record": true
     },
@@ -4843,6 +5111,7 @@
       "status": "keep",
       "reason": "",
       "description": "Replay the easiest provisional document for the final 500 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:30:54Z",
       "has_record": true
     },
@@ -4858,6 +5127,7 @@
       "status": "keep",
       "reason": "",
       "description": "Sort all provisional replay documents so slot 500 receives the easiest observed document",
+      "val_loss": null,
       "measured": "2026-10-01T00:32:13Z",
       "has_record": true
     },
@@ -4873,6 +5143,7 @@
       "status": "keep",
       "reason": "",
       "description": "Pretrain the 50 candidates twice then replay the easiest for 900 steps",
+      "val_loss": null,
       "measured": "2026-10-01T00:35:10Z",
       "has_record": true
     },
@@ -4888,6 +5159,7 @@
       "status": "keep",
       "reason": "",
       "description": "Double replay learning rate and early stop below 1e-5 loss",
+      "val_loss": null,
       "measured": "2026-10-01T00:41:17Z",
       "has_record": true
     },
@@ -4903,6 +5175,7 @@
       "status": "keep",
       "reason": "",
       "description": "Add a trainable direct positional vocabulary bias",
+      "val_loss": null,
       "measured": "2026-10-01T00:44:26Z",
       "has_record": true
     },
@@ -4918,6 +5191,7 @@
       "status": "crash",
       "reason": "the patch did not apply",
       "description": "Collapse four 3-dimensional heads into one 12-dimensional head and correct the attention scale",
+      "val_loss": null,
       "measured": "2026-10-01T00:45:50Z",
       "has_record": true
     },
@@ -4933,7 +5207,136 @@
       "status": "crash",
       "reason": "the gradient check did not pass",
       "description": "Use a range-reduced polynomial exponential in softmax",
+      "val_loss": null,
       "measured": "2026-10-01T00:49:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0312",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "rust",
+      "loss": 2.432972,
+      "steps_per_sec": 87.910373,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 1.000259,
+      "status": "baseline",
+      "reason": "frozen implementations/rust, re-measured this session",
+      "description": "the frozen Rust track, unmodified, as this session's comparator",
+      "val_loss": null,
+      "measured": "2026-10-01T02:29:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0313",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "go",
+      "loss": 2.411932,
+      "steps_per_sec": 83.584974,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.999984,
+      "status": "baseline",
+      "reason": "frozen implementations/go, re-measured this session",
+      "description": "the frozen Go track, unmodified, as this session's comparator",
+      "val_loss": null,
+      "measured": "2026-10-01T02:30:23Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0314",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "typescript",
+      "loss": 2.309025,
+      "steps_per_sec": 94.351719,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.722129,
+      "status": "baseline",
+      "reason": "frozen implementations/typescript, re-measured this session",
+      "description": "the frozen TypeScript track, unmodified, as this session's comparator",
+      "val_loss": null,
+      "measured": "2026-10-01T02:31:07Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0315",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "c",
+      "loss": 2.340034,
+      "steps_per_sec": 37088.60663,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.988406,
+      "status": "baseline",
+      "reason": "frozen implementations/c, re-measured this session",
+      "description": "the frozen C track, unmodified, as this session's comparator",
+      "val_loss": null,
+      "measured": "2026-10-01T02:31:10Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0316",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "rust",
+      "loss": 2.432972,
+      "steps_per_sec": 85.813116,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 1.000259,
+      "status": "baseline",
+      "reason": "frozen implementations/rust, re-measured this session",
+      "description": "the frozen Rust track, unmodified, as this session's comparator",
+      "val_loss": 2.385351,
+      "measured": "2026-10-01T02:32:28Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0317",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "go",
+      "loss": 2.411932,
+      "steps_per_sec": 83.009514,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.999984,
+      "status": "baseline",
+      "reason": "frozen implementations/go, re-measured this session",
+      "description": "the frozen Go track, unmodified, as this session's comparator",
+      "val_loss": 2.398188,
+      "measured": "2026-10-01T02:33:28Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0318",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "typescript",
+      "loss": 2.309025,
+      "steps_per_sec": 87.177476,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.722129,
+      "status": "baseline",
+      "reason": "frozen implementations/typescript, re-measured this session",
+      "description": "the frozen TypeScript track, unmodified, as this session's comparator",
+      "val_loss": 2.409746,
+      "measured": "2026-10-01T02:34:14Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0319",
+      "parent": "4272c2452a9ec7fa955dabb1589a5b069e38393a",
+      "track": "c",
+      "loss": 2.340034,
+      "steps_per_sec": 33819.345539,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.988406,
+      "status": "baseline",
+      "reason": "frozen implementations/c, re-measured this session",
+      "description": "the frozen C track, unmodified, as this session's comparator",
+      "val_loss": 2.35284,
+      "measured": "2026-10-01T02:34:17Z",
       "has_record": true
     }
   ],

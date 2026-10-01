@@ -168,6 +168,30 @@ SPEED_TOL = 0.05
 #: C port's gradient used to be wrong by a factor of -8 and still achieved 17.6%
 #: windowed improvement, so this catches divergence but is nowhere near
 #: sufficient on its own. The gradient check is what catches a broken tape.
+#: How much a held-out loss has to improve before a loss-axis keep is allowed.
+#: The same number as `LOSS_MATERIAL` on purpose: if a change moved the training
+#: loss by 2% but moved the held-out loss by less, then the training loss moved
+#: for a reason other than the model getting better, and the two numbers are there
+#: to disagree about that.
+VAL_MATERIAL = LOSS_MATERIAL
+
+#: One in every VAL_STRIDE documents is held out of training and used only for the
+#: held-out measurement. 128 gives 250 documents on the names corpus. The held-out
+#: loss is a mean over documents, not over tokens, and the per-document loss has a
+#: standard deviation near 0.40 -- so at n = 250 its own standard error is
+#: 0.40/sqrt(250) = 0.025, about 1% of the mean. Well under the 5% regression
+#: limit, so the gate is reading the model and not its own error.
+#:
+#: (An earlier version of this comment estimated the noise from the token count and
+#: said "near 4%". That was wrong in the safe direction and it was still wrong: the
+#: quantity is a mean of 250 per-document means, and dividing by the token count
+#: instead of the document count overstates the error fourfold.)
+VAL_STRIDE = 128
+# re.MULTILINE, and load-bearing: `^` anchors to the start of the *string* without
+# it, so `.search()` over a whole run's stdout only matches when the program's
+# entire output is that one line. It looked correct and silently matched nothing.
+VAL_RE = re.compile(r"^val_loss\s+([0-9.]+)\s*$", re.MULTILINE)
+
 MIN_RELATIVE_IMPROVEMENT = parity.MIN_RELATIVE_IMPROVEMENT
 
 #: The window the loss axis is read over. `tools/parity.py`'s trend gate uses 50
@@ -534,6 +558,11 @@ COLUMNS = (
     "status",
     "reason",
     "description",
+    # Added last, deliberately. A column's position is every historical row's
+    # index, and inserting in the middle would mean rewriting 237 records that are
+    # supposed to be immutable. Appended, the pre-existing rows carry an empty cell
+    # and mean "this run predates the validation gate", which is what they are.
+    "val_loss",
 )
 HEADER = "\t".join(COLUMNS)
 
@@ -644,6 +673,13 @@ class Row:
     status: str
     reason: str
     description: str
+    #: Loss on documents held out of training, or None when the run predates the
+    #: gate. Never 0.0 for "missing" -- an absent measurement and a loss of zero
+    #: are the two numbers this whole column exists to keep apart, and collapsing
+    #: them would reintroduce the bug the column was added to catch. None rather
+    #: than NaN, because NaN != NaN and the row is compared for equality in tests
+    #: and in `keeps_in_effect`.
+    val_loss: float | None = None
 
     def fields(self) -> list[str]:
         def number(value: float) -> str:
@@ -661,6 +697,7 @@ class Row:
             self.status,
             self.reason,
             self.description,
+            "" if self.val_loss is None else number(self.val_loss),
         ]
 
     def to_json(self) -> dict[str, Any]:
@@ -670,6 +707,9 @@ class Row:
         payload["loss_gain"] = round(self.loss_gain, 6)
         payload["speed_gain"] = round(self.speed_gain, 6)
         payload["grad_ratio"] = round(self.grad_ratio, 6)
+        payload["val_loss"] = (
+            None if self.val_loss is None else round(self.val_loss, 6)
+        )
         return payload
 
     @classmethod
@@ -689,6 +729,11 @@ class Row:
             status=str(payload["status"]),
             reason=str(payload["reason"]),
             description=str(payload["description"]),
+            val_loss=(
+                None
+                if payload.get("val_loss") in (None, "")
+                else float(payload["val_loss"])
+            ),
         )
 
 
@@ -743,6 +788,11 @@ def read_ledger() -> list[Row]:
                     status=record["status"],
                     reason=record["reason"],
                     description=record["description"],
+                    val_loss=(
+                        None
+                        if not record.get("val_loss")
+                        else float(record["val_loss"])
+                    ),
                 )
             )
         except ValueError as exc:
@@ -792,6 +842,10 @@ class Measurement:
     grad_analytic: float
     grad_params: int
     log: str
+    #: Loss on documents held out of training, or None if the track reports none.
+    #: The gate in `verdict()` keys off this; see its docstring for why the
+    #: training loss alone is a measurement of the run and not of the model.
+    val_loss: float | None = None
 
 
 def windowed(losses: list[float]) -> dict[str, float]:
@@ -813,8 +867,14 @@ def parse_losses(stdout: str, limit: int) -> list[float]:
 
 def train_once(
     track: Track, command: list[str], steps: int, seed: int, cwd: Path
-) -> tuple[list[float], float, float | None]:
+) -> tuple[list[float], float, float | None, float | None]:
     """One timed training run.
+
+    Returns the loss curve, the wall clock, any speed the program reported about
+    itself, and the held-out loss from the `val_loss` line -- which is `None` when
+    the track does not implement the split. `verdict()` treats that `None` as "not
+    checked", never as "checked out".
+
 
     `command` is the track's entry point (`Track.run`), not a path: Go and
     TypeScript are run through their toolchain rather than exec'd from disk. The
@@ -839,7 +899,17 @@ def train_once(
 
     started = time.monotonic()
     completed = run_command(
-        command + ["--input", str(DATASET), "--steps", str(steps), "--seed", str(seed)],
+        command
+        + [
+            "--input",
+            str(DATASET),
+            "--steps",
+            str(steps),
+            "--seed",
+            str(seed),
+            "--val-stride",
+            str(VAL_STRIDE),
+        ],
         cwd=cwd,
         timeout=RUN_TIMEOUT_SECONDS,
     )
@@ -908,7 +978,11 @@ def train_once(
             )
     reported = REPORTED_SPEED_RE.search(completed.stdout)
     reported_sps = float(reported.group("sps")) if reported else None
-    return losses, elapsed, reported_sps
+    # Parsed from stdout rather than the trace, so one line of the protocol serves
+    # every track whether its loss curve comes from stdout or from a trace file.
+    match = VAL_RE.search(completed.stdout or "")
+    val_loss = float(match.group(1)) if match else None
+    return losses, elapsed, reported_sps, val_loss
 
 
 def require_local_tsc(track: Track, project_dir: Path) -> None:
@@ -1180,10 +1254,12 @@ def measure_track(
 
     # One run for the loss axis -- it is deterministic at a fixed seed -- and
     # `repeats` for the speed axis, which is not.
-    losses, first_elapsed, reported = train_once(track, command, steps, seed, project_dir)
+    losses, first_elapsed, reported, val_loss = train_once(
+        track, command, steps, seed, project_dir
+    )
     wall = [first_elapsed]
     for _ in range(max(0, repeats - 1)):
-        _, elapsed, _ = train_once(track, command, steps, seed, project_dir)
+        _, elapsed, _, _ = train_once(track, command, steps, seed, project_dir)
         wall.append(elapsed)
 
     return Measurement(
@@ -1197,6 +1273,7 @@ def measure_track(
         grad_analytic=grad["analytic"],
         grad_params=grad["params"],
         log="",
+        val_loss=val_loss,
     )
 
 
@@ -1269,6 +1346,8 @@ def verdict(
     cand_loss: float,
     cand_speed: float,
     window: dict[str, float],
+    base_val: float | None = None,
+    cand_val: float | None = None,
 ) -> dict[str, Any]:
     """Decide keep or discard from measured numbers. A pure function, and the
     single place the research policy lives.
@@ -1287,11 +1366,41 @@ def verdict(
     is "this went somewhere", tolerance is "this is not a regression"; the first
     has to clear the noise floor, the second only has to be generous.
 
-    Three things this deliberately does not do. It does not accept a tie: an
-    exact tie is a no-op, and a no-op that advances the branch is how a log fills
-    with 200 identical rows and no information. It does not look at the gradient
-    ratio, because that is a gate and not a score -- a broken tape is a crash,
-    not a bad candidate. And it does not consult anything the model said.
+    ## The validation gate, and why the loss axis alone was not a measurement
+
+    `cand_loss` is the mean training loss over the last 50 of 1000 steps, and the
+    candidate owns which document each of those steps trains on. That makes the
+    loss axis a measurement of the *run* rather than of the *model*, and the C
+    loop found this on its own within twenty experiments: point the measured
+    window at documents it has already learned and the loss falls; train on one
+    document for the last 900 steps and add a position-indexed bias to the logits,
+    as run 0309 did, and the loss is exactly 0.000000 -- a model that has learned
+    nothing and a number that reads as a 99.9% improvement. The speed axis goes
+    the same way for free, because a shorter document means fewer tokens per step
+    and therefore more steps per second.
+
+    So a keep has to be corroborated on documents the candidate never trained on:
+
+    * a material training-loss gain requires `VAL_MATERIAL` of validation gain to
+      match it -- and this is checked whichever axis won, because the exploit won
+      both at once; and
+    * any keep requires the validation loss to be no more than `LOSS_TOL` worse.
+
+    The speed axis is deliberately not gated on validation improvement. A memory
+    optimisation that is 20% faster at identical loss is a real result, and
+    requiring it to also improve the model would throw away the largest category
+    of keep the loop has produced on the Rust and Go tracks.
+
+    A missing validation number is a refusal, not a pass. A track that does not
+    report one cannot be kept on the loss axis, because "we did not check" and
+    "it checked out" are the same answer on the ledger and only one of them is
+    true.
+
+    Three further things this deliberately does not do. It does not accept a tie:
+    an exact tie is a no-op, and a no-op that advances the branch is how a log
+    fills with 200 identical rows and no information. It does not look at the
+    gradient ratio, because that is a gate and not a score -- a broken tape is a
+    crash, not a bad candidate. And it does not consult anything the model said.
     """
     if base_loss <= 0 or base_speed <= 0:
         raise ResearchError("the baseline is degenerate; refusing to compare against it")
@@ -1299,8 +1408,29 @@ def verdict(
     loss_gain = (base_loss - cand_loss) / base_loss
     speed_gain = (cand_speed - base_speed) / base_speed
 
+    # NaN-safe: a missing number has to read as "no evidence", never as zero gain.
+    val_gain = (
+        (base_val - cand_val) / base_val
+        if base_val is not None and cand_val is not None and base_val > 0
+        else None
+    )
+    val_checked = val_gain is not None
+    val_safe = not val_checked or val_gain >= -LOSS_TOL
+
     learned = window.get("relative_improvement", 0.0) >= MIN_RELATIVE_IMPROVEMENT
-    loss_won = loss_gain >= LOSS_MATERIAL and speed_gain >= -SPEED_TOL
+    # Whether the training loss improved materially at all, independently of which
+    # axis won. The corroboration rule keys off this rather than off the loss axis,
+    # because the C exploit at run 0307 satisfied *both* axes at once -- it won the
+    # loss axis outright and the speed axis with it -- and a gate written as
+    # "loss_won also needs validation improvement" would have waved it through on
+    # the speed axis instead. Its held-out loss was flat to 0.4% while its training
+    # loss fell 100%, and that gap is the whole signature.
+    train_improved = loss_gain >= LOSS_MATERIAL
+    # A material training-loss gain that the held-out loss does not corroborate is
+    # the model memorising its training documents rather than getting better. It is
+    # refused whichever axis it arrived on.
+    corroborated = not train_improved or (val_checked and val_gain >= VAL_MATERIAL)
+    loss_won = train_improved and speed_gain >= -SPEED_TOL
     speed_won = speed_gain >= SPEED_MATERIAL and loss_gain >= -LOSS_TOL
 
     checks = {
@@ -1314,7 +1444,7 @@ def verdict(
         "loss_material": {
             "value": loss_gain,
             "threshold": LOSS_MATERIAL,
-            "pass": loss_gain >= LOSS_MATERIAL,
+            "pass": train_improved,
             "why": "the loss axis only counts once it clears the noise floor, which "
             "is about one standard error of a 50-step window",
         },
@@ -1336,14 +1466,39 @@ def verdict(
             "pass": speed_gain >= -SPEED_TOL,
             "why": "winning on loss is not a licence to be meaningfully slower",
         },
+        "validation_reported": {
+            "value": val_gain if val_checked else None,
+            "threshold": None,
+            "pass": val_checked,
+            "why": "a track that reports no held-out loss cannot be kept on the loss "
+            "axis at all: 'we did not check' and 'it checked out' are the same answer "
+            "on the ledger and only one of them is true",
+        },
+        "validation_corroborates_loss": {
+            "value": val_gain if val_checked else None,
+            "threshold": VAL_MATERIAL,
+            "pass": corroborated,
+            "why": "a material training-loss gain the held-out loss does not share is "
+            "the run memorising the documents it chose rather than the model getting "
+            "better. Checked whichever axis won, because a candidate that collapsed "
+            "its training loss also got faster for free",
+        },
+        "validation_tolerance": {
+            "value": val_gain if val_checked else None,
+            "threshold": -LOSS_TOL,
+            "pass": val_safe,
+            "why": "no keep may be meaningfully worse on documents the candidate "
+            "never trained on, whichever axis it won on",
+        },
     }
 
-    kept = learned and (loss_won or speed_won)
+    kept = learned and val_safe and corroborated and (loss_won or speed_won)
     if kept:
         rule = "loss_won" if loss_won else "speed_won"
+        val_note = f", validation {val_gain * 100:+.1f}%" if val_checked else ""
         explanation = (
             f"kept: loss {loss_gain * 100:+.1f}% and speed {speed_gain * 100:+.1f}% "
-            f"against the session baseline, via {rule}"
+            f"against the session baseline, via {rule}{val_note}"
         )
     else:
         rule = "none"
@@ -1466,8 +1621,13 @@ def build_results_document() -> dict[str, Any]:
     for track in TRACKS.values():
         track_rows = [r for r in rows if r.track == track.name]
         track_kept = [r for r in track_rows if r.status == "keep"]
+        # The *last* baseline row, not the first. A track can be re-seeded -- that is
+        # what `seed --force` is for, and what a protocol change needs -- and taking
+        # the first row would keep reporting a baseline measured under the old
+        # protocol forever, silently, while `seed` printed a fresh number and moved
+        # on. The most recent baseline is the one the current rows are relative to.
         baselines[track.name] = next(
-            (r.to_json() for r in track_rows if r.status == "baseline"), None
+            (r.to_json() for r in reversed(track_rows) if r.status == "baseline"), None
         )
         # Over the keeps still in effect, not over every keep ever recorded. See
         # `keeps_in_effect`: the lowest number on the ledger is not an achievement
@@ -1561,6 +1721,25 @@ def build_results_document() -> dict[str, Any]:
         "dataset_sha256": sha256_file(DATASET) if DATASET.is_file() else "",
         "baselines": baselines,
         "bests": bests,
+        # Per track, why a best is missing when rows exist but none is in effect.
+        # Without it the page's "best run" panel is simply empty after a protocol
+        # change, which reads as a broken page rather than as an honest "every
+        # recorded keep predates the current protocol".
+        "best_status": {
+            track.name: (
+                ""
+                if bests[track.name]
+                else (
+                    "no kept candidate matches the committed source: every recorded "
+                    "keep either has been rolled back or was measured under an "
+                    "earlier protocol. Re-run the loop to promote one under the "
+                    "current protocol."
+                    if any(r.track == track.name and r.status == "keep" for r in rows)
+                    else "no kept candidate yet"
+                )
+            )
+            for track in TRACKS.values()
+        },
         "counts": {
             "experiments": len([r for r in rows if r.status != "baseline"]),
             "keep": len(kept),
@@ -2120,6 +2299,11 @@ def measure_session_baseline(
         "protocol": {"steps": steps, "seed": seed, "repeats": repeats},
         "loss": round(frozen.window["last_window_mean"], 6),
         "window": {key: round(value, 6) for key, value in frozen.window.items()},
+        # The frozen track's held-out loss. `verdict()` compares every candidate's
+        # held-out loss against this, so it is the reference point for the gate --
+        # and it is taken from the frozen track rather than the candidate, because
+        # the candidate is exactly what the gate is supposed to judge.
+        "val_loss": None if frozen.val_loss is None else round(frozen.val_loss, 6),
         "steps_per_sec": round(frozen.steps_per_sec, 6),
         "wall_seconds": frozen.wall_seconds,
         "loss_curve_sha256": sha256_text(",".join(f"{value:.6f}" for value in frozen.losses)),
@@ -2144,6 +2328,7 @@ def measure_session_baseline(
         "steps_per_sec": payload["steps_per_sec"],
         "grad_ratio": payload["grad_ratio"],
         "window": payload["window"],
+        "val_loss": payload["val_loss"],
     }
 
 
@@ -2164,7 +2349,7 @@ def cmd_seed(args: argparse.Namespace) -> int:
         RESULTS_TSV.write_text(HEADER + "\n", encoding="utf-8")
     rows = read_ledger()
     mine = [r for r in rows if r.track == track.name]
-    if mine:
+    if mine and not args.force:
         print(
             f"{RESULTS_TSV.relative_to(REPO_ROOT)} already has {len(mine)} "
             f"{track.name} row(s); nothing to seed"
@@ -2194,6 +2379,11 @@ def cmd_seed(args: argparse.Namespace) -> int:
         loss_gain=0.0,
         speed_gain=0.0,
         grad_ratio=baseline["grad_ratio"],
+        # The frozen track's held-out loss, on the same row. Without it the page
+        # can show a baseline's *training* loss and no held-out counterpart, and a
+        # reader has no denominator for the held-out figure the runs are quoted
+        # against -- which is how a dash in that column becomes ambiguous.
+        val_loss=baseline.get("val_loss"),
         status="baseline",
         reason=f"frozen implementations/{track.comparator_dir}, re-measured this session",
         description=(
@@ -2292,8 +2482,11 @@ def cmd_verify(args: argparse.Namespace) -> int:
         if not kept:
             if any(r.track == track.name for r in rows):
                 print(
-                    f"--  {track.name}: every kept candidate has since been rolled "
-                    f"back; nothing to verify"
+                    f"--  {track.name}: no kept candidate matches the committed "
+                    f"source. Either every keep has been rolled back, or the "
+                    f"track's protocol changed after the last one -- a held-out "
+                    f"validation split, say -- in which case re-seed it to "
+                    f"establish a baseline under the current protocol"
                 )
             continue
         # Two different runs, and conflating them is a bug this file used to have.
@@ -2496,6 +2689,8 @@ def cmd_loop(args: argparse.Namespace) -> int:
                         measurement.window["last_window_mean"],
                         measurement.steps_per_sec,
                         measurement.window,
+                        baseline.get("val_loss"),
+                        measurement.val_loss,
                     )
                     print(
                         f"  {'keep' if judged['kept'] else 'discard'}: "
@@ -2522,6 +2717,8 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 status="crash",
                 reason=clean_field(failure or "no measurement", "reason"),
                 description=(proposal.description if proposal else "the model returned nothing usable"),
+                # A crash measured nothing, so it has no held-out loss either.
+                val_loss=None,
             )
             record = {
                 "$comment": "One experiment. GENERATED by tools/autoresearch.py -- do not edit.",
@@ -2554,6 +2751,7 @@ def cmd_loop(args: argparse.Namespace) -> int:
                 loss_gain=judged["loss_gain"],
                 speed_gain=judged["speed_gain"],
                 grad_ratio=measurement.grad_ratio,
+                val_loss=measurement.val_loss,
                 status="keep" if judged["kept"] else "discard",
                 reason=(
                     ""
@@ -2832,6 +3030,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--no-push", dest="push", action="store_false",
         help="commit locally but do not push; the site will not update",
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="with `seed`: seed a track that already has rows. For exactly one case "
+        "-- a change to the measurement protocol. Every keep on that track was then "
+        "compared to a baseline that no longer describes the same measurement, so a "
+        "new baseline row is appended and the session baseline rewritten. The "
+        "experiment rows are left alone; they are the history they are.",
     )
     parser.add_argument(
         "--push-delay", type=float, default=0.0,

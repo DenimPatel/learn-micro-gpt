@@ -53,13 +53,15 @@ An earlier revision of the gist, not its current HEAD. The algorithm is identica
 ### `implementations/rust/src/lib.rs`
 
 - **Status:** derived (adapted by us)
-- **sha256:** `4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15`
+- **sha256:** `f361642663c2f32ea538864923932ee94027552cc2f9711424f39f41a1f4a2cb`
 - **Origin:** Rust port of microgpt.py (micro config, parity track) -- FROZEN
 - **Author / copyright:** Karpathy (algorithm), this repository (port)
 - **License:** MIT
 - **Upstream:** <https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95>
 
-FROZEN IN PLACE, and the digest above is the mechanism. `derived=True` is the honest flag -- this is our adaptation of Karpathy's Python, not bytes fetched from somewhere -- but the check compares the digest either way, so editing this file fails the build. It is called out here because 'derived' normally means the opposite.
+FROZEN IN PLACE, and the digest above is the mechanism. It was moved once, on purpose, and that is what it is for: every track now holds out one document in 128 from training and reports the loss on them, because the loss axis reads the *training* loss and the run's documents are the candidate's to choose. The C loop found that out and drove the loss to 0.000000; see docs/KNOWN-ISSUES.md issue 7. The hold-out moves the training loss by about 0.1%, so every keep on this track was re-baselined and the run before it stays in the ledger as what it measured.
+This entry is one half of a two-key lock. `make verify-provenance-refresh` will move this digest on its own -- a frozen file it cannot refuse, since the whole point of the derived flag is that it is our own code -- so the gate that actually holds is the second copy in `tools/tests/test_autoresearch.py`, which has to be updated by hand. That is what it is for: the protocol change failed this test loudly before anyone noticed it was a protocol change and not a stray edit.
+`derived=True` is the honest flag -- this is our adaptation of Karpathy's Python, not bytes fetched from somewhere -- but the check compares the digest either way, so editing this file fails the build. It is called out here because 'derived' normally means the opposite.
 The research loop in tools/autoresearch.py measures every candidate against this file and the site renders it, so 'the first version' is only a real claim while its bytes cannot move. The tuned copy lives at autoresearch/candidate/src/lib.rs and is expected to diverge freely; this one is not. tools/tests/test_autoresearch.py asserts this digest by name.
 It is also wrong about gradients -- docs/KNOWN-ISSUES.md issue 5, a 6.32% overestimate found by finite difference -- and that is left in place on purpose, because it is the thing every candidate is measured against.
 
@@ -99,7 +101,7 @@ A FORK, not the reference. It is a reading aid and is deliberately excluded from
 ### `implementations/c/microgpt.c`
 
 - **Status:** derived (adapted by us)
-- **sha256:** `1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9`
+- **sha256:** `f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f`
 - **Origin:** C port in the microgpt-c lineage (micro config, parity track)
 - **Author / copyright:** Vishal (TheVixhal), adapted by this repository
 - **License:** MIT

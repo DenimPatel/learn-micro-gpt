@@ -43,3 +43,18 @@ if (trace) {
   writeFileSync(trace, lines.join('\n') + '\n')
   console.log(`wrote ${trace}`)
 }
+
+// The held-out loss, as the last thing the process says.
+//
+// Last is the whole point, and it is a property of this file rather than of the
+// harness: the other three tracks print it last, and the harness's regex is
+// anchored per line and searched across the whole output, so a line that sits
+// earlier still parses. That is precisely what made the earlier placement worth
+// changing -- nothing fails when a line moves, so nothing would have caught it.
+//
+// Not gated on `quiet`, unlike the per-step loss and the samples. `quiet` exists to
+// shorten a watchable run; the harness passes `--input --steps --seed --val-stride`
+// and nothing else, so quiet is off in every measured run -- and a flag that could
+// silence the one number the keep gate reads is a flag that could make a run look
+// like a track that reports no held-out loss at all.
+console.log(`val_loss ${result.valLoss.toFixed(6)}`)

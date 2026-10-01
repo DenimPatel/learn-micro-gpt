@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { bestVsBaselinePatch, research } from '../src/data/sources'
 import {
+  baselineRow,
   bestRow,
   diffCounts,
   experiments,
@@ -154,10 +155,21 @@ describe('measured rows exclude crashes', () => {
     // one track is the whole ledger.
     for (const track of tracks()) {
       const mine = trackRows(track)
-      const baselines = mine.filter((row) => row.status === 'baseline').length
-      expect(baselines).toBeLessThanOrEqual(1)
+      const baselineRows = mine.filter((row) => row.status === 'baseline')
       expect(experiments(track).some((row) => row.status === 'baseline')).toBe(false)
-      expect(experiments(track).length).toBe(mine.length - baselines)
+      expect(experiments(track).length).toBe(mine.length - baselineRows.length)
+      /* More than one baseline row is legitimate now, and the arithmetic above has
+         to account for all of them rather than assume one. A track is re-baselined
+         when the measurement protocol changes: the C loop drove the loss axis to
+         0.000000 by choosing which documents it trained on, and the fix gave every
+         track a held-out split -- which moves the comparator too, so its baseline is
+         re-measured. Each superseded row stays, because it is an honest record of
+         what that session measured, and the one that counts is the most recent. */
+      if (baselineRows.length > 1) {
+        expect(research.baselines[track]?.run_id).toBe(
+          baselineRows[baselineRows.length - 1]!.run_id,
+        )
+      }
     }
     // And the total is the sum of the parts, so the two cannot drift.
     expect(tracks().reduce((sum, track) => sum + experiments(track).length, 0)).toBe(
@@ -180,16 +192,46 @@ describe('measured rows exclude crashes', () => {
 })
 
 describe('the best run', () => {
-  it('is the lowest-loss keep, or null when nothing has been kept', () => {
-    const keeps = research.runs.filter((row) => row.status === 'keep')
+  /*
+   * "The best run" is the lowest-loss keep *whose code the repository still
+   * holds*, which is not the lowest-loss keep on the ledger.
+   *
+   * A keep says the loop accepted a candidate at the time. It does not say the
+   * candidate survived, and one often does not: it was rolled back because it was
+   * degenerate, or because a later experiment found it was a regression, or
+   * because the track's protocol changed underneath it. On the C track a run whose
+   * training loop had collapsed to replaying a single document held the record at
+   * loss 0.000000 and 99,081 steps/s for as long as it held it, while the tree
+   * contained something three experiments newer. See docs/KNOWN-ISSUES.md issue 7.
+   *
+   * Which keeps are in effect is decided in tools/autoresearch.py, by comparing
+   * each run's recorded `source_sha256` against the digest the candidate file has
+   * now, and that test lives there. This one cannot recompute it -- the page has no
+   * digests and is not given any -- so what it checks is the part that is its own:
+   * that `bests` names a real keep, and that the row it hands the page agrees with
+   * that run's own row. Duplicating the selection rule here would be a second
+   * definition of a statistic decided in one place, which is how two numbers stop
+   * agreeing and nobody can say which is right.
+   */
+  it('names a keep that is present in the ledger, with the same numbers', () => {
     const best = bestRow()
-    if (keeps.length === 0) {
-      expect(best).toBeNull()
+    if (best === null) {
+      /* Not "no keeps" -- "no *in-effect* keeps". A track can hold a hundred keeps
+         on the ledger and promote none, because every one of them has been rolled
+         back or predates the current protocol. What has to be true then is that
+         `results.json` says so, rather than the page showing an empty panel with no
+         explanation. */
+      const keeps = research.runs.filter((row) => row.status === 'keep')
+      if (keeps.length > 0) {
+        expect(research.best_status?.[research.runs[0]!.track as never]).toBeDefined()
+      }
       return
     }
-    expect(best).not.toBeNull()
-    const lowest = Math.min(...keeps.map((row) => row.loss))
-    expect(best?.loss).toBeCloseTo(lowest, 6)
+    expect(best.status).toBe('keep')
+    const source = research.runs.find((row) => row.run_id === best.run_id)
+    expect(source, `bests names run ${best.run_id}, which is not in the ledger`).toBeDefined()
+    expect(best.loss).toBeCloseTo(source!.loss, 6)
+    expect(best.track).toBe(source!.track)
   })
 
   it('is never a crash or a discard', () => {
@@ -454,8 +496,13 @@ describe('the cross-track normalisation', () => {
     const placed = relativeRuns()
     expect(placed.length).toBeGreaterThan(0)
     for (const group of placed) {
-      const baseline = group.runs.find((run) => run.row.status === 'baseline')
-      expect(baseline, `${group.track} has a baseline row`).toBeDefined()
+      /* By run id, not by status: a re-baselined track holds several rows with
+         status 'baseline', and only the one `results.json` reports is the comparator
+         these ratios are measured against. */
+      const baseline = group.runs.find(
+        (run) => run.row.run_id === research.baselines[group.track]?.run_id,
+      )
+      expect(baseline, `${group.track} has a current baseline row among its runs`).toBeDefined()
       expect(baseline?.lossRatio, `${group.track} baseline loss ratio`).toBeCloseTo(1, 10)
       expect(baseline?.speedRatio, `${group.track} baseline speed ratio`).toBeCloseTo(1, 10)
     }
@@ -485,13 +532,27 @@ describe('the cross-track normalisation', () => {
     }
   })
 
-  it('reports a best of 1.0 for a track nothing improved, rather than 0 or infinity', () => {
+  it("reports the promoted run's ratios, or nothing at all when there is none", () => {
     for (const group of relativeRuns()) {
-      // 1.0 is the comparator. Reporting the minimum of a set that happens to be
-      // worse than 1.0 is honest; reporting 0 would claim a loss of zero.
       expect(group.bestLossRatio).toBeGreaterThan(0)
-      expect(group.bestLossRatio).toBeLessThanOrEqual(1)
-      expect(group.bestSpeedRatio).toBeGreaterThanOrEqual(1)
+      if (group.best === null) {
+        // No promoted run means no figure. 1.0 would read as "this language held
+        // its baseline", which is a claim; null reads as "nothing to report".
+        expect(group.bestSpeedRatio).toBe(1)
+        expect(group.bestNote).not.toBe('')
+      } else {
+        expect(group.bestNote).toBe('')
+        // The promoted run's own loss, not the lowest number on the ledger.
+        expect(group.best.status).toBe('keep')
+        expect(group.bestLossRatio).toBeCloseTo(
+          group.best.loss / (baselineRow(group.track)?.loss as number),
+          9,
+        )
+        // A promoted run can be slower than the session baseline -- a keep won on
+        // loss may well have cost speed, inside the 5% tolerance -- so this is
+        // only bounded below, never asserted to have improved.
+        expect(group.bestSpeedRatio).toBeGreaterThan(0)
+      }
     }
   })
 

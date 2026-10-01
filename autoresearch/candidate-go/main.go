@@ -24,11 +24,15 @@
 //
 // # Running it
 //
-//	go run . --input ../../data/input.txt [--steps 1000] [--seed 42]
+//	go run . --input ../../data/input.txt [--steps 1000] [--seed 42] [--val-stride 128]
 //
 // The dataset is read from --input, not from the current directory and not from
 // a URL. The Python reference does both of those things; see issue 3 in
 // docs/KNOWN-ISSUES.md.
+//
+// --val-stride holds one document in every N out of training and reports the
+// loss on them once, at the end; see defaultValStride below for why a run needs
+// a second number at all.
 package main
 
 import (
@@ -848,6 +852,36 @@ func tokenize(doc string, charIndex map[rune]int, bos int) []int {
 
 // ─── Main ──────────────────────────────────────────────────────────────────
 
+// defaultValStride holds out one document in every 128 of the corpus from
+// training, and reports the loss on those documents once, after the last step.
+//
+// This is a default rather than a requirement because the loss axis reads the
+// *training* loss, and a training loss is a measurement of the run rather than of
+// the model -- and which documents the run trains on is the candidate's to
+// choose. The C track worked that out on its own inside twenty experiments. Run
+// 0307 -- "Pretrain the 50 candidates twice then replay the easiest for 900
+// steps" -- pointed the measured window at documents it had already learned and
+// then spent 900 of its 1,000 steps on the single easiest one. Its loss read
+// 0.000000, which the ledger recorded as a 100% gain, and it won the speed axis
+// at the same time: a shorter document is fewer tokens per step, so the same
+// non-result came in 653% faster. A model that had learned nothing, reported as
+// the track's best run so far. Run 0309 put a trainable position-indexed bias on
+// the logits on top of that and read the same 0.000000.
+//
+// So the run now reports two numbers. The training loss says what the run did,
+// which is a thing the loop is allowed to change. The held-out loss says what the
+// model can do on documents the run never reached, which is a thing the run is
+// not allowed to change, because those documents are not in the pool a step
+// draws from at all. The harness reads the second one and refuses a keep whose
+// training loss moved while its held-out loss did not follow; 0307's signature is
+// exactly that gap -- a training loss that fell 100% and a held-out loss flat to
+// 0.4%.
+//
+// 128 holds out 251 of the 32,033 documents in data/input.txt -- about 1,758
+// prediction positions -- which is enough documents that the measurement's own
+// noise stays under the 5% the harness treats as a regression.
+const defaultValStride = 128
+
 func main() {
 	var (
 		inputPath = flag.String("input", "../../data/input.txt", "path to the dataset, one document per line")
@@ -855,8 +889,19 @@ func main() {
 		seed      = flag.Int64("seed", 42, "PRNG seed")
 		traceOut  = flag.String("trace", "", "if set, write a JSONL trace here")
 		quiet     = flag.Bool("quiet", false, "suppress per-step output")
+		valStride = flag.Int("val-stride", defaultValStride, "hold out every Nth document from training and report the loss on them once, at the end")
 	)
 	flag.Parse()
+
+	// A stride of 0 is a remainder by zero, and a stride of 1 holds out every
+	// document, leaving the training loop with an empty pool to index. Both would
+	// fail somewhere further down with a message about arithmetic rather than about
+	// the flag that caused it, and the whole point of this number is that it is not
+	// something a run should be able to make meaningless.
+	if *valStride < 2 {
+		fmt.Fprintf(os.Stderr, "--val-stride must be at least 2, got %d\n", *valStride)
+		os.Exit(2)
+	}
 
 	docs, err := loadDocs(*inputPath)
 	if err != nil {
@@ -890,7 +935,42 @@ func main() {
 	bos := len(uchars)
 
 	rng := rand.New(rand.NewSource(*seed))
-	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
+
+	// ─── The held-out split ─────────────────────────────────────────────────────
+	//
+	// Every `valStride`th document *of the corpus* -- that is, of the file as it
+	// was loaded, before any shuffling -- is validation. The rest are the training
+	// pool. The index is deliberately the pre-shuffle one: a split that followed
+	// the shuffle would move when the seed moved, which would make the held-out set
+	// a second thing the loop gets to choose, and choosing the split is as much a
+	// choice as choosing the training documents was. Held out by position in the
+	// file, it is the same 251 documents for every seed, every candidate and every
+	// run, so the two numbers are comparable.
+	//
+	// What is shuffled is the *indices*, not the documents, and that is not
+	// tidiness. `(*rand.Rand).Shuffle` draws once per swap regardless of what the
+	// swap function does with the indices it is handed -- it is a Fisher-Yates walk
+	// of n-1 draws -- so shuffling a slice of `len(docs)` integers consumes exactly
+	// the stream that shuffling the 32,033 document strings just consumed, and the
+	// parameter initialisation drawn immediately afterwards, and therefore every
+	// training step's arithmetic, is unchanged by this edit. Shuffling the
+	// surviving documents instead would have re-randomised all weights and turned
+	// the comparison the harness makes between the frozen track and this candidate
+	// into a comparison between two different models.
+	order := make([]int, len(docs))
+	for i := range order {
+		order[i] = i
+	}
+	rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] })
+	trainOrder := make([]int, 0, len(order))
+	valOrder := make([]int, 0, len(order)/(*valStride)+1)
+	for _, index := range order {
+		if index%*valStride == 0 {
+			valOrder = append(valOrder, index)
+		} else {
+			trainOrder = append(trainOrder, index)
+		}
+	}
 
 	cfg := Config{
 		NEmbd: 32, NHead: 4, NLayer: 1, BlockSize: 16,
@@ -901,6 +981,9 @@ func main() {
 	cfg.Params = len(params)
 
 	fmt.Printf("num docs: %d\nvocab size: %d\nnum params: %d\n", len(docs), cfg.VocabSize, cfg.Params)
+	// Both counts, because "num docs" is the size of the file and the size of the
+	// pool a step can draw from stopped being the same number at this edit.
+	fmt.Printf("held out: %d of %d docs (--val-stride %d)\n", len(valOrder), len(docs), *valStride)
 	if *quiet {
 		fmt.Printf("num params: %d\n", cfg.Params)
 	}
@@ -942,7 +1025,13 @@ func main() {
 				defer wg.Done()
 				docModel := *m
 				docModel.resetCache()
-				doc := docs[(step*batchSize+batchIndex)%len(docs)]
+				// The only line of the training loop this edit touches. It reads the
+				// pool by position rather than the file, because a held-out document
+				// must not be reachable from a step; the stride between documents in a
+				// batch is untouched, so a step still trains on eight consecutive
+				// positions of the same shuffled order. Losing 0.8% of the documents
+				// changes which documents are seen, not what a step computes.
+				doc := docs[trainOrder[(step*batchSize+batchIndex)%len(trainOrder)]]
 				tokens := tokenize(doc, charIndex, bos)
 				n := cfg.BlockSize
 				if len(tokens)-1 < n {
@@ -990,6 +1079,71 @@ func main() {
 		}
 	}
 	elapsed := time.Since(started)
+
+	// ─── The held-out measurement ───────────────────────────────────────────────
+	//
+	// Forward passes only. No Backward, no optimiser step, no parameter touched:
+	// this reads the model the training loop ended with and nothing else. The
+	// cross-entropy per position is `forwardLoss`, the same function the step above
+	// trains through, including its fused vocabulary projection and its analytic
+	// softmax Jacobian -- the held-out number is the loss axis's own arithmetic
+	// pointed at documents the loss axis never saw, and a second expression here
+	// would make the two numbers incomparable for reasons that have nothing to do
+	// with the split.
+	//
+	// Sequential, where the training loop above is a batch of eight goroutines.
+	// Two reasons, and the second is the one that matters. The quantity is a mean
+	// over held-out prediction positions, and a batch would only be a way to divide
+	// by a batch total -- the same number, computed by a path that exists nowhere
+	// else in the file. And the run has to stay bit-reproducible: `forward` appends
+	// to the KV cache, so this pass could only go parallel behind a model copy per
+	// document exactly as the training loop does, and then the cross-document sum
+	// would have to be merged in completion order. The training loop gets away with
+	// merging in batch order; a held-out number the harness re-measures on `verify`
+	// and compares against the record cannot be left to the scheduler.
+	//
+	// Summed over every prediction position of every held-out document and divided
+	// by how many prediction positions there were: a mean over the held-out set
+	// rather than a mean over documents, because a document two characters longer
+	// would otherwise get half the vote of a short one and the loss axis counts
+	// tokens, not names. Go is float64 end to end here, so the running sum carries
+	// no f32 rounding question at all -- the Rust port had to accumulate in f64 for
+	// exactly the reason this file does not have.
+	//
+	// It is printed once, at the very end of the program, and not once per step. A
+	// per-step held-out loss would be a third curve to watch, and a curve is a
+	// curve to fit: the C run at 0307 would have found it in one experiment. The
+	// gate only needs to know what the finished model does with documents it has
+	// never seen, and that is one number.
+	var valNLL float64
+	valPositions := 0
+	for _, index := range valOrder {
+		tokens := tokenize(docs[index], charIndex, bos)
+		n := cfg.BlockSize
+		if len(tokens)-1 < n {
+			n = len(tokens) - 1
+		}
+
+		m.resetCache()
+		for posID := 0; posID < n; posID++ {
+			nll := m.forwardLoss(tokens[posID], posID, tokens[posID+1])
+			valNLL += nll.Data
+			valPositions++
+		}
+		// The graph for this document is garbage the moment its numbers have been
+		// read -- there is no backward pass in this loop that would want it and no
+		// optimiser step to consume it -- and Go's collector takes it, because
+		// `resetCache` at the top of the next iteration drops the KV cache that
+		// still referenced it. No explicit free, no `runtime.GC()`: unlike the Rust
+		// port's arena there is nothing to truncate here, and forcing a collection
+		// per document would buy a peak-RSS number at the cost of the run's own
+		// time.
+	}
+	// A stride that held out nothing would make this a division by zero, and one
+	// that held out everything would make it a mean of an untrained model. Both are
+	// refused at the flag instead, because a val_loss that is a number about
+	// nothing is worse than no val_loss at all.
+	valLoss := valNLL / float64(valPositions)
 
 	// Inference: the same forward function, fed its own output. The only new
 	// idea is the stop condition, which is a token the model learned to emit.
@@ -1041,6 +1195,21 @@ func main() {
 			"step_ms": elapsedMs / float64(*steps),
 		})
 	}
+
+	// The last line the program writes, on purpose. The harness matches it with
+	// `^val_loss\s+([0-9.]+)\s*$` on a line of its own -- nothing before it on the
+	// line, nothing after it anywhere -- and a held-out loss with output after it
+	// is a line somebody will eventually want to move: after the samples, after the
+	// timing, somewhere a future change can put a step. It is measured up where the
+	// measurement lives and printed down here, and the only thing joining the two is
+	// that the inference block in between does not train.
+	//
+	// Not gated on --quiet, unlike the per-step line and the samples. Quiet exists
+	// to shorten a watchable run; the harness passes --input/--steps/--seed/--val-
+	// stride and nothing else, so quiet is off in every measured run -- and a flag
+	// that could silence the one number the gate reads is a flag that could make a
+	// run look like a track that reports no held-out loss at all.
+	fmt.Printf("val_loss %.6f\n", valLoss)
 }
 
 func sampleFrom(rng *rand.Rand, weights []float64) int {

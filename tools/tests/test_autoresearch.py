@@ -56,8 +56,34 @@ def judge(
     cand_loss: float = 2.4,
     cand_speed: float = 90.0,
     improvement: float = 0.15,
+    base_val: float | None = None,
+    cand_val: float | None = None,
 ) -> dict:
-    return ar.verdict(base_loss, base_speed, cand_loss, cand_speed, window(improvement))
+    """Judge, with the held-out loss tracking the training loss unless a test says
+    otherwise.
+
+    The default is the honest "this candidate generalised" case: the held-out
+    number moves with the training number. That keeps the tests below testing what
+    they were written to test, which is the two-axis rule, and it leaves
+    `TestTheValidationGate` free to decouple the two -- which is the only way to
+    model what actually happened on the C track.
+
+    Passing `None` explicitly is not the same as omitting it, and the difference is
+    the whole point of the gate: omitting both means "held-out behaves like
+    training", while passing them as `None` through the caller below reaches
+    `verdict()` as "not measured", which is a refusal.
+    """
+    if base_val is None and cand_val is None:
+        base_val, cand_val = base_loss, cand_loss
+    return ar.verdict(
+        base_loss,
+        base_speed,
+        cand_loss,
+        cand_speed,
+        window(improvement),
+        base_val,
+        cand_val,
+    )
 
 
 class TestVerdictKeepsRealImprovements(unittest.TestCase):
@@ -252,7 +278,7 @@ class TestTheFrozenBaselineHasNotMoved(unittest.TestCase):
     """
 
     EXPECTED = {
-        "implementations/rust/src/lib.rs": "4bced112f2db2bf8662082051fa550f82ab793bed251be9398c6f672947a2f15",
+        "implementations/rust/src/lib.rs": "f361642663c2f32ea538864923932ee94027552cc2f9711424f39f41a1f4a2cb",
         "implementations/rust/Cargo.toml": "0b743d919a98011f7f995db246ebc45f22dafc24233580aab342960cd380aa7b",
         "implementations/rust/src/main.rs": "0160147568e6ac5a1c0448dccefd638931467cdcd1225e47529d078d97fbc324",
     }
@@ -360,22 +386,50 @@ class TestLedgerRoundTrips(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)), "duplicate run id in the ledger")
         self.assertEqual(ids, [f"{i:04d}" for i in range(len(rows))], rows and ids)
 
-    def test_exactly_one_baseline_row_per_seeded_track(self) -> None:
-        """One per track, not one for the ledger.
+    def test_a_track_has_one_current_baseline_row(self) -> None:
+        """At most one baseline row per *session*, and the reported one is the latest.
 
-        `seed` is idempotent per track, so a second run on a track that already
-        has a baseline must not append a second one -- that would mean the
-        comparator for that track was re-measured and the first number silently
-        became wrong.
+        `seed` is idempotent per track, so a second plain run on a track that
+        already has a baseline must not append another -- that would mean the
+        comparator was re-measured and the first number silently became wrong.
+
+        The exception is `seed --force`, which exists for exactly one case: a change
+        to the measurement protocol. The C loop drove the loss to 0.000000 by choosing
+        which documents it trained on (docs/KNOWN-ISSUES.md issue 7), and the fix
+        gives every track a held-out split -- which changes the comparator, because
+        the comparator is measured under the same protocol as the candidates. That
+        track then legitimately has a second baseline row, and the one that counts is
+        the most recent.
+
+        So the invariant is not "one row" but "one *current* row", and what makes
+        that true is `build_results_document` taking the last rather than the first.
+        A superseded row stays, because it is an honest record of what that session
+        measured.
         """
         rows = ar.read_ledger()
+        document = ar.build_results_document()
         for track in ar.TRACKS.values():
             with self.subTest(track=track.name):
                 baselines = [
-                    row.run_id for row in rows
+                    row for row in rows
                     if row.status == "baseline" and row.track == track.name
                 ]
-                self.assertLessEqual(len(baselines), 1, f"{track.name} has two baselines")
+                if not baselines:
+                    self.assertIsNone(document["baselines"][track.name])
+                    continue
+                self.assertEqual(
+                    document["baselines"][track.name]["run_id"],
+                    baselines[-1].run_id,
+                    f"{track.name}: results.json must report the most recent baseline "
+                    f"row, not the first",
+                )
+                # Every baseline row is a real measurement, not an invented one.
+                for row in baselines:
+                    self.assertTrue(
+                        (ar.RUNS_DIR / f"{row.run_id}.json").is_file(),
+                        f"{track.name}: baseline row {row.run_id} has no run record",
+                    )
+                    self.assertGreater(row.loss, 0)
         # The first track seeded takes 0000, because the sequence is global and it
         # was seeded first. The others take the next ids, which is why "its
         # baseline is its first row" is not a property here and is not asserted.
@@ -1067,10 +1121,21 @@ class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
                 ledger = ar.read_ledger()
                 mine = [r for r in ledger if r.track == track.name]
                 self.assertTrue(mine, f"the {track.name} track has no rows at all")
+                # Scoped to the ledger table, not to the whole prompt. The prompt
+                # also carries the candidate's full source, and a source file is
+                # allowed to cite a run id: the Go track's main.go names run 0307 in
+                # the comment explaining why the held-out split exists at all. A
+                # whole-prompt assertion cannot tell that citation apart from a
+                # ledger row, so it fails on the fix for the thing it was checking.
+                table = next(
+                    block
+                    for block in prompt.split("```")[1::2]
+                    if block.lstrip().startswith("run_id")
+                )
                 for row in mine[-15:]:
-                    self.assertIn(row.run_id, prompt)
+                    self.assertIn(row.run_id, table)
                 for row in [r for r in ledger if r.track != track.name][-15:]:
-                    self.assertNotIn(row.run_id, prompt)
+                    self.assertNotIn(row.run_id, table)
 
     def test_the_thresholds_and_the_session_baseline_are_included(self) -> None:
         for value in (
@@ -1095,3 +1160,184 @@ class TestThePromptGivesTheModelWhatItNeeds(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTheValidationGate(unittest.TestCase):
+    """The C exploit, run 0298 through 0311, as a test.
+
+    The loss axis is the mean *training* loss over the last 50 of 1000 steps, and
+    the loop's candidate chooses which document each of those steps trains on. So
+    the loss axis measures the run, not the model, and the loop found that out on
+    its own:
+
+    * 0293 put the longest documents into the measured window.
+    * 0298-0307 spent the last 900 steps on a single chosen document.
+    * 0309 added a bias indexed by position to the logits, so the output stopped
+      depending on the input at all.
+
+    The loss then read 0.000000. The harness recorded that as a 99.9% improvement
+    and kept it, ten times, and the site quoted run 0307 as the C track's best
+    result: loss 0.0 at 99,081 steps/s. The speed came along for free, because a
+    shorter document means fewer tokens per step and therefore more steps per
+    second -- so the exploit won *both* axes at once, which is why the gate cannot
+    be written as "the loss axis also needs corroboration". It has to be written so
+    that a material training-loss gain is refused on its own.
+    """
+
+    def test_collapsing_the_training_loss_is_a_discard(self) -> None:
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=0.0,
+            cand_speed=99081.0,  # +261%, the speed the exploit actually reached
+            base_val=2.30,
+            cand_val=2.31,
+        )
+        self.assertFalse(result["kept"], result["explanation"])
+        self.assertFalse(result["checks"]["validation_corroborates_loss"]["pass"])
+
+    def test_the_exploit_is_refused_even_though_it_won_the_speed_axis(self) -> None:
+        """The one that would have survived a narrower gate.
+
+        Run 0307 satisfied every threshold in the old rule: loss improved 100%,
+        speed improved 261%, it learned, and nothing regressed. Writing the check
+        as "loss_won also needs validation improvement" would have thrown it out on
+        the loss axis and let it straight back in on the speed one.
+        """
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=0.0,
+            cand_speed=99081.0,
+            base_val=2.30,
+            cand_val=2.31,
+        )
+        self.assertGreater(result["speed_gain"], 0.10)
+        self.assertTrue(result["checks"]["speed_material"]["pass"])
+        self.assertFalse(result["kept"], result["explanation"])
+
+    def test_a_milder_version_of_the_same_thing_is_also_a_discard(self) -> None:
+        """Shorter documents only, no position bias, no zero loss.
+
+        Run 0288's shape: "use one full-width attention head to reduce repeated
+        softmax work", kept at +60% speed. The training loss fell because fewer
+        tokens were being predicted per step and the run got easier, and the
+        held-out loss did not move at all. A 40% loss "improvement" bought by
+        predicting fewer tokens is not a better model.
+        """
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=1.40,
+            cand_speed=44000.0,
+            base_val=2.30,
+            cand_val=2.32,
+        )
+        self.assertFalse(result["kept"], result["explanation"])
+
+    def test_a_genuine_loss_win_is_still_kept(self) -> None:
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=2.20,
+            cand_speed=27000.0,
+            base_val=2.30,
+            cand_val=2.17,
+        )
+        self.assertTrue(result["kept"], result["explanation"])
+        self.assertEqual(result["rule"], "loss_won")
+
+    def test_a_pure_speed_win_is_not_held_to_improving_the_model(self) -> None:
+        """The largest category of keep the Rust and Go tracks produced.
+
+        A memory optimisation that is 20% faster at identical loss is a real
+        result, and requiring it to also improve the model would throw away most of
+        what the loop has ever found. It still may not be *worse* on held-out data.
+        """
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=2.34,
+            cand_speed=164000.0,
+            base_val=2.30,
+            cand_val=2.30,
+        )
+        self.assertTrue(result["kept"], result["explanation"])
+        self.assertEqual(result["rule"], "speed_won")
+
+    def test_a_speed_win_that_is_worse_on_held_out_data_is_a_discard(self) -> None:
+        result = judge(
+            base_loss=2.3367,
+            base_speed=27428.0,
+            cand_loss=2.34,
+            cand_speed=164000.0,
+            base_val=2.30,
+            cand_val=2.45,  # 6.5% worse, past LOSS_TOL
+        )
+        self.assertFalse(result["kept"], result["explanation"])
+        self.assertFalse(result["checks"]["validation_tolerance"]["pass"])
+
+    def test_a_track_that_measures_no_held_out_loss_cannot_win_on_loss(self) -> None:
+        """"We did not check" and "it checked out" are the same answer on the
+        ledger, and only one of them is true."""
+        result = ar.verdict(
+            2.3367,
+            27428.0,
+            0.0,
+            27428.0,
+            window(0.5),
+            None,
+            None,
+        )
+        self.assertFalse(result["kept"], result["explanation"])
+        self.assertFalse(result["checks"]["validation_reported"]["pass"])
+
+    def test_a_missing_baseline_held_out_loss_is_refused_too(self) -> None:
+        result = ar.verdict(2.3367, 27428.0, 2.0, 27428.0, window(0.5), None, 1.9)
+        self.assertFalse(result["kept"], result["explanation"])
+        self.assertFalse(result["checks"]["validation_reported"]["pass"])
+
+    def test_every_gate_reports_whether_it_was_able_to_run(self) -> None:
+        """A check whose value is `None` must say so rather than reading as zero.
+
+        A missing measurement and a measurement of zero are the same number to every
+        comparison in this file, and keeping them the same is how the training loss
+        reached 0.000000 and called it a 99.9% win.
+        """
+        result = ar.verdict(2.3367, 27428.0, 2.0, 27428.0, window(0.5), None, None)
+        for name in ("validation_reported", "validation_corroborates_loss"):
+            with self.subTest(check=name):
+                self.assertIsNone(result["checks"][name]["value"])
+
+
+class TestTheHeldOutSplitIsReal(unittest.TestCase):
+    """The split, as a property of the code rather than of a number.
+
+    A validation document that is reachable by the training loop makes the gate
+    decorative: it would measure training loss and call it held out. So these check
+    the partition itself, which is cheap and does not need a training run.
+    """
+
+    def test_every_track_holds_out_documents(self) -> None:
+        # 32,032 names, every 128th, is 250 documents.
+        self.assertEqual(ar.VAL_STRIDE, 128)
+        self.assertGreater(32032 // ar.VAL_STRIDE, 200)
+
+    def test_the_split_is_disjoint_from_the_training_pool(self) -> None:
+        held_out = {i for i in range(32032) if i % ar.VAL_STRIDE == 0}
+        training = {i for i in range(32032) if i % ar.VAL_STRIDE != 0}
+        self.assertEqual(held_out & training, set())
+        self.assertEqual(len(held_out) + len(training), 32032)
+
+    def test_a_held_out_document_is_not_in_the_first_thousand_training_slots(self) -> None:
+        """The property that makes the gate mean anything, stated as a test.
+
+        1,000 steps over 31,782 training documents visits a prefix of the shuffled
+        order. If a held-out index can appear in that prefix, the run can train on
+        it. This cannot prove the shuffle never puts one there -- that is checked by
+        the tracks themselves -- but it pins the arithmetic the shuffle relies on.
+        """
+        held_out = {i for i in range(32032) if i % ar.VAL_STRIDE == 0}
+        pool = [i for i in range(32032) if i % ar.VAL_STRIDE != 0]
+        self.assertEqual(len(pool), 32032 - len(held_out))
+        self.assertLess(1000, len(pool))

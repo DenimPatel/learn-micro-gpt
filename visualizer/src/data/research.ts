@@ -61,6 +61,11 @@ export function bestRow(track: ResearchTrack = 'rust'): ResearchRow | null {
   return research.bests[track] ?? null
 }
 
+/** Why `bestRow` is null, when it is. "" when there is a best to show. */
+export function bestStatus(track: ResearchTrack = 'rust'): string {
+  return research.best_status?.[track] ?? ''
+}
+
 /** A track's frozen comparator as this session measured it. */
 export function baselineRow(track: ResearchTrack = 'rust'): ResearchRow | null {
   return research.baselines[track] ?? null
@@ -226,7 +231,23 @@ export interface PlottableTrack {
   bestLossRatio: number
   /** The highest speed ratio any run reached. 1.0 if none beat it. */
   bestSpeedRatio: number
+  /** How many runs report a held-out loss at all. Zero on a track that predates
+   *  the split, and the table says so rather than showing a dash for every row. */
+  valCount: number
+  /** The best held-out loss ratio, or null when no run reports one. */
+  bestValRatio: number | null
   keepCount: number
+  /** The track's promoted run, or null when none matches the committed source.
+   *
+   *  This, not the lowest number on the ledger. A keep says the loop accepted a
+   *  candidate at the time; it does not say the candidate survived, and on the C
+   *  track one very deliberately did not -- a run whose training loop had collapsed
+   *  to replaying a single document held the record at loss 0.000000 while the tree
+   *  held code three experiments newer. "Best loss" read off the raw ledger would
+   *  print that 0.0000 as this track's achievement. */
+  best: ResearchRow | null
+  /** Why `best` is null, when it is; "" otherwise. */
+  bestNote: string
 }
 
 /**
@@ -271,6 +292,7 @@ export function relativeRuns(): PlottableTrack[] {
     if (!baseline || !(baseline.loss > 0) || !(baseline.steps_per_sec > 0)) continue
     const frontier = new Set(frontierIds(track))
     const language = research.tracks[track]?.language ?? track
+    const best = research.bests[track] ?? null
     const runs: RelativeRun[] = measuredRows(track)
       .filter((row) => row.steps_per_sec > 0)
       .map((row) => ({
@@ -281,13 +303,33 @@ export function relativeRuns(): PlottableTrack[] {
         speedRatio: row.steps_per_sec / baseline.steps_per_sec,
         onFrontier: frontier.has(row.run_id),
       }))
+    /* A run's held-out loss, normalised against the track's own held-out baseline
+     * when there is one, so the column means the same thing as every other column
+     * in this table: a multiple of where this track started. Pre-split runs report
+     * none and are left out rather than counted as 1.0 -- "no measurement" and "no
+     * change" are not the same number, which is the whole reason issue 7 exists. */
+    const valRuns = runs.filter(
+      (run) => typeof run.row.val_loss === 'number' && (run.row.val_loss as number) > 0,
+    )
+    const valBaseline =
+      typeof research.baselines[track]?.val_loss === 'number'
+        ? research.baselines[track].val_loss
+        : null
     placed.push({
       track,
       language,
       runs,
       frontierCount: runs.filter((run) => run.onFrontier).length,
-      bestLossRatio: runs.reduce((best, run) => Math.min(best, run.lossRatio), 1),
-      bestSpeedRatio: runs.reduce((best, run) => Math.max(best, run.speedRatio), 1),
+      /* From the promoted run, not from the lowest number present. See `best`. */
+      best,
+      bestNote: best ? '' : (research.best_status?.[track] ?? ''),
+      bestLossRatio: best ? best.loss / baseline.loss : 1,
+      bestSpeedRatio: best ? best.steps_per_sec / baseline.steps_per_sec : 1,
+      valCount: valRuns.length,
+      bestValRatio:
+        valBaseline && valBaseline > 0 && best && typeof best.val_loss === 'number'
+          ? best.val_loss / valBaseline
+          : null,
       keepCount: runs.filter((run) => run.row.status === 'keep').length,
     })
   }

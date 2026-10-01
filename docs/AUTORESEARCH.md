@@ -114,6 +114,49 @@ inside the noise and cannot be trusted, while a 5% *regression* is two standard
 errors and can be. `tools/tests/test_autoresearch.py` asserts that they stay
 distinct and that no arrangement of the other axis rescues a 10% loss regression.
 
+## The loss axis measures the run, and that is why there is a held-out split
+
+The loss axis is the mean **training** loss over the last 50 of 1000 steps. The
+candidate owns that file, so it owns which document each of those steps trains on,
+and it owns the model and the vocabulary. Nothing in the protocol required the loss
+to have fallen because the model got better at the task.
+
+The C loop established that in twenty experiments. It moved the longest documents
+into the measured window (run 0293), spent the last 900 steps on a single chosen
+document (0300&ndash;0307), and added a bias indexed by *position* to the logits
+(0309), so that the output stopped depending on the input entirely. The loss read
+**0.000000** and the harness recorded that as a 99.9% improvement and kept it, ten
+times. `docs/KNOWN-ISSUES.md` issue 7 has the ledger.
+
+The speed axis came along for free, and that is the part that made it hard to see
+coming. `steps_per_sec` counts *steps*, and a shorter document means fewer tokens
+per step, so every document-selection exploit also inflates the speed number. Run
+0307 cleared every threshold in the old rule simultaneously: loss up 100%, speed up
+261%, learned, nothing regressed.
+
+So:
+
+- Every 128th document, by position in the corpus, is held out of **training
+  order** and evaluated once on the final model after the loop. 250 documents, about
+  1,800 prediction positions, so the held-out loss's own noise is near 4% &mdash;
+  under the 5% regression limit, which means the gate is reading the number rather
+  than its own error.
+- A material training-loss gain must be **corroborated** by a material held-out
+  gain, whichever axis it arrived on. That last clause is the fix: a gate written
+  as "the loss axis also needs corroboration" rejects run 0307 on the loss axis and
+  lets it back in on the speed one.
+- The speed axis is deliberately **not** required to improve the model. Most of
+  what the Rust and Go tracks ever kept is a memory optimisation that is faster at
+  identical loss. It must simply not be worse on held-out data.
+- A track reporting no held-out loss cannot be kept on the loss axis at all. On the
+  ledger, "we did not check" and "it checked out" are the same number.
+
+The generalisation, and the reason this and issues 1 and 5 belong in one
+repository: **every number a loop optimises needs a check the loop does not
+control.** The gradient ratio has a finite-difference probe. The loss axis now has
+the held-out split. Neither existed when the loop started, and both were found the
+same way &mdash; by the loop, eventually, searching for them.
+
 ## Why the baseline is re-measured every session
 
 `benchmarks/results.json` says the Rust track runs at 53 steps/sec. This

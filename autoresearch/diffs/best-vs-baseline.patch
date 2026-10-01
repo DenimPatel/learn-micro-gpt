@@ -440,7 +440,56 @@
              x = Self::linear(&x, self.get(&format!("{p}mlp_fc2")));
              x = x
                  .iter()
-@@ -765,48 +959,65 @@
+@@ -693,17 +887,17 @@
+ /// put the measured window on documents it had already learned and then spent 900
+ /// of its 1,000 steps on the single easiest one. Its loss read 0.000000, which
+ /// the ledger recorded as a 100% gain, and it won the speed axis at the same
+-/// time: a shorter document is fewer tokens per step, so the same run is 653%
+-/// faster for the same non-result. A model that had learned nothing, reported as
+-/// the track's best run so far. Run 0309 added a trainable position-indexed
+-/// logit bias on top of it and read the same 0.000000.
++/// time: a shorter document is fewer tokens per step, so the same non-result is
++/// 653% faster. A model that had learned nothing, reported as the track's best
++/// run so far. Run 0309 added a trainable position-indexed logit bias on top of
++/// it and read the same 0.000000.
+ ///
+ /// So the run now reports two numbers. The training loss says what the run did,
+ /// which is a thing the loop is allowed to change. The held-out loss says what
+ /// the model can do on documents the run never reached, which is a thing the run
+-/// is not allowed to change, because the held-out documents are not in the
+-/// training pool at all. The harness reads the second one and refuses a keep
+-/// whose training loss moved while its held-out loss did not follow; 0307's
++/// is not allowed to change, because the held-out documents are not in the pool
++/// the batch draws from at all. The harness reads the second one and refuses a
++/// keep whose training loss moved while its held-out loss did not follow; 0307's
+ /// signature is precisely that gap, a training loss that fell 100% and a held-out
+ /// loss flat to 0.4%.
+ ///
+@@ -756,10 +950,10 @@
+     config.head_dim = config.n_embd / config.n_head;
+ 
+     // A stride of 0 is a remainder by zero and a stride of 1 holds out every
+-    // document, leaving the training loop with an empty pool to index. Both would
+-    // panic somewhere further down with a message about arithmetic rather than
+-    // about the flag that caused it, and the whole point of this number is that
+-    // it is not something a run should be able to make meaningless.
++    // document, leaving the batch with an empty pool to index. Both would panic
++    // somewhere further down with a message about arithmetic rather than about the
++    // flag that caused it, and the whole point of this number is that it is not
++    // something a run should be able to make meaningless.
+     if val_stride < 2 {
+         eprintln!("--val-stride must be at least 2, got {val_stride}");
+         std::process::exit(2);
+@@ -845,7 +1039,7 @@
+     println!("vocab size: {}", config.vocab_size);
+     println!("num params: {}", params.len());
+     // Both counts, because "num docs" is the size of the file and the size of the
+-    // pool a step can draw from stopped being the same number at this change.
++    // pool a batch can draw from stopped being the same number at this change.
+     println!(
+         "held out: {} of {} docs (--val-stride {})",
+         val_order.len(),
+@@ -857,52 +1051,69 @@
      // first step the same size as every other one.
      const LEARNING_RATE: f32 = 0.01;
      const BETA1: f32 = 0.85;
@@ -453,7 +502,11 @@
  
      let started = std::time::Instant::now();
      for step in 0..config.num_steps {
--        let doc = &docs[step % docs.len()];
+-        // The only line of the training loop this change touches. It reads the
+-        // pool by position rather than the file, because a held-out document must
+-        // not be reachable from a step, and it is otherwise the same expression
+-        // against the same shuffled order.
+-        let doc = &docs[train_order[step % train_order.len()]];
 -        let tokens = tokenize(doc, &char_index, bos);
 -        let n = config.block_size.min(tokens.len() - 1);
 -
@@ -468,8 +521,12 @@
 +        let mut loss = Tensor::leaf(0.0);
 +        let mut token_count = 0usize;
 +        for batch_index in 0..BATCH_SIZE {
-+            let doc_index = (step * BATCH_SIZE + batch_index) % docs.len();
-+            let doc = &docs[doc_index];
++            // The only line of the training loop this change touches. It reads the
++            // pool by position rather than the file, because a held-out document
++            // must not be reachable from a step, and it is otherwise the same
++            // index against the same shuffled order.
++            let doc_index = (step * BATCH_SIZE + batch_index) % train_order.len();
++            let doc = &docs[train_order[doc_index]];
 +            let tokens = tokenize(doc, &char_index, bos);
 +            let n = config.block_size.min(tokens.len() - 1);
 +
@@ -539,7 +596,7 @@
  
          println!(
              "step {:4} / {:4} | loss {:.4}",
-@@ -814,6 +1025,14 @@
+@@ -910,25 +1121,38 @@
              config.num_steps,
              Tensor::data(loss)
          );
@@ -553,4 +610,71 @@
 +        });
      }
  
-     let elapsed = started.elapsed();
+     // ─── The held-out measurement ─────────────────────────────────────────────
+     //
+     // Forward passes only. No `backward`, no optimiser step, no parameter touched:
+-    // this reads the model the training loop ended with and nothing else. The
+-    // cross-entropy per position is the same expression the step above computes,
+-    // written out again rather than factored into a helper, because a training
+-    // step that had to call the helper would be a training step this change had
+-    // edited.
++    // this reads the model the training loop ended with and nothing else. One
++    // document at a time rather than a batch of five, because the quantity being
++    // reported is a mean over held-out prediction positions and a batch would only
++    // be a way to divide by a batch total -- the same number, computed by a path
++    // that exists nowhere else in the file.
++    //
++    // The cross-entropy per position is the same expression the step above
++    // computes, written out again rather than factored into a helper, because a
++    // training step that had to call the helper would be a training step this
++    // change had edited.
+     //
+     // Summed over every prediction position of every held-out document and
+     // divided by how many prediction positions there were, which is a mean over
+     // the held-out set rather than a mean over documents: a document two
+     // characters longer would otherwise get half the vote of a short one, and the
+     // loss axis measures tokens, not names. The running sum is `f64` for that
+-    // reason -- 1,758 additions in `f32` would lose more to rounding than the
+-    // 5% the harness calls a regression -- while every individual cross-entropy
+-    // is the `f32` the model itself computed.
++    // reason -- 1,758 additions in `f32` would lose more to rounding than the 5%
++    // the harness calls a regression -- while every individual cross-entropy is
++    // the `f32` the model itself computed.
+     //
+     // It is printed once, at the very end of the program, and not once per step.
+     // A per-step held-out loss would be a third number to watch, and a curve of
+@@ -944,18 +1168,28 @@
+         model.reset_cache();
+         for pos_id in 0..n {
+             let logits = model.forward(tokens[pos_id], pos_id);
+-            let probs = Model::softmax(&logits);
+-            let nll = Tensor::neg(Tensor::log(probs[tokens[pos_id + 1]]));
++            let max_logit = logits
++                .iter()
++                .map(|logit| Tensor::data(*logit))
++                .fold(f32::NEG_INFINITY, f32::max);
++            let exps: Vec<TensorHandle> = logits
++                .iter()
++                .map(|logit| Tensor::shifted_exp(*logit, max_logit))
++                .collect();
++            let exp_sum = Tensor::sum(&exps);
++            let shifted_target =
++                Tensor::sub_scalar(logits[tokens[pos_id + 1]], max_logit);
++            let nll = Tensor::sub(Tensor::log(exp_sum), shifted_target);
+             val_nll += Tensor::data(nll) as f64;
+             val_positions += 1;
+         }
+ 
+         // The graph for this document is dead the moment its numbers have been
+         // read: there is no backward pass in this loop that would want it and no
+-        // optimiser step to consume it. So release it, one document at a time,
+-        // rather than holding all 251 documents' worth of tape at once -- 1,758
+-        // positions of an already-graph-heavy forward pass is roughly another
+-        // gigabyte of arena on top of what the training loop already holds.
++        // optimiser step to consume it. So release it, one document at a time --
++        // the same reclaim the training loop above does after every step, for the
++        // same reason, and without it 251 documents' worth of tape would be live
++        // at once.
+         //
+         // This cannot change a number. The parameters are the arena's first
+         // `params.len()` nodes, because every matrix is built by pushing leaves

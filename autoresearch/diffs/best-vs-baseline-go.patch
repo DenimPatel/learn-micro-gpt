@@ -1,6 +1,6 @@
 --- a/implementations/go/main.go
 +++ b/autoresearch/candidate-go/main.go
-@@ -40,6 +40,7 @@
+@@ -44,6 +44,7 @@
  	"math/rand"
  	"os"
  	"strings"
@@ -8,7 +8,7 @@
  	"time"
  )
  
-@@ -179,20 +180,38 @@
+@@ -183,20 +184,38 @@
  // document, every position, and every head, so its gradient has many
  // contributions to sum.
  func (v *Value) Backward() {
@@ -54,7 +54,7 @@
  
  	v.Grad = 1
  	for i := len(topo) - 1; i >= 0; i-- {
-@@ -214,7 +233,14 @@
+@@ -218,7 +237,14 @@
  
  // Mean divides by a count, matching `(1 / n) * sum(losses)`.
  func Mean(values []*Value) *Value {
@@ -70,7 +70,7 @@
  }
  
  // DivScalar is `x / n` for a plain Go float, as a *scalar* division so that the
-@@ -267,6 +293,7 @@
+@@ -271,6 +297,7 @@
  func newModel(cfg Config, rng *rand.Rand) *model {
  	m := &model{cfg: cfg, state: make(map[string]Matrix)}
  	std := 0.08
@@ -78,7 +78,7 @@
  	m.state["wte"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
  	m.state["wpe"] = newMatrix(rng, cfg.BlockSize, cfg.NEmbd, std)
  	m.state["lm_head"] = newMatrix(rng, cfg.VocabSize, cfg.NEmbd, std)
-@@ -276,8 +303,8 @@
+@@ -280,8 +307,8 @@
  		m.state[p+"attn_wk"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wv"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
  		m.state[p+"attn_wo"] = newMatrix(rng, cfg.NEmbd, cfg.NEmbd, std)
@@ -89,7 +89,7 @@
  	}
  	m.resetCache()
  	return m
-@@ -306,12 +333,181 @@
+@@ -310,12 +337,181 @@
  // a weight matrix is used, and most of the arithmetic in the model.
  func linear(x []*Value, w Matrix) []*Value {
  	out := make([]*Value, 0, len(w))
@@ -276,7 +276,7 @@
  	}
  	return out
  }
-@@ -327,16 +523,130 @@
+@@ -331,16 +527,130 @@
  		}
  	}
  	exps := make([]*Value, len(logits))
@@ -412,7 +412,7 @@
  }
  
  // SubScalar is `val - m` for a plain Go float, recorded as a node so the
-@@ -348,38 +658,112 @@
+@@ -352,38 +662,112 @@
  // rmsnorm rescales a vector by the reciprocal of its root-mean-square, with eps
  // inside the square root to bound the division.
  func rmsnorm(x []*Value) []*Value {
@@ -541,7 +541,7 @@
  		q := linear(x, m.state[p+"attn_wq"])
  		k := linear(x, m.state[p+"attn_wk"])
  		v := linear(x, m.state[p+"attn_wv"])
-@@ -390,55 +774,35 @@
+@@ -394,55 +778,35 @@
  		for h := 0; h < m.cfg.NHead; h++ {
  			hs := h * m.cfg.HeadDim
  			qH := q[hs : hs+m.cfg.HeadDim]
@@ -617,8 +617,21 @@
  }
  
  func addAll(a, b []*Value) []*Value {
-@@ -529,8 +893,8 @@
- 	rng.Shuffle(len(docs), func(i, j int) { docs[i], docs[j] = docs[j], docs[i] })
+@@ -590,9 +954,9 @@
+ 	// the stream that shuffling the 32,033 document strings just consumed, and the
+ 	// parameter initialisation drawn immediately afterwards, and therefore every
+ 	// training step's arithmetic, is unchanged by this edit. Shuffling the
+-	// surviving documents instead would have re-randomised all 4,192 weights and
+-	// turned the comparison the harness makes between this frozen track and a
+-	// candidate into a comparison between two different models.
++	// surviving documents instead would have re-randomised all weights and turned
++	// the comparison the harness makes between the frozen track and this candidate
++	// into a comparison between two different models.
+ 	order := make([]int, len(docs))
+ 	for i := range order {
+ 		order[i] = i
+@@ -609,8 +973,8 @@
+ 	}
  
  	cfg := Config{
 -		NEmbd: 16, NHead: 4, NLayer: 1, BlockSize: 16,
@@ -628,7 +641,7 @@
  	}
  	m := newModel(cfg, rng)
  	params := m.params()
-@@ -545,7 +909,7 @@
+@@ -628,7 +992,7 @@
  	const (
  		learningRate = 0.01
  		beta1        = 0.85
@@ -637,11 +650,16 @@
  		epsAdam      = 1e-8
  	)
  	moments := make([]float64, len(params))
-@@ -569,23 +933,33 @@
+@@ -652,28 +1016,39 @@
  
  	started := time.Now()
  	for step := 0; step < *steps; step++ {
--		doc := docs[step%len(docs)]
+-		// The only line of the training loop this edit touches. It reads the pool
+-		// by position rather than the file, because a held-out document must not be
+-		// reachable from a step; it is otherwise the same expression against the
+-		// same shuffled order. Losing 0.8% of the documents changes which documents
+-		// are seen, not what a step computes.
+-		doc := docs[trainOrder[step%len(trainOrder)]]
 -		tokens := tokenize(doc, charIndex, bos)
 -		n := cfg.BlockSize
 -		if len(tokens)-1 < n {
@@ -667,7 +685,13 @@
 +				defer wg.Done()
 +				docModel := *m
 +				docModel.resetCache()
-+				doc := docs[(step*batchSize+batchIndex)%len(docs)]
++				// The only line of the training loop this edit touches. It reads the
++				// pool by position rather than the file, because a held-out document
++				// must not be reachable from a step; the stride between documents in a
++				// batch is untouched, so a step still trains on eight consecutive
++				// positions of the same shuffled order. Losing 0.8% of the documents
++				// changes which documents are seen, not what a step computes.
++				doc := docs[trainOrder[(step*batchSize+batchIndex)%len(trainOrder)]]
 +				tokens := tokenize(doc, charIndex, bos)
 +				n := cfg.BlockSize
 +				if len(tokens)-1 < n {
@@ -688,7 +712,7 @@
  		}
  		loss := Mean(losses)
  		loss.Backward()
-@@ -593,13 +967,15 @@
+@@ -681,13 +1056,15 @@
  		// Linear decay to zero, so the run settles into a minimum rather than
  		// bouncing around it.
  		lrT := learningRate * (1 - float64(step)/float64(*steps))
@@ -705,4 +729,44 @@
 +			vHat := velocities[i] / biasCorrection2
  			p.Data -= lrT * mHat / (math.Sqrt(vHat) + epsAdam)
  			p.Grad = 0
+ 		}
+@@ -707,9 +1084,23 @@
+ 	//
+ 	// Forward passes only. No Backward, no optimiser step, no parameter touched:
+ 	// this reads the model the training loop ended with and nothing else. The
+-	// cross-entropy per position is the same two lines the step above computes,
+-	// written out again rather than lifted into a helper, because a training step
+-	// that had to call that helper would be a training step this edit had changed.
++	// cross-entropy per position is `forwardLoss`, the same function the step above
++	// trains through, including its fused vocabulary projection and its analytic
++	// softmax Jacobian -- the held-out number is the loss axis's own arithmetic
++	// pointed at documents the loss axis never saw, and a second expression here
++	// would make the two numbers incomparable for reasons that have nothing to do
++	// with the split.
++	//
++	// Sequential, where the training loop above is a batch of eight goroutines.
++	// Two reasons, and the second is the one that matters. The quantity is a mean
++	// over held-out prediction positions, and a batch would only be a way to divide
++	// by a batch total -- the same number, computed by a path that exists nowhere
++	// else in the file. And the run has to stay bit-reproducible: `forward` appends
++	// to the KV cache, so this pass could only go parallel behind a model copy per
++	// document exactly as the training loop does, and then the cross-document sum
++	// would have to be merged in completion order. The training loop gets away with
++	// merging in batch order; a held-out number the harness re-measures on `verify`
++	// and compares against the record cannot be left to the scheduler.
+ 	//
+ 	// Summed over every prediction position of every held-out document and divided
+ 	// by how many prediction positions there were: a mean over the held-out set
+@@ -735,11 +1126,7 @@
+ 
+ 		m.resetCache()
+ 		for posID := 0; posID < n; posID++ {
+-			logits := m.forward(tokens[posID], posID)
+-			probs := softmax(logits)
+-			// Log first, then negate, for the same reason the training step does
+-			// it that way: the reverse order is `log(-p)` and therefore NaN.
+-			nll := probs[tokens[posID+1]].Log().Neg()
++			nll := m.forwardLoss(tokens[posID], posID, tokens[posID+1])
+ 			valNLL += nll.Data
+ 			valPositions++
  		}

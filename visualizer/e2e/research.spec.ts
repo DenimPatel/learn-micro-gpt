@@ -25,6 +25,24 @@ const RESEARCH_TRACKS = (
   ) as { tracks: Record<string, { language: string }> }
 ).tracks
 const RESEARCH_TRACK_COUNT = Object.keys(RESEARCH_TRACKS).length
+/**
+ * The number of baseline rows on the ledger.
+ *
+ * Read from disk, deliberately, and only this one field. It changes when a track is
+ * re-baselined and not otherwise, so it cannot race a run being appended the way a
+ * per-run count does -- which is why the mark count in this file is checked against
+ * the number the chart reports about *itself* instead, and only this stable figure
+ * comes from the data.
+ */
+const RESEARCH_BASELINE_ROWS = (
+  JSON.parse(
+    readFileSync(
+      fileURLToPath(new URL('../../autoresearch/results.json', import.meta.url)),
+      'utf-8',
+    ),
+  ) as { runs: { status: string }[] }
+).runs.filter((row) => row.status === 'baseline').length
+
 /** The button labels, which are languages rather than track keys. */
 const RESEARCH_LANGUAGES = Object.values(RESEARCH_TRACKS).map((track) => track.language)
 
@@ -175,11 +193,13 @@ test.describe('the research page', () => {
       (await chart.getAttribute('aria-label'))?.match(/of (\d+) measured runs/)?.[1] ?? '-1',
     )
     expect(claimed, 'the chart states how many runs it drew').toBeGreaterThan(0)
-    // Each placed track contributes exactly one baseline row, and those are not
-    // drawn as marks -- they all coincide at (1, 1) and are drawn as a single
-    // ring. So marks + comparators = runs, and the ring count must be 1 however
-    // many languages are on the chart. Both numbers come from the page or from
-    // the track list, neither of which changes while a run is appended.
+    // Baseline rows are normalised to exactly (1, 1) and every one of them is drawn
+    // as the *same* ring, so the marks are `claimed` minus the number of baseline
+    // *rows* -- which is not the number of tracks. A track re-baselined after a
+    // protocol change holds several: the C loop drove the loss axis to 0.000000 by
+    // choosing which documents it trained on, and the fix gave every track a held-out
+    // split, which moves the comparator too.
+    expect(RESEARCH_BASELINE_ROWS, 'the ledger has baseline rows to collapse').toBeGreaterThan(0)
     const comparators = Number(
       (await figure.locator('.research__key--tracks').innerText()).match(
         /all (\d+) comparators/,
@@ -187,7 +207,7 @@ test.describe('the research page', () => {
     )
     expect(comparators, 'the legend states how many comparators coincide').toBeGreaterThan(0)
     const marks = await chart.locator('circle.research__point--relative').count()
-    expect(marks, 'one mark per run, minus the comparators').toBe(claimed - comparators)
+    expect(marks, 'one mark per run, minus the comparators').toBe(claimed - RESEARCH_BASELINE_ROWS)
     expect(
       await chart.locator('circle.research__point--baseline').count(),
       'the coinciding comparators are one ring, not one per language',

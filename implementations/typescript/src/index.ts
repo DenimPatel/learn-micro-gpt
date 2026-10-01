@@ -443,9 +443,88 @@ export function sampleFrom(rng: () => number, weights: number[]): number {
 
 // ─── Training loop ────────────────────────────────────────────────────────
 
+/**
+ * One in every `DEFAULT_VAL_STRIDE` documents of the corpus is held out of
+ * training and used only for the `val_loss` measurement at the end of the run.
+ *
+ * This is a default rather than a requirement because the loss axis reads the
+ * *training* loss, and a training loss is a measurement of the run rather than
+ * of the model -- while which documents the run trains on is the candidate's to
+ * choose. The C track worked that out inside twenty experiments. Run 0307 --
+ * "Pretrain the 50 candidates twice then replay the easiest for 900 steps" --
+ * pointed the measured window at documents it had already learned and then spent
+ * 900 of its 1,000 steps on the single easiest one. Its loss read 0.000000,
+ * which the ledger recorded as a 100% gain, and it took the speed axis at the
+ * same time: a shorter document is fewer tokens per step, so the same
+ * non-result ran 261% faster. A model that had learned nothing, reported as the
+ * track's best run so far.
+ *
+ * So a run reports two numbers now. The training loss says what the run did,
+ * which is a thing the loop is allowed to change. The held-out loss says what
+ * the model does with documents the run never reached, which is a thing the run
+ * is not allowed to change, because those documents are not in the training pool
+ * at all. The harness reads the second one and refuses a keep whose training
+ * loss moved while its held-out loss did not follow, whichever axis the
+ * candidate arrived on; 0307's signature is exactly that gap.
+ *
+ * 128 holds out 251 of the 32,033 documents in `data/input.txt` -- about 1,760
+ * prediction positions -- which is enough documents that the measurement's own
+ * noise stays under the 5% the harness treats as a regression.
+ */
+export const DEFAULT_VAL_STRIDE = 128
+
+/**
+ * `--val-stride N` read off the process argument vector, defaulting to
+ * `DEFAULT_VAL_STRIDE`.
+ *
+ * Parsed here rather than in `cli.ts` deliberately. The flag is a property of the
+ * run and the run lives in this file, and `cli.ts` is byte-identical between the
+ * frozen track and the candidate -- which is the point of this port, since the
+ * harness measures the candidate against the frozen track and every extra line
+ * in the CLI is a line that has to be kept identical by hand for no gain. Reading
+ * `process.argv` here also leaves the flag's default in one place instead of two.
+ *
+ * The `typeof process` guard is not decoration: this module is imported by the
+ * browser playground, where there is no `process` and where the split has to fall
+ * back to its default rather than throw.
+ */
+export function valStrideFromArgv(argv: readonly string[]): number {
+  const at = argv.indexOf('--val-stride')
+  if (at < 0) return DEFAULT_VAL_STRIDE
+  const raw = argv[at + 1]
+  const stride = raw === undefined ? Number.NaN : Number(raw)
+  // A flag that silently fell back to its default would be a held-out measurement
+  // that quietly stopped happening, and the harness cannot tell the difference
+  // between "this track reports no held-out loss" and "this track was told to
+  // report one and did not". So an unusable value is refused by name, rather than
+  // becoming 128.
+  if (!Number.isInteger(stride)) {
+    throw new Error(
+      `--val-stride wants a whole number, got ${raw === undefined ? 'nothing' : JSON.stringify(raw)}`,
+    )
+  }
+  // A stride of 1 holds out every document and leaves the training loop an empty
+  // pool to index; a stride of 0 is a remainder by zero. Both used to fail
+  // further down with a message about arithmetic rather than about the flag, and
+  // this number is not something a run should be able to make meaningless.
+  if (stride < 2) {
+    throw new Error(
+      `--val-stride must be at least 2, got ${stride}: it says how many documents to skip between held-out ones`,
+    )
+  }
+  return stride
+}
+
 export interface TrainOptions {
   config?: Partial<Config>
   seed?: number
+  /**
+   * How many corpus documents to skip between held-out ones. Defaults to
+   * `--val-stride` off the command line, and to `DEFAULT_VAL_STRIDE` when there
+   * is no command line -- a library caller with no process wants the split too,
+   * and gets it.
+   */
+  valStride?: number
   /** Called after each step, for a trace. */
   onStep?: (step: number, loss: number) => void
   onSample?: (index: number, text: string) => void
@@ -456,6 +535,18 @@ export interface TrainResult {
   losses: number[]
   samples: string[]
   params: number
+  /** Loss on the held-out documents, measured once on the final model.
+   *
+   *  Returned rather than printed. The other three tracks print `val_loss` as the
+   *  last line of the process, and this one used to print it from inside `train()`
+   *  -- which put it *before* the inference block, the timing and the trace line,
+   *  because `cli.ts` prints those after `train()` returns. The harness's regex is
+   *  anchored per line and searched across the whole output, so it parsed fine
+   *  either way, and that is exactly why it was worth fixing: a line's position
+   *  being load-bearing is a property no test catches and every future edit can
+   *  quietly break. Printing it from the caller keeps the four tracks alike and
+   *  keeps the last thing the process says a number the gate reads. */
+  valLoss: number
 }
 
 /**
@@ -464,8 +555,14 @@ export interface TrainResult {
  * Identical in structure to the reference's bottom half: one document per step,
  * framed with BOS, run one position at a time, averaged into a loss,
  * backpropagated, updated with Adam. There is no batching, no gradient
- * accumulation, no validation split, and no checkpointing -- every one of those
- * is a real technique that this file deliberately leaves out.
+ * accumulation and no checkpointing -- every one of those is a real technique
+ * that this file deliberately leaves out.
+ *
+ * There is a held-out split, which the reference also lacks and which is here for
+ * a reason that has nothing to do with technique: the loss axis measures the
+ * *training* loss, and a training loss is a measurement of the run rather than of
+ * the model. See `DEFAULT_VAL_STRIDE` for how the C track turned that into a
+ * 0.000000.
  */
 export function train(docs: string[], options: TrainOptions = {}): TrainResult {
   const config: Config = { ...DEFAULT_CONFIG, ...options.config }
@@ -476,8 +573,51 @@ export function train(docs: string[], options: TrainOptions = {}): TrainResult {
   const bos = uchars.length
   config.vocab_size = bos + 1
 
+  // The harness passes `--val-stride` on the command line; a library caller with
+  // no command line gets the default, and an explicit option beats both.
+  const argv: readonly string[] =
+    typeof process !== 'undefined' && Array.isArray(process.argv) ? process.argv : []
+  const valStride = options.valStride ?? valStrideFromArgv(argv)
+
   const rng = makeRng(seed)
-  shuffle(rng, docs)
+
+  // ─── The held-out split ───────────────────────────────────────────────────
+  //
+  // Every `valStride`th document *of the corpus* -- that is, of `docs` as it
+  // arrived, before any shuffling -- is validation, and every other document is
+  // the training pool. The index is deliberately the pre-shuffle one: a split
+  // that followed the shuffle would move when the seed moved, which would make
+  // the held-out set a second thing the loop can choose, and choosing the split
+  // is as much a choice as choosing the training documents was. Held out by
+  // position in the corpus, it is the same 251 documents for every seed, every
+  // candidate and every run, so the two numbers are comparable.
+  //
+  // What is shuffled is the *indices*, not the documents, and that is not
+  // tidiness. `shuffle` draws `length - 1` times whatever the elements are, so
+  // shuffling an index vector of 32,033 consumes exactly the PRNG stream that
+  // shuffling 32,033 documents did -- and the 4,192 gaussians of parameter
+  // initialisation drawn from that same stream afterwards, with nothing but this
+  // bookkeeping in between, are bit for bit what they were before the split
+  // existed, and so is every training step. Shuffling the surviving documents
+  // instead would have drawn a different 4,192 and turned the harness's
+  // frozen-versus-candidate comparison into a comparison of two different models.
+  const order = Array.from({ length: docs.length }, (_, i) => i)
+  shuffle(rng, order)
+  const trainOrder: number[] = []
+  const valOrder: number[] = []
+  for (const index of order) {
+    if (index % valStride === 0) valOrder.push(index)
+    else trainOrder.push(index)
+  }
+  if (trainOrder.length === 0) {
+    // Unreachable for any stride `valStrideFromArgv` accepts and any corpus with
+    // more than one document, which is why it is a check and not an argument:
+    // `docs[step % 0]` is `undefined`, and a TypeError about `tokenize` says
+    // nothing about the dataset being smaller than the stride.
+    throw new Error(
+      `--val-stride ${valStride} held out all ${docs.length} documents, leaving the training loop nothing to read`,
+    )
+  }
 
   const model = new Model(config, rng)
   const params = model.params()
@@ -485,6 +625,9 @@ export function train(docs: string[], options: TrainOptions = {}): TrainResult {
     console.log(`num docs: ${docs.length}`)
     console.log(`vocab size: ${config.vocab_size}`)
     console.log(`num params: ${params.length}`)
+    // Both counts, because "num docs" is the size of the file and the size of the
+    // pool a step can draw from stopped being the same number at this change.
+    console.log(`held out: ${valOrder.length} of ${docs.length} docs (--val-stride ${valStride})`)
   }
 
   // Adam, with the reference's betas. The bias correction is what makes the
@@ -498,7 +641,14 @@ export function train(docs: string[], options: TrainOptions = {}): TrainResult {
 
   const losses: number[] = []
   for (let step = 0; step < config.num_steps; step++) {
-    const doc = docs[step % docs.length]!
+    // The only line of the training loop this change touches, and it is a change
+    // of which document is read rather than of what a step computes. Before, the
+    // pool was `docs` itself; now it is the shuffled list of *training* indices,
+    // so a held-out document cannot be reached from a step at all. Everything
+    // below this line -- the framing, the forward pass, the loss, Adam -- is
+    // untouched, because a held-out split is a change to the corpus the run sees
+    // and not a change to the arithmetic of a step.
+    const doc = docs[trainOrder[step % trainOrder.length]!]!
     const tokens = tokenize(doc, charIndex, bos)
     const n = Math.min(config.block_size, tokens.length - 1)
 
@@ -534,6 +684,75 @@ export function train(docs: string[], options: TrainOptions = {}): TrainResult {
     }
   }
 
+  // ─── The held-out measurement ─────────────────────────────────────────────
+  //
+  // Forward passes only: no `backward()`, no Adam, no parameter written. This
+  // reads the model the training loop ended with and nothing else, which is the
+  // whole reason the number means anything. The loss axis cannot say that -- it
+  // measures each step *after* the optimiser step on that very document, so a
+  // training loss is allowed to read below what an identically-measured
+  // training document reads on a model that has not yet been stepped on it. The
+  // two numbers are therefore not expected to agree, and neither one is expected
+  // to be the larger.
+  //
+  // The per-position cross-entropy is the same expression the step above
+  // computes, written out again rather than factored into a helper: a training
+  // step that had to call that helper would be a training step this change had
+  // edited. Summed over every prediction position of every held-out document and
+  // divided by the number of positions there were, so the mean is over prediction
+  // positions rather than over documents. The loss axis measures tokens, not
+  // names, and a document two characters longer must not get half the vote.
+  //
+  // Measured before the inference block below on purpose. That block draws from
+  // the PRNG and writes no parameter, so the model it would see is the same one,
+  // but reading the held-out loss while the measured model is still unambiguously
+  // the training loop's last model is worth the two lines of ordering.
+  let valNll = 0
+  let valPositions = 0
+  for (const index of valOrder) {
+    const doc = docs[index]!
+    const tokens = tokenize(doc, charIndex, bos)
+    const n = Math.min(config.block_size, tokens.length - 1)
+
+    model.resetCache()
+    for (let posId = 0; posId < n; posId++) {
+      const logits = model.forward(tokens[posId]!, posId)
+      const probs = Model.softmax(logits)
+      // Log first, then negate: `-probs[target].log()`. The order matters, and
+      // backwards gives `log(-p)` and therefore NaN immediately.
+      valNll += probs[tokens[posId + 1]!]!.log().neg().data
+      valPositions++
+    }
+    // One document's tape at a time, and that is all this needs: `Value` holds its
+    // children and never its parents, so a graph becomes unreachable the moment
+    // the loop's last reference to it goes out of scope. The Rust port has to
+    // truncate an arena to get the same effect; here the garbage collector does
+    // it, and 251 documents' worth of held-out tape is never alive at once.
+  }
+  if (valPositions === 0) {
+    // Every held-out document was empty, which `loadDocs` makes impossible. A
+    // `NaN` here would print as `val_loss NaN`, which the harness's regex does not
+    // match at all -- so this would look like a track that reports no held-out
+    // loss rather than like a bug.
+    throw new Error('the held-out set has no prediction positions, so its loss is undefined')
+  }
+  const valLoss = valNll / valPositions
+
+  // One line, once, on stdout, printed by the caller from `TrainResult.valLoss`.
+  // The harness matches it with
+  // `^val_loss\s+([0-9.]+)\s*$` against the run's output. Not gated on `quiet`,
+  // because a `val_loss` a caller can silence by forgetting an option is one that
+  // eventually goes missing from a run that was supposed to report it, and the
+  // harness cannot tell that apart from a track with no held-out split. Not
+  // repeated per step either: a curve of held-out losses is a third curve to
+  // watch and therefore a third curve to fit, and the C run at 0307 would have
+  // found it in a single experiment. The gate needs to know what the finished
+  // model does with documents it has never seen, and that is one number.
+  //
+  // And it goes in neither the trace nor the loss curve: the trace is the
+  // per-step record the loss axis averages, and this is not a step of it.
+  // Printed by the caller, not here. See `TrainResult.valLoss`.
+
   // Inference: the same forward function, fed its own output. The only new idea
   // is the stop condition, which is a token the model was trained to emit.
   const temperature = 0.5
@@ -556,5 +775,5 @@ export function train(docs: string[], options: TrainOptions = {}): TrainResult {
     options.onSample?.(sample, out)
   }
 
-  return { losses, samples, params: params.length }
+  return { losses, samples, params: params.length, valLoss: valLoss }
 }
