@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 290,
+    "experiments": 291,
     "keep": 118,
     "discard": 19,
-    "crash": 153
+    "crash": 154
   },
   "pareto": {
     "rust": [
@@ -4666,6 +4666,21 @@
       "reason": "",
       "description": "Select the 50 longest shuffled-prefix documents for the final window",
       "measured": "2026-09-30T23:58:22Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0294",
+      "parent": "d7a62cdad7773cce8876280b7a34e7cab5513d1f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replay the fifty longest documents once while caching the attention vector for speed",
+      "measured": "2026-10-01T00:03:00Z",
       "has_record": true
     }
   ],
