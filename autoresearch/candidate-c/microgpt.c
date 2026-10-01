@@ -112,9 +112,6 @@ static float ALIGN128 mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
 /* Direct output-class prior learned alongside the language model. */
 static float ALIGN128 lm_bias[MAX_VOCAB];
 
-/* Direct positional class prior learned alongside the language model. */
-static float ALIGN128 position_head[BLOCK_SIZE * MAX_VOCAB];
-
 /* Gradient arrays */
 static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
 static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
@@ -126,7 +123,6 @@ static float ALIGN128 g_attn_wo[N_LAYER][N_EMBD * N_EMBD];
 static float ALIGN128 g_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
 static float ALIGN128 g_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
 static float ALIGN128 g_lm_bias[MAX_VOCAB];
-static float ALIGN128 g_position_head[BLOCK_SIZE * MAX_VOCAB];
 
 /* Adam moment buffers */
 static float ALIGN128 m_wte[MAX_VOCAB * N_EMBD], v_wte[MAX_VOCAB * N_EMBD];
@@ -146,14 +142,11 @@ static float ALIGN128 m_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD],
 static float ALIGN128 m_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM],
     v_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
 static float ALIGN128 m_lm_bias[MAX_VOCAB], v_lm_bias[MAX_VOCAB];
-static float ALIGN128 m_position_head[BLOCK_SIZE * MAX_VOCAB],
-    v_position_head[BLOCK_SIZE * MAX_VOCAB];
 
 /* ── Dataset ─────────────────────────────────────────────────────────── */
 static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
 static int doc_lens[MAX_DOCS];
 static int doc_order[MAX_DOCS]; /* shuffle order */
-static float observed_doc_loss[MAX_DOCS];
 static char uchars[MAX_VOCAB];  /* sorted unique chars */
 static int char_to_idx[128];    /* ASCII lookup table */
 
@@ -572,7 +565,6 @@ static void init_matrix(float *w, int nout, int nin, float std) {
 static void init_weights(void) {
   const float std = 0.08f;
   memset(lm_bias, 0, sizeof(lm_bias));
-  memset(position_head, 0, sizeof(position_head));
   init_matrix(wte, vocab_size, N_EMBD, std);
   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
   memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
@@ -586,7 +578,7 @@ static void init_weights(void) {
   }
 
   int total = 2 * vocab_size * N_EMBD + BLOCK_SIZE * N_EMBD;
-  total += vocab_size + BLOCK_SIZE * MAX_VOCAB;
+  total += vocab_size;
   for (int l = 0; l < N_LAYER; l++)
     total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
   printf("num params: %d\n", total);
@@ -688,9 +680,8 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
   memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
-  const float *position_prior = position_head + pos_id * MAX_VOCAB;
   for (int i = 0; i < vocab_size; i++)
-    saved_logits[pos_id][i] += lm_bias[i] + position_prior[i];
+    saved_logits[pos_id][i] += lm_bias[i];
   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
 }
 
@@ -715,7 +706,6 @@ static void backward_all(const int *tokens, int n) {
 
   for (int pos = n - 1; pos >= 0; pos--) {
     int target_id = tokens[pos + 1];
-    float *g_position_row = g_position_head + pos * MAX_VOCAB;
 
     /* dL/d(logits) = (probs - one_hot(target)) / n */
     float dlogits[MAX_VOCAB];
@@ -723,7 +713,6 @@ static void backward_all(const int *tokens, int n) {
       float d = (saved_probs[pos][i] - (i == target_id ? 1.0f : 0.0f)) * inv_n;
       dlogits[i] = d;
       g_lm_bias[i] += d;
-      g_position_row[i] += d;
     }
 
     /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
@@ -983,9 +972,8 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
 
   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
-  const float *position_prior = position_head + pos_id * MAX_VOCAB;
   for (int i = 0; i < vocab_size; i++)
-    logits_out[i] += lm_bias[i] + position_prior[i];
+    logits_out[i] += lm_bias[i];
 }
 
 /* ── Main ────────────────────────────────────────────────────────────── */
@@ -1041,26 +1029,7 @@ int main(int argc, char **argv) {
 
   /* Training loop */
   for (int step = 0; step < num_steps; step++) {
-    int doc_slot = step;
-    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS) {
-      if (step < 100) {
-        doc_slot = NUM_STEPS - 50 + step % 50;
-      } else {
-        if (step == 100) {
-          int easiest = NUM_STEPS - 50;
-          for (int i = easiest + 1; i < NUM_STEPS; i++) {
-            if (observed_doc_loss[doc_order[i]] <
-                observed_doc_loss[doc_order[easiest]])
-              easiest = i;
-          }
-          int tmp = doc_order[100];
-          doc_order[100] = doc_order[easiest];
-          doc_order[easiest] = tmp;
-        }
-        doc_slot = 100;
-      }
-    }
-    int doc_idx = doc_order[doc_slot % num_docs];
+    int doc_idx = doc_order[step % num_docs];
     const char *doc = docs_raw[doc_idx];
     int doc_len = doc_lens[doc_idx];
 
@@ -1080,7 +1049,6 @@ int main(int argc, char **argv) {
     memset(g_wpe, 0, sizeof(g_wpe));
     memset(g_lm_head, 0, sizeof(g_lm_head));
     memset(g_lm_bias, 0, sizeof(g_lm_bias));
-    memset(g_position_head, 0, sizeof(g_position_head));
     for (int l = 0; l < N_LAYER; l++) {
       memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
       memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
@@ -1105,25 +1073,12 @@ int main(int argc, char **argv) {
     }
     loss /= n;
 
-    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        step < NUM_STEPS - 50) {
-      observed_doc_loss[doc_idx] = loss;
-    }
-
-    if (step > 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
-        loss < 1.0e-5f) {
-      printf("step %4d / %4d | loss %.4f\n", step + 1, num_steps, loss);
-      continue;
-    }
-
     /* Backward pass */
     backward_all(tokens, n);
 
     /* Adam update */
     float lr_t = learning_rate *
                  (0.3f + 0.7f * (1.0f - (float)step / num_steps));
-    if (step >= 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS)
-      lr_t *= 2.0f;
     float b1c = 1.0f - powf(beta1, step + 1);
     float b2c = 1.0f - powf(beta2, step + 1);
 
@@ -1133,9 +1088,6 @@ int main(int argc, char **argv) {
     adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
     adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
                 lr_t, b1c, b2c);
-    adam_update(position_head, g_position_head, m_position_head,
-                v_position_head, BLOCK_SIZE * MAX_VOCAB, lr_t, b1c,
-                b2c);
     for (int l = 0; l < N_LAYER; l++) {
       adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
                   N_EMBD * N_EMBD, lr_t, b1c, b2c);

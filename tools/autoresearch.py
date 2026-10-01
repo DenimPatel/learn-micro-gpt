@@ -557,7 +557,9 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def read_json(path: Path) -> dict[str, Any]:
+def read_json(path: Path, optional: bool = False) -> dict[str, Any] | None:
+    if optional and not path.exists():
+        return None
     return json.loads(path.read_text(encoding="utf-8"))
 
 
@@ -1216,6 +1218,51 @@ def measure_baseline(track: Track, steps: int = STEPS, seed: int = SEED, repeats
 # ─── the verdict ─────────────────────────────────────────────────────────────
 
 
+def candidate_source_digest(track: "Track") -> str | None:
+    """The digest of the candidate source as it is committed right now."""
+    try:
+        return sha256_file(track.candidate_file)
+    except OSError:
+        return None
+
+
+def keeps_in_effect(track: "Track", rows: list["LedgerRow"]) -> list["LedgerRow"]:
+    """The kept rows whose code the repository still holds.
+
+    A keep in the ledger says the loop accepted a candidate *at the time*. It does
+    not say the candidate survived, and one very often does not: a keep can be
+    rolled back because it was degenerate, because a later experiment found the
+    change was a regression, or because a human read the patch and disagreed. The
+    branch is the authority on what is in the tree, not the ledger.
+
+    So `run.kept_as_candidate` is not enough -- it is written at the moment of the
+    keep and never revisited, so every keep in a long ledger has it set to true
+    and it says nothing about the present. What does say is the per-run
+    `source_sha256` map, which the harness already writes. A keep is in effect
+    when the digest it recorded for this track's candidate file is the digest that
+    file has now.
+
+    Without this, `min(kept, key=loss)` picks the lowest number the loop ever
+    recorded and presents it as the track's achievement even after the code that
+    produced it has been thrown away. That is not a reporting detail: on the C
+    track a run whose training loop had collapsed to replaying one document was
+    advertising loss 0.0000 at 99,081 steps/s for as long as it held the record,
+    and the code behind it was three experiments out of date.
+    """
+    digest = candidate_source_digest(track)
+    if digest is None:
+        return []
+    in_effect: list[LedgerRow] = []
+    for row in rows:
+        if row.track != track.name or row.status != "keep":
+            continue
+        record = read_json(RUNS_DIR / f"{row.run_id}.json", optional=True)
+        recorded = (record or {}).get("source_sha256") or {}
+        if recorded.get(track.source_key) == digest:
+            in_effect.append(row)
+    return in_effect
+
+
 def verdict(
     base_loss: float,
     base_speed: float,
@@ -1422,9 +1469,13 @@ def build_results_document() -> dict[str, Any]:
         baselines[track.name] = next(
             (r.to_json() for r in track_rows if r.status == "baseline"), None
         )
+        # Over the keeps still in effect, not over every keep ever recorded. See
+        # `keeps_in_effect`: the lowest number on the ledger is not an achievement
+        # if the code that produced it was rolled back.
+        in_effect = keeps_in_effect(track, rows)
         bests[track.name] = (
-            min(track_kept, key=lambda r: (r.loss, -r.steps_per_sec)).to_json()
-            if track_kept
+            min(in_effect, key=lambda r: (r.loss, -r.steps_per_sec)).to_json()
+            if in_effect
             else None
         )
         provenances[track.name] = {
@@ -2231,10 +2282,19 @@ def cmd_verify(args: argparse.Namespace) -> int:
     # silence, for the reason the speed axis below is reported rather than skipped.
     targets: list[tuple[Track, Row]] = []
     for track in TRACKS.values():
-        kept = [r for r in rows if r.track == track.name and r.status == "keep"]
+        # The keeps whose code is still in the tree, for the reason
+        # `keeps_in_effect` gives. Verifying a run whose candidate has since been
+        # rolled back would check that the *current* file reproduces a number the
+        # current file did not produce, and the digest check below would then fail
+        # with a digest that had never been wrong -- which is exactly the confusion
+        # that comment exists to prevent.
+        kept = keeps_in_effect(track, rows)
         if not kept:
             if any(r.track == track.name for r in rows):
-                print(f"--  {track.name}: no kept candidate yet; nothing to verify")
+                print(
+                    f"--  {track.name}: every kept candidate has since been rolled "
+                    f"back; nothing to verify"
+                )
             continue
         # Two different runs, and conflating them is a bug this file used to have.
         #

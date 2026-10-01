@@ -486,24 +486,46 @@ class TestTheGeneratedDocumentIsCurrent(unittest.TestCase):
                 continue
             self.assertIn(ar.TRACKS[row.track].source_key, payload.get("source_sha256", {}))
 
-    def test_the_best_row_is_actually_the_lowest_loss_among_the_keeps(self) -> None:
+    def test_the_best_row_is_the_lowest_loss_among_the_keeps_still_in_effect(self) -> None:
         # Per track. A single "best" across tracks would rank a Go candidate
         # against a Rust one, each measured against a different frozen build, and
         # the winner would be whichever language happened to be quicker on the
         # session's machine rather than whichever change was better.
+        #
+        # And among the keeps *still in effect*, not among every keep ever
+        # recorded. A keep says the loop accepted a candidate at the time; it does
+        # not say the candidate survived, and one very often does not. On the C
+        # track a run whose training loop had collapsed to replaying a single
+        # document held the record at loss 0.0000 and 99,081 steps/s for as long as
+        # it held it -- while the code behind it was three experiments out of date
+        # and the tree held something else entirely. The lowest number on a ledger
+        # is not an achievement if you threw the code away.
+        #
+        # Which keeps are in effect is decided by comparing each run's recorded
+        # `source_sha256` against the digest the candidate file has now, so this
+        # test is really checking that the two agree about what is in the tree.
         document = ar.build_results_document()
         for track in ar.TRACKS.values():
             with self.subTest(track=track.name):
-                kept = [
-                    row
-                    for row in ar.read_ledger()
-                    if row.status == "keep" and row.track == track.name
-                ]
-                if not kept:
+                in_effect = ar.keeps_in_effect(track, ar.read_ledger())
+                if not in_effect:
                     self.assertIsNone(document["bests"][track.name])
                     continue
-                best = min(kept, key=lambda row: (row.loss, -row.steps_per_sec))
+                best = min(in_effect, key=lambda row: (row.loss, -row.steps_per_sec))
                 self.assertEqual(document["bests"][track.name]["run_id"], best.run_id)
+                # And that set is not merely "the keeps that happen to be cheapest",
+                # which is what makes this a real constraint rather than a
+                # restatement of the same min() in another place.
+                self.assertTrue(
+                    all(
+                        (ar.read_json(ar.RUNS_DIR / f"{row.run_id}.json") or {})
+                        .get("source_sha256", {})
+                        .get(track.source_key)
+                        == ar.candidate_source_digest(track)
+                        for row in in_effect
+                    ),
+                    "every keep counted as in effect must match the committed candidate digest",
+                )
 
     def test_every_track_has_a_baseline_slot_even_when_unseeded(self) -> None:
         # The page renders a zero for an unseeded track and says so. A missing key

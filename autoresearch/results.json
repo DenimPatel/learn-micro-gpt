@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "1298a20cb9b9698aec2bb6f268d9fddbf1dd1e5341bc63eeedd7fc3875b7a7b9",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "88822ea20d67b8db7d5e007f502ce262c71e117f68b66130b4b6dc7026795079",
+      "candidate_sha256": "38e1648978d39f7e0bf017ee927b42dfbd5c1e4f9741b59eea054ceedeaa6659",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -167,17 +167,17 @@
   },
   "bests": {
     "rust": {
-      "run_id": "0066",
-      "parent": "f52a9e86bf504e764a93e021ebe7aa19acb914cf",
+      "run_id": "0102",
+      "parent": "388cbe003f35660e91d88eabde1504269952f1d9",
       "track": "rust",
-      "loss": 2.185464,
-      "steps_per_sec": 131.987549,
-      "loss_gain": 0.102067,
-      "speed_gain": 1.246052,
+      "loss": 2.19014,
+      "steps_per_sec": 251.094495,
+      "loss_gain": 0.100145,
+      "speed_gain": 3.272913,
       "grad_ratio": 1.000259,
       "status": "keep",
       "reason": "",
-      "description": "Correctly fold ReLU into the FC1 autograd node to cut tape allocations"
+      "description": "Restore the five-document Adam batch"
     },
     "go": {
       "run_id": "0170",
@@ -206,17 +206,17 @@
       "description": "Fuse each linear row into one exact ordered product-sum autograd node"
     },
     "c": {
-      "run_id": "0307",
-      "parent": "c7f488f5016e128ae312429b16c590ffdfb60f62",
+      "run_id": "0297",
+      "parent": "42a9cbbbfbcf373cc858f94d41eafc10f1299389",
       "track": "c",
-      "loss": 0.0,
-      "steps_per_sec": 99081.426197,
-      "loss_gain": 1.0,
-      "speed_gain": 6.535266,
+      "loss": 2.360724,
+      "steps_per_sec": 52870.889247,
+      "loss_gain": -0.010271,
+      "speed_gain": 3.020897,
       "grad_ratio": 0.988406,
       "status": "keep",
       "reason": "",
-      "description": "Pretrain the 50 candidates twice then replay the easiest for 900 steps"
+      "description": "Raise the learning-rate decay floor from 20 percent to 30 percent"
     }
   },
   "counts": {
