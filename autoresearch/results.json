@@ -220,10 +220,10 @@
     }
   },
   "counts": {
-    "experiments": 292,
+    "experiments": 293,
     "keep": 119,
     "discard": 19,
-    "crash": 154
+    "crash": 155
   },
   "pareto": {
     "rust": [
@@ -4697,6 +4697,21 @@
       "reason": "",
       "description": "Add a 20 percent learning rate floor to the linear decay",
       "measured": "2026-10-01T00:05:52Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0296",
+      "parent": "ed0ec5ee7db88a0ac508f0fb68badf80c644014a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use two width-6 attention heads with corrected inverse-square-root scaling",
+      "measured": "2026-10-01T00:08:07Z",
       "has_record": true
     }
   ],
