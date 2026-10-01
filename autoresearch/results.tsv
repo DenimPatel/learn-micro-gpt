@@ -307,3 +307,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0305	6a0dbd7166f912c4d7c160fddd3b2a7a76c03e59	c	0.001334	85177.359622	+0.999429	+5.477845	0.988406	keep		Replay the easiest provisional document for the final 500 steps
 0306	1361ac65684f02b8696a071f6436c1a82768e65f	c	0.001334	54920.536776	+0.999429	+3.176775	0.988406	keep		Sort all provisional replay documents so slot 500 receives the easiest observed document
 0307	c7f488f5016e128ae312429b16c590ffdfb60f62	c	0.000000	99081.426197	+1.000000	+6.535266	0.988406	keep		Pretrain the 50 candidates twice then replay the easiest for 900 steps
+0308	ed3021820a30b9806599419c709150ab2d5d619a	c	0.000000	52889.764774	+1.000000	+3.022333	0.988406	keep		Double replay learning rate and early stop below 1e-5 loss

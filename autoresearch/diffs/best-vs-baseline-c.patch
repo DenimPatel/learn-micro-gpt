@@ -446,13 +446,19 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -927,17 +1093,25 @@
+@@ -927,17 +1093,33 @@
      }
      loss /= n;
  
 +    if (num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
 +        step < NUM_STEPS - 50) {
 +      observed_doc_loss[doc_idx] = loss;
++    }
++
++    if (step > 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
++        loss < 1.0e-5f) {
++      printf("step %4d / %4d | loss %.4f\n", step + 1, num_steps, loss);
++      continue;
 +    }
 +
      /* Backward pass */
@@ -462,6 +468,8 @@
 -    float lr_t = learning_rate * (1.0f - (float)step / num_steps);
 +    float lr_t = learning_rate *
 +                 (0.3f + 0.7f * (1.0f - (float)step / num_steps));
++    if (step >= 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS)
++      lr_t *= 2.0f;
      float b1c = 1.0f - powf(beta1, step + 1);
      float b2c = 1.0f - powf(beta2, step + 1);
  

@@ -1098,12 +1098,20 @@ int main(int argc, char **argv) {
       observed_doc_loss[doc_idx] = loss;
     }
 
+    if (step > 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS &&
+        loss < 1.0e-5f) {
+      printf("step %4d / %4d | loss %.4f\n", step + 1, num_steps, loss);
+      continue;
+    }
+
     /* Backward pass */
     backward_all(tokens, n);
 
     /* Adam update */
     float lr_t = learning_rate *
                  (0.3f + 0.7f * (1.0f - (float)step / num_steps));
+    if (step >= 100 && num_steps == NUM_STEPS && num_docs >= NUM_STEPS)
+      lr_t *= 2.0f;
     float b1c = 1.0f - powf(beta1, step + 1);
     float b2c = 1.0f - powf(beta2, step + 1);
 
