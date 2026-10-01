@@ -1,0 +1,16 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -1133,8 +1133,12 @@
+     float b1c = 1.0f - powf(beta1, step + 1);
+     float b2c = 1.0f - powf(beta2, step + 1);
+ 
++    for (int i = 0; i < vocab_size * N_EMBD; i++)
++      g_wte[i] += g_lm_head[i];
++    memset(g_lm_head, 0, sizeof(g_lm_head));
+     adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
+-    adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head,
+-                vocab_size * N_EMBD, lr_t, b1c, b2c);
++    memcpy(lm_head, wte, vocab_size * N_EMBD * sizeof(float));
+     adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
+     adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
+                 lr_t, b1c, b2c);

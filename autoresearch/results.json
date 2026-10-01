@@ -182,9 +182,9 @@
     "c": "no kept candidate matches the committed source: every recorded keep either has been rolled back or was measured under an earlier protocol. Re-run the loop to promote one under the current protocol."
   },
   "counts": {
-    "experiments": 308,
+    "experiments": 309,
     "keep": 132,
-    "discard": 19,
+    "discard": 20,
     "crash": 157
   },
   "pareto": {
@@ -5337,6 +5337,22 @@
       "description": "the frozen C track, unmodified, as this session's comparator",
       "val_loss": 2.35284,
       "measured": "2026-10-01T02:34:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0320",
+      "parent": "c3cb2923aea8f86a0e8d8c59e2630f5e53772b70",
+      "track": "c",
+      "loss": 2.481408,
+      "steps_per_sec": 48653.613382,
+      "loss_gain": -0.060415,
+      "speed_gain": 1.04419,
+      "grad_ratio": 0.988406,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -6.0%, speed +104.4%; failing loss_material, loss_tolerance",
+      "description": "Tie output embeddings to token embeddings by summing both gradients and copying the shared update",
+      "val_loss": 2.459913,
+      "measured": "2026-10-01T23:37:42Z",
       "has_record": true
     }
   ],
