@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "bf6dc2249eeec254ceb5515288f91f04cd4b17cf5a076ed39a57b9c287aa40b4",
+      "candidate_sha256": "c9e562aa8f8721eceeec5d600af35e5b1557e8d22f6a69f95fa81abcfeeab6d7",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0383",
-      "parent": "dcfee8c73607c934c314c6789ea8672c6f05a948",
+      "run_id": "0384",
+      "parent": "dec6258da8f2f214b3147598da769eb304c213f5",
       "track": "c",
-      "loss": 2.407736,
-      "steps_per_sec": 108631.70162,
-      "loss_gain": -0.028932,
-      "speed_gain": 3.564179,
-      "grad_ratio": 1.108624,
+      "loss": 2.415854,
+      "steps_per_sec": 51874.282787,
+      "loss_gain": -0.032401,
+      "speed_gain": 1.179507,
+      "grad_ratio": 1.10499,
       "status": "keep",
       "reason": "",
-      "description": "Widen the one-layer MLP from two to three hidden units",
-      "val_loss": 2.388505
+      "description": "Widen the one-layer MLP from three to four hidden units",
+      "val_loss": 2.390583
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 372,
-    "keep": 152,
+    "experiments": 373,
+    "keep": 153,
     "discard": 27,
     "crash": 193
   },
@@ -6375,6 +6375,22 @@
       "description": "Widen the one-layer MLP from two to three hidden units",
       "val_loss": 2.388505,
       "measured": "2026-10-02T07:03:15Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0384",
+      "parent": "dec6258da8f2f214b3147598da769eb304c213f5",
+      "track": "c",
+      "loss": 2.415854,
+      "steps_per_sec": 51874.282787,
+      "loss_gain": -0.032401,
+      "speed_gain": 1.179507,
+      "grad_ratio": 1.10499,
+      "status": "keep",
+      "reason": "",
+      "description": "Widen the one-layer MLP from three to four hidden units",
+      "val_loss": 2.390583,
+      "measured": "2026-10-02T07:04:09Z",
       "has_record": true
     }
   ],

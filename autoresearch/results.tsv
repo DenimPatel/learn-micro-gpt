@@ -383,3 +383,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0381	ef6913b6980e87cd28c940a1b925d53750d29791	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a sparsely updated trainable bigram logit residual	
 0382	50a5c7759e0b6709fc5677faee25a7f5afb95b18	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Split attention into two four-dimensional heads	
 0383	dcfee8c73607c934c314c6789ea8672c6f05a948	c	2.407736	108631.701620	-0.028932	+3.564179	1.108624	keep		Widen the one-layer MLP from two to three hidden units	2.388505
+0384	dec6258da8f2f214b3147598da769eb304c213f5	c	2.415854	51874.282787	-0.032401	+1.179507	1.104990	keep		Widen the one-layer MLP from three to four hidden units	2.390583
