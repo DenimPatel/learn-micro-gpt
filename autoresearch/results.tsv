@@ -340,3 +340,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0338	43fe137266334695a799ab0b72c8ad8c9aad3dec	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Accumulate gradients over document pairs and double the cosine peak learning rate	
 0339	40b14624c6dc94e2e25b9eb1275316f515b5ce5c	c	2.385896	61410.602939	-0.019599	+1.580177	0.992936	keep		Halve MLP width to 8 and correct its narrower backward projection	2.385190
 0340	38d273a741c3b43e7dfef74d32aa44c0673d4103	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0341	cbb9efa57b6fdae82411c3d1e6af7dbb06054516	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce residual width to 8 and use two correctly scaled 4D heads	

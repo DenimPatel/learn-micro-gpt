@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 329,
+    "experiments": 330,
     "keep": 137,
     "discard": 23,
-    "crash": 169
+    "crash": 170
   },
   "pareto": {
     "rust": [
@@ -5686,6 +5686,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T03:26:28Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0341",
+      "parent": "cbb9efa57b6fdae82411c3d1e6af7dbb06054516",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Reduce residual width to 8 and use two correctly scaled 4D heads",
+      "val_loss": null,
+      "measured": "2026-10-02T03:29:43Z",
       "has_record": true
     }
   ],
