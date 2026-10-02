@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "f21581c88d4408f658c056003a86bc8d3e99e65f183351537523c5263e947ddb",
+      "candidate_sha256": "969e2aa304500084553d47cbbf61f0d9401d95cb0dee930101d2ad9e61c72404",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0373",
-      "parent": "26358e636c848b119772e1bec4dbe4a13c9266a9",
+      "run_id": "0376",
+      "parent": "c4fee85ca7dbf248517e99b65f7abf5461ea1ddb",
       "track": "c",
-      "loss": 2.416534,
-      "steps_per_sec": 80435.419361,
-      "loss_gain": -0.032692,
-      "speed_gain": 2.379507,
+      "loss": 2.412338,
+      "steps_per_sec": 60083.21282,
+      "loss_gain": -0.030899,
+      "speed_gain": 1.524406,
       "grad_ratio": 1.099484,
       "status": "keep",
       "reason": "",
-      "description": "Raise the peak learning rate from 0.01 to 0.015",
-      "val_loss": 2.404233
+      "description": "Raise the peak cosine learning rate from 0.015 to 0.02",
+      "val_loss": 2.387714
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 364,
-    "keep": 150,
+    "experiments": 365,
+    "keep": 151,
     "discard": 27,
     "crash": 187
   },
@@ -6246,6 +6246,22 @@
       "description": "Cache and vectorize the causal attention value path",
       "val_loss": null,
       "measured": "2026-10-02T06:13:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0376",
+      "parent": "c4fee85ca7dbf248517e99b65f7abf5461ea1ddb",
+      "track": "c",
+      "loss": 2.412338,
+      "steps_per_sec": 60083.21282,
+      "loss_gain": -0.030899,
+      "speed_gain": 1.524406,
+      "grad_ratio": 1.099484,
+      "status": "keep",
+      "reason": "",
+      "description": "Raise the peak cosine learning rate from 0.015 to 0.02",
+      "val_loss": 2.387714,
+      "measured": "2026-10-02T06:17:14Z",
       "has_record": true
     }
   ],

@@ -1155,7 +1155,7 @@ int main(int argc, char **argv) {
   init_weights();
 
   /* Adam hyperparams */
-  const float learning_rate = 0.015f;
+  const float learning_rate = 0.02f;
   const float learning_rate_floor = 0.0f;
   const float beta1 = 0.85f, beta2 = 0.98f;
 
