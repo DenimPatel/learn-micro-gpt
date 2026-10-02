@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 370,
+    "experiments": 371,
     "keep": 151,
     "discard": 27,
-    "crash": 192
+    "crash": 193
   },
   "pareto": {
     "rust": [
@@ -6342,6 +6342,22 @@
       "description": "Add a sparsely updated trainable bigram logit residual",
       "val_loss": null,
       "measured": "2026-10-02T06:52:09Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0382",
+      "parent": "50a5c7759e0b6709fc5677faee25a7f5afb95b18",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Split attention into two four-dimensional heads",
+      "val_loss": null,
+      "measured": "2026-10-02T07:00:24Z",
       "has_record": true
     }
   ],
