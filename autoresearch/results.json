@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 345,
+    "experiments": 346,
     "keep": 143,
-    "discard": 24,
+    "discard": 25,
     "crash": 178
   },
   "pareto": {
@@ -5942,6 +5942,22 @@
       "description": "Cache concatenated attention outputs for exact backward-pass reuse",
       "val_loss": null,
       "measured": "2026-10-02T04:38:29Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0357",
+      "parent": "224846d73066720d0a3e89fa68ff7ae6bec5cab8",
+      "track": "c",
+      "loss": 2.12143,
+      "steps_per_sec": 64606.786991,
+      "loss_gain": 0.093419,
+      "speed_gain": 1.714465,
+      "grad_ratio": 0.993809,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +9.3%, speed +171.4%; failing learned",
+      "description": "Add a training-only smoothed trigram backoff prior to the logits",
+      "val_loss": 2.162111,
+      "measured": "2026-10-02T04:42:54Z",
       "has_record": true
     }
   ],

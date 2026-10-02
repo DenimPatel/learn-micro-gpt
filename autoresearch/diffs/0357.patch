@@ -1,0 +1,122 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -105,6 +105,9 @@ static float ALIGN128 mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
+ /* Direct output-class prior learned alongside the language model. */
+ static float ALIGN128 lm_bias[MAX_VOCAB];
+ 
++/* Fixed smoothed character-trigram log-odds, indexed [older][newer][target]. */
++static float ALIGN128 lm_ngram_bias[MAX_VOCAB][MAX_VOCAB][MAX_VOCAB];
++
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
+@@ -159,6 +162,7 @@ static char uchars[MAX_VOCAB];  /* sorted unique chars */
+ static int char_to_idx[128];    /* ASCII lookup table */
+ 
+ /* ── Activation buffers (pre-allocated, zero malloc in hot loop) ─────── */
++static int saved_input_token[BLOCK_SIZE];
+ /* Per-position saved activations for backward pass */
+ static float ALIGN128 saved_x_embed[BLOCK_SIZE][N_EMBD];
+ static float ALIGN128 saved_x_normed_pre[BLOCK_SIZE][N_EMBD];
+@@ -548,6 +552,15 @@ static void init_weights(void) {
+ static void init_weights(void) {
+   const float std = 0.08f;
++  static int ngram2_count[MAX_VOCAB][MAX_VOCAB];
++  static int ngram2_total[MAX_VOCAB];
++  static int ngram3_count[MAX_VOCAB][MAX_VOCAB][MAX_VOCAB];
++  static int ngram3_total[MAX_VOCAB][MAX_VOCAB];
+   float target_counts[MAX_VOCAB] = {0};
+   float target_total = 0.0f;
++  memset(ngram2_count, 0, sizeof(ngram2_count));
++  memset(ngram2_total, 0, sizeof(ngram2_total));
++  memset(ngram3_count, 0, sizeof(ngram3_count));
++  memset(ngram3_total, 0, sizeof(ngram3_total));
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+     int doc_len = doc_lens[doc_id];
+@@ -561,6 +574,16 @@ static void init_weights(void) {
+       int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+                               : BOS_TOKEN;
+       target_counts[token] += 1.0f;
++      int prev1 = BOS_TOKEN;
++      int prev2 = BOS_TOKEN;
++      if (i > 0)
++        prev1 = char_to_idx[(int)docs_raw[doc_id][i - 1]];
++      if (i > 1)
++        prev2 = char_to_idx[(int)docs_raw[doc_id][i - 2]];
++      ngram2_count[prev1][token]++;
++      ngram2_total[prev1]++;
++      ngram3_count[prev2][prev1][token]++;
++      ngram3_total[prev2][prev1]++;
+     }
+   }
+   if (target_total > 0.0f) {
+@@ -571,8 +594,25 @@ static void init_weights(void) {
+       lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
++    memset(lm_ngram_bias, 0, sizeof(lm_ngram_bias));
++  }
++  if (target_total > 0.0f) {
++    const float unigram_alpha = 0.1f;
++    const float bigram_backoff = 2.0f;
++    const float trigram_backoff = 4.0f;
++    for (int older = 0; older < vocab_size; older++) {
++      for (int newer = 0; newer < vocab_size; newer++) {
++        for (int target = 0; target < vocab_size; target++) {
++          float p1 = (target_counts[target] + unigram_alpha) /
++                     (target_total + unigram_alpha * (float)vocab_size);
++          float p2 = (ngram2_count[newer][target] + bigram_backoff * p1) /
++                     (ngram2_total[newer] + bigram_backoff);
++          float p3 =
++              (ngram3_count[older][newer][target] + trigram_backoff * p2) /
++              (ngram3_total[older][newer] + trigram_backoff);
++          lm_ngram_bias[older][newer][target] = logf(p3 / p1);
++        }
++      }
++    }
+   }
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+@@ -626,6 +666,7 @@ static void init_matrix(float *w, int nout, int nin, float std) {
+ 
+ /* ── Forward pass (single position, causal attention via KV cache) ─── */
+ static void forward_pos(int token_id, int pos_id, int seq_len) {
++  saved_input_token[pos_id] = token_id;
+   /* `x` is the running residual stream, and it is a local on purpose. It used to
+    * alias saved_x_embed[pos_id], and the pre-layer rmsnorm below wrote its
+    * normalised output straight back over that array -- so the only record of the
+@@ -722,8 +763,12 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++  int prev1 = token_id;
++  int prev2 = pos_id > 0 ? saved_input_token[pos_id - 1] : BOS_TOKEN;
++  const float *ngram_bias = lm_ngram_bias[prev2][prev1];
++  for (int i = 0; i < vocab_size; i++)
++    saved_logits[pos_id][i] += lm_bias[i] + ngram_bias[i];
+   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
+ }
+ 
+@@ -812,6 +857,7 @@ static void backward_all(const int *tokens, int n) {
+ /* ── Forward-only for inference (no saving for backward) ─────────────── */
+ static void forward_inference(int token_id, int pos_id, float *logits_out) {
++  saved_input_token[pos_id] = token_id;
+   float x[N_EMBD];
+   const float *te = wte + token_id * N_EMBD;
+   const float *pe = wpe + pos_id * N_EMBD;
+@@ -890,8 +936,12 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+ 
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++  int prev1 = token_id;
++  int prev2 = pos_id > 0 ? saved_input_token[pos_id - 1] : BOS_TOKEN;
++  const float *ngram_bias = lm_ngram_bias[prev2][prev1];
++  for (int i = 0; i < vocab_size; i++)
++    logits_out[i] += lm_bias[i] + ngram_bias[i];
+ }
+ 
+ /* ── Main ────────────────────────────────────────────────────────────── */
