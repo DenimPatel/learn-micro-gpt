@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 350,
+    "experiments": 351,
     "keep": 145,
     "discard": 26,
-    "crash": 179
+    "crash": 180
   },
   "pareto": {
     "rust": [
@@ -6022,6 +6022,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T05:03:59Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0362",
+      "parent": "8983078fa55e7a4fd3e586fcc4c750e9b6780336",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Reduce model width from 8 to 4 for fully vector-aligned projections",
+      "val_loss": null,
+      "measured": "2026-10-02T05:11:39Z",
       "has_record": true
     }
   ],
