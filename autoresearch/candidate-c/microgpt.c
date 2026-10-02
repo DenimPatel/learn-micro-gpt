@@ -1112,6 +1112,7 @@ int main(int argc, char **argv) {
     int n = seq_len - 1;       /* number of prediction positions */
     if (n > BLOCK_SIZE)
       n = BLOCK_SIZE;
+    unsigned char used_wte[MAX_VOCAB] = {0};
 
     /* Zero gradients */
     memset(g_wte, 0, sizeof(g_wte));
@@ -1128,8 +1129,10 @@ int main(int argc, char **argv) {
     }
 
     /* Forward pass — all positions */
-    for (int pos = 0; pos < n; pos++)
+    for (int pos = 0; pos < n; pos++) {
+      used_wte[tokens[pos]] = 1;
       forward_pos(tokens[pos], pos, pos + 1);
+    }
 
     /* Compute loss */
     float loss = 0.0f;
@@ -1152,10 +1155,17 @@ int main(int argc, char **argv) {
     float b1c = 1.0f - powf(beta1, step + 1);
     float b2c = 1.0f - powf(beta2, step + 1);
 
-    adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
+    for (int token_id = 0; token_id < vocab_size; token_id++) {
+      if (!used_wte[token_id])
+        continue;
+      adam_update(wte + token_id * N_EMBD,
+                  g_wte + token_id * N_EMBD,
+                  m_wte + token_id * N_EMBD,
+                  v_wte + token_id * N_EMBD, N_EMBD, lr_t, b1c, b2c);
+    }
     adam_update(lm_head, g_lm_head, m_lm_head, v_lm_head,
                 vocab_size * N_EMBD, lr_t, b1c, b2c);
-    adam_update(wpe, g_wpe, m_wpe, v_wpe, BLOCK_SIZE * N_EMBD, lr_t, b1c, b2c);
+    adam_update(wpe, g_wpe, m_wpe, v_wpe, n * N_EMBD, lr_t, b1c, b2c);
     adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
                 lr_t, b1c, b2c);
     for (int l = 0; l < N_LAYER; l++) {

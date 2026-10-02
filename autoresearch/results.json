@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "0a4159b5b969dac2bf0335f193747530f75ab1f2e581cf63737db8bbef92b171",
+      "candidate_sha256": "d41f289997e2d86803f54637f49385e2754060d6ace054c6df0debd878bf5e3b",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0327",
-      "parent": "bb3470c15c68b391f48f63aa05da4b897ea73927",
+      "run_id": "0332",
+      "parent": "7dcf0916aabf68f94ab267e966a094dfc2f02bcc",
       "track": "c",
-      "loss": 2.379112,
-      "steps_per_sec": 45576.25486,
-      "loss_gain": -0.0167,
-      "speed_gain": 0.914894,
+      "loss": 2.381984,
+      "steps_per_sec": 60336.524661,
+      "loss_gain": -0.017927,
+      "speed_gain": 1.535049,
       "grad_ratio": 1.004978,
       "status": "keep",
       "reason": "",
-      "description": "Replace linear learning-rate decay with cosine decay over the 1000 training steps",
-      "val_loss": 2.376884
+      "description": "Update only token and position embeddings used by each document",
+      "val_loss": 2.385616
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 320,
-    "keep": 135,
+    "experiments": 321,
+    "keep": 136,
     "discard": 22,
     "crash": 163
   },
@@ -5542,6 +5542,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T02:34:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0332",
+      "parent": "7dcf0916aabf68f94ab267e966a094dfc2f02bcc",
+      "track": "c",
+      "loss": 2.381984,
+      "steps_per_sec": 60336.524661,
+      "loss_gain": -0.017927,
+      "speed_gain": 1.535049,
+      "grad_ratio": 1.004978,
+      "status": "keep",
+      "reason": "",
+      "description": "Update only token and position embeddings used by each document",
+      "val_loss": 2.385616,
+      "measured": "2026-10-02T02:39:01Z",
       "has_record": true
     }
   ],
