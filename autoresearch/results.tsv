@@ -376,3 +376,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0374	26e3de53a94f4f634879274fa74349de46f12f49	c	2.336248	61486.117109	+0.001618	+1.583349	1.007744	discard	no axis improved materially: discarded: loss +0.2%, speed +158.3%; failing learned, loss_material	Add a fixed train-only smoothed bigram log-odds logit prior	2.332155
 0375	61b6c7b4517d47571263ec8263a778ea19217606	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache and vectorize the causal attention value path	
 0376	c4fee85ca7dbf248517e99b65f7abf5461ea1ddb	c	2.412338	60083.212820	-0.030899	+1.524406	1.099484	keep		Raise the peak cosine learning rate from 0.015 to 0.02	2.387714
+0377	d4ab5681201f4e8a8d4ec7a65bab9122ec6f4f25	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention inputs and use forward-only held-out evaluation	
