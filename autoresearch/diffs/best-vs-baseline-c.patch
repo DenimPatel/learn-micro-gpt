@@ -537,11 +537,13 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -942,7 +1156,8 @@
+@@ -941,8 +1155,9 @@
+   init_weights();
  
    /* Adam hyperparams */
-   const float learning_rate = 0.01f;
+-  const float learning_rate = 0.01f;
 -  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float learning_rate = 0.015f;
 +  const float learning_rate_floor = 0.0f;
 +  const float beta1 = 0.85f, beta2 = 0.98f;
  

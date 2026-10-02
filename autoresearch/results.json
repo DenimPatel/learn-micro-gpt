@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "7f4fd3336fef4a66d5a2eebcd0494f54d9eed7daaca2263cf6679a4c2b8b3ee1",
+      "candidate_sha256": "f21581c88d4408f658c056003a86bc8d3e99e65f183351537523c5263e947ddb",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0371",
-      "parent": "7ef28dd5dd6a88b0ce6c763d0e8e16d3f77eee23",
+      "run_id": "0373",
+      "parent": "26358e636c848b119772e1bec4dbe4a13c9266a9",
       "track": "c",
-      "loss": 2.420088,
-      "steps_per_sec": 63915.631557,
-      "loss_gain": -0.034211,
-      "speed_gain": 1.685426,
+      "loss": 2.416534,
+      "steps_per_sec": 80435.419361,
+      "loss_gain": -0.032692,
+      "speed_gain": 2.379507,
       "grad_ratio": 1.099484,
       "status": "keep",
       "reason": "",
-      "description": "Add a forward and backward tied current-token embedding logit skip",
-      "val_loss": 2.409712
+      "description": "Raise the peak learning rate from 0.01 to 0.015",
+      "val_loss": 2.404233
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 361,
-    "keep": 149,
+    "experiments": 362,
+    "keep": 150,
     "discard": 26,
     "crash": 186
   },
@@ -6198,6 +6198,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T06:03:14Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0373",
+      "parent": "26358e636c848b119772e1bec4dbe4a13c9266a9",
+      "track": "c",
+      "loss": 2.416534,
+      "steps_per_sec": 80435.419361,
+      "loss_gain": -0.032692,
+      "speed_gain": 2.379507,
+      "grad_ratio": 1.099484,
+      "status": "keep",
+      "reason": "",
+      "description": "Raise the peak learning rate from 0.01 to 0.015",
+      "val_loss": 2.404233,
+      "measured": "2026-10-02T06:06:13Z",
       "has_record": true
     }
   ],
