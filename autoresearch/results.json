@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 339,
+    "experiments": 340,
     "keep": 141,
     "discard": 24,
-    "crash": 174
+    "crash": 175
   },
   "pareto": {
     "rust": [
@@ -5846,6 +5846,22 @@
       "description": "Halve MLP width from 8 to 4 for cheaper projections",
       "val_loss": 2.416341,
       "measured": "2026-10-02T04:11:34Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0351",
+      "parent": "c727117bf3ddbc94812f6e0464b69401d9fc8239",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use one full-width attention head with the matching scale",
+      "val_loss": null,
+      "measured": "2026-10-02T04:15:40Z",
       "has_record": true
     }
   ],
