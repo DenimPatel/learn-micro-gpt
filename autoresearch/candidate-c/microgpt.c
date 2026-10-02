@@ -1088,6 +1088,7 @@ int main(int argc, char **argv) {
 
   /* Adam hyperparams */
   const float learning_rate = 0.01f;
+  const float learning_rate_floor = 0.001f;
   const float beta1 = 0.85f, beta2 = 0.98f;
 
   /* Training loop */
@@ -1145,7 +1146,9 @@ int main(int argc, char **argv) {
     /* Adam update */
     float phase = 3.1415926535897932f * (float)step / (float)num_steps;
     float lr_t =
-        0.5f * learning_rate * (1.0f + cosf(phase));
+        learning_rate_floor +
+        (learning_rate - learning_rate_floor) *
+            0.5f * (1.0f + cosf(phase));
     float b1c = 1.0f - powf(beta1, step + 1);
     float b2c = 1.0f - powf(beta2, step + 1);
 

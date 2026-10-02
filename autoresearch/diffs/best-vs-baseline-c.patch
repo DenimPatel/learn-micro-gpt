@@ -393,16 +393,17 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -942,7 +1088,7 @@
+@@ -942,7 +1088,8 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
 -  const float beta1 = 0.85f, beta2 = 0.99f;
++  const float learning_rate_floor = 0.001f;
 +  const float beta1 = 0.85f, beta2 = 0.98f;
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,11 +1106,13 @@
+@@ -960,11 +1107,13 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
@@ -416,7 +417,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -975,8 +1123,10 @@
+@@ -975,8 +1124,10 @@
      }
  
      /* Forward pass — all positions */
@@ -428,14 +429,16 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1143,24 @@
+@@ -993,13 +1144,26 @@
      backward_all(tokens, n);
  
      /* Adam update */
 -    float lr_t = learning_rate * (1.0f - (float)step / num_steps);
 +    float phase = 3.1415926535897932f * (float)step / (float)num_steps;
 +    float lr_t =
-+        0.5f * learning_rate * (1.0f + cosf(phase));
++        learning_rate_floor +
++        (learning_rate - learning_rate_floor) *
++            0.5f * (1.0f + cosf(phase));
      float b1c = 1.0f - powf(beta1, step + 1);
      float b2c = 1.0f - powf(beta2, step + 1);
  
