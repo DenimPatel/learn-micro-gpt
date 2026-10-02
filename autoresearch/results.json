@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 340,
+    "experiments": 341,
     "keep": 141,
     "discard": 24,
-    "crash": 175
+    "crash": 176
   },
   "pareto": {
     "rust": [
@@ -5862,6 +5862,22 @@
       "description": "Use one full-width attention head with the matching scale",
       "val_loss": null,
       "measured": "2026-10-02T04:15:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0352",
+      "parent": "38025bea40bac3881865e6653671be8e294bfca8",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Reduce model width to 10 with two wider heads and support non-multiple-of-four vectors safely",
+      "val_loss": null,
+      "measured": "2026-10-02T04:20:13Z",
       "has_record": true
     }
   ],
