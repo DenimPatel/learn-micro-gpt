@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 347,
+    "experiments": 348,
     "keep": 144,
-    "discard": 25,
+    "discard": 26,
     "crash": 178
   },
   "pareto": {
@@ -5974,6 +5974,22 @@
       "description": "Merge attention into one full-width 8D head with the matching scale",
       "val_loss": 2.405486,
       "measured": "2026-10-02T04:46:29Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0359",
+      "parent": "dcbbd85d892279ed267afddce39937068add0390",
+      "track": "c",
+      "loss": 2.588656,
+      "steps_per_sec": 66576.788031,
+      "loss_gain": -0.106247,
+      "speed_gain": 1.797235,
+      "grad_ratio": 0.99462,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -10.6%, speed +179.7%; failing learned, loss_material, loss_tolerance, validation_tolerance",
+      "description": "Tie wte and lm_head by summing their gradients and updating one shared matrix",
+      "val_loss": 2.569941,
+      "measured": "2026-10-02T04:49:14Z",
       "has_record": true
     }
   ],
