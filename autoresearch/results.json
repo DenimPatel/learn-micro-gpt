@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 330,
+    "experiments": 331,
     "keep": 137,
     "discard": 23,
-    "crash": 170
+    "crash": 171
   },
   "pareto": {
     "rust": [
@@ -5702,6 +5702,22 @@
       "description": "Reduce residual width to 8 and use two correctly scaled 4D heads",
       "val_loss": null,
       "measured": "2026-10-02T03:29:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0342",
+      "parent": "bd18d30e79c3e05faafe615c00bf72bc3b1681c3",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache attention outputs during forward instead of reconstructing them during backward",
+      "val_loss": null,
+      "measured": "2026-10-02T03:31:49Z",
       "has_record": true
     }
   ],
