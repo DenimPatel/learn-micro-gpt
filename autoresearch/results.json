@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 369,
+    "experiments": 370,
     "keep": 151,
     "discard": 27,
-    "crash": 191
+    "crash": 192
   },
   "pareto": {
     "rust": [
@@ -6326,6 +6326,22 @@
       "description": "Replace softmax libm expf calls with a fast polynomial approximation",
       "val_loss": null,
       "measured": "2026-10-02T06:48:37Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0381",
+      "parent": "ef6913b6980e87cd28c940a1b925d53750d29791",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a sparsely updated trainable bigram logit residual",
+      "val_loss": null,
+      "measured": "2026-10-02T06:52:09Z",
       "has_record": true
     }
   ],

@@ -380,3 +380,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0378	86f4ed346b194912de2d066a2a04fc312d3b9acd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0379	7f63f7feb4426eda2f52aed1dbae9ecbc0c0b67f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention inputs and streamline softmax with a shifted polynomial exponential	
 0380	1519cd34e6c2444012746b8ca5a74311ef0312c5	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Replace softmax libm expf calls with a fast polynomial approximation	
+0381	ef6913b6980e87cd28c940a1b925d53750d29791	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a sparsely updated trainable bigram logit residual	
