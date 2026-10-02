@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 375,
+    "experiments": 376,
     "keep": 154,
     "discard": 27,
-    "crash": 194
+    "crash": 195
   },
   "pareto": {
     "rust": [
@@ -6423,6 +6423,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T07:16:34Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0387",
+      "parent": "c091123c5f7c80e74b0bf6ada5fe8caa751dc771",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Restrict attention to the current token value path",
+      "val_loss": null,
+      "measured": "2026-10-02T07:20:43Z",
       "has_record": true
     }
   ],

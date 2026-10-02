@@ -386,3 +386,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0384	dec6258da8f2f214b3147598da769eb304c213f5	c	2.415854	51874.282787	-0.032401	+1.179507	1.104990	keep		Widen the one-layer MLP from three to four hidden units	2.390583
 0385	74b14d36721965670ab59082365947824d6fa1af	c	2.407736	63457.816542	-0.028932	+1.666191	1.108624	keep		Reduce the one-layer MLP width from four hidden units to three	2.388505
 0386	0b426bae6990a2295ec780f7eceb410b54c15159	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0387	c091123c5f7c80e74b0bf6ada5fe8caa751dc771	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restrict attention to the current token value path	
