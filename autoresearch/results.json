@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 331,
+    "experiments": 332,
     "keep": 137,
     "discard": 23,
-    "crash": 171
+    "crash": 172
   },
   "pareto": {
     "rust": [
@@ -5718,6 +5718,22 @@
       "description": "Cache attention outputs during forward instead of reconstructing them during backward",
       "val_loss": null,
       "measured": "2026-10-02T03:31:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0343",
+      "parent": "6feafd3f1f1650248cdd92ed1b69ac8f81c6af26",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use two wider heads with cached attention and one fewer RMSNorm",
+      "val_loss": null,
+      "measured": "2026-10-02T03:35:54Z",
       "has_record": true
     }
   ],
