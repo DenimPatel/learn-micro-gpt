@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 367,
+    "experiments": 368,
     "keep": 151,
     "discard": 27,
-    "crash": 189
+    "crash": 190
   },
   "pareto": {
     "rust": [
@@ -6294,6 +6294,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T06:33:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0379",
+      "parent": "7f63f7feb4426eda2f52aed1dbae9ecbc0c0b67f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache attention inputs and streamline softmax with a shifted polynomial exponential",
+      "val_loss": null,
+      "measured": "2026-10-02T06:42:33Z",
       "has_record": true
     }
   ],
