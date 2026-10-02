@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 335,
+    "experiments": 336,
     "keep": 139,
     "discard": 24,
-    "crash": 172
+    "crash": 173
   },
   "pareto": {
     "rust": [
@@ -5782,6 +5782,22 @@
       "description": "Raise the cosine learning-rate floor from 0.001 to 0.005",
       "val_loss": 2.395938,
       "measured": "2026-10-02T03:48:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0347",
+      "parent": "65d6c0783076fc1957a588a23d5cdd9d9ea2a7a7",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use three four-dimensional attention heads",
+      "val_loss": null,
+      "measured": "2026-10-02T03:54:55Z",
       "has_record": true
     }
   ],

@@ -346,3 +346,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0344	afe850ee9b54a8f88975a3300b52ba29c99bd971	c	2.323168	47571.193475	+0.007208	+0.998712	0.995564	discard	no axis improved materially: discarded: loss +0.7%, speed +99.9%; failing learned, loss_material	Add a centered smoothed training-only bigram log-odds prior to output logits	2.324106
 0345	c2e716c8ddca91f2a81433ebf9556cc2f64f9521	c	2.379720	47972.944170	-0.016960	+1.015591	0.992936	keep		Add a 0.001 cosine learning-rate floor for continued optimization near the end	2.383502
 0346	e30221b31f12de371010547a7f7d189288b243a0	c	2.406132	58288.220522	-0.028247	+1.448989	0.992936	keep		Raise the cosine learning-rate floor from 0.001 to 0.005	2.395938
+0347	65d6c0783076fc1957a588a23d5cdd9d9ea2a7a7	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use three four-dimensional attention heads	
