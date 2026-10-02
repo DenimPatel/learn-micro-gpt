@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 366,
+    "experiments": 367,
     "keep": 151,
     "discard": 27,
-    "crash": 188
+    "crash": 189
   },
   "pareto": {
     "rust": [
@@ -6278,6 +6278,22 @@
       "description": "Cache attention inputs and use forward-only held-out evaluation",
       "val_loss": null,
       "measured": "2026-10-02T06:22:35Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0378",
+      "parent": "86f4ed346b194912de2d066a2a04fc312d3b9acd",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T06:33:19Z",
       "has_record": true
     }
   ],
