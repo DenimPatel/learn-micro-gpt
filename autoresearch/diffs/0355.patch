@@ -1,0 +1,67 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -27,14 +27,14 @@
+ 
+ /* ── Hyperparameters (compile-time constants for loop unrolling) ──────── */
+-#define N_EMBD 12
+-#define N_HEAD 4
++#define N_EMBD 8
++#define N_HEAD 2
+ #define N_LAYER 1
+ #define BLOCK_SIZE 16
+-#define HEAD_DIM (N_EMBD / N_HEAD) /* 3 */
+-#define MLP_DIM 4
++#define HEAD_DIM (N_EMBD / N_HEAD) /* 4 */
++#define MLP_DIM 8
+ #define MAX_DOCS 40000
+ #define MAX_DOC_LEN 20
+ #define NUM_STEPS 1000
+-#define INV_SQRT_HD 0.57735027f /* 1/sqrt(HEAD_DIM=3) */
++#define INV_SQRT_HD 0.5f /* 1/sqrt(HEAD_DIM=4) */
+ 
+ /* Alignment for M-series 128-byte cache lines */
+ #define ALIGN128 __attribute__((aligned(128)))
+@@ -331,44 +331,14 @@
+ static inline void linear_bwd_x(const float *__restrict__ dout,
+                                 const float *__restrict__ w,
+                                 float *__restrict__ dx_out, int nout, int nin) {
+-  if (nin == N_EMBD) {
+-    float32x4_t acc0 = vld1q_f32(dx_out);
+-    float32x4_t acc1 = vld1q_f32(dx_out + 4);
+-    float32x4_t acc2 = vld1q_f32(dx_out + 8);
+-    for (int i = 0; i < nout; i++) {
+-      const float32x4_t di = vdupq_n_f32(dout[i]);
+-      const float *row = w + i * nin;
+-      acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
+-      acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
+-      acc2 = vfmaq_f32(acc2, di, vld1q_f32(row + 8));
+-    }
+-    vst1q_f32(dx_out, acc0);
+-    vst1q_f32(dx_out + 4, acc1);
+-    vst1q_f32(dx_out + 8, acc2);
+-    return;
+-  }
+-  if (nin == MLP_DIM) {
+-    float32x4_t acc0 = vld1q_f32(dx_out);
+-    float32x4_t acc1 = vld1q_f32(dx_out + 4);
+-    for (int i = 0; i < nout; i++) {
+-      const float32x4_t di = vdupq_n_f32(dout[i]);
+-      const float *row = w + i * nin;
+-      acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
+-      acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
+-    }
+-    vst1q_f32(dx_out, acc0);
+-    vst1q_f32(dx_out + 4, acc1);
++  if ((nin & 3) == 0) {
++    for (int j = 0; j < nin; j += 4) {
++      float32x4_t acc = vld1q_f32(dx_out + j);
++      for (int i = 0; i < nout; i++) {
++        const float32x4_t di = vdupq_n_f32(dout[i]);
++        const float *row = w + i * nin;
++        acc = vfmaq_f32(acc, di, vld1q_f32(row + j));
++      }
++      vst1q_f32(dx_out + j, acc);
++    }
+     return;
+   }
+   for (int i = 0; i < nout; i++) {
