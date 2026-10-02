@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 376,
+    "experiments": 377,
     "keep": 154,
     "discard": 27,
-    "crash": 195
+    "crash": 196
   },
   "pareto": {
     "rust": [
@@ -6439,6 +6439,22 @@
       "description": "Restrict attention to the current token value path",
       "val_loss": null,
       "measured": "2026-10-02T07:20:43Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0388",
+      "parent": "b451ec44333426edfdac843973bb6bb8556d2fcc",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a smoothed train-only positional log-prior residual",
+      "val_loss": null,
+      "measured": "2026-10-02T07:27:12Z",
       "has_record": true
     }
   ],
