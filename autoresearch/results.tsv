@@ -326,3 +326,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0324	99491184a3bd19b9a70bdc77928270f46f7f3d84	c	2.330538	45879.803347	+0.004058	+0.927648	1.004761	discard	no axis improved materially: discarded: loss +0.4%, speed +92.8%; failing learned, loss_material	Add a smoothed training-only bigram log-prior to output logits	2.321815
 0325	4c13453dc794b3a90e07437be1f589dd08504f38	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Halve the MLP and remove exact redundant attention and zeroing work	
 0326	c8494ee012d712c06a8fa254d32fe241dabdeb13	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0327	bb3470c15c68b391f48f63aa05da4b897ea73927	c	2.379112	45576.254860	-0.016700	+0.914894	1.004978	keep		Replace linear learning-rate decay with cosine decay over the 1000 training steps	2.376884

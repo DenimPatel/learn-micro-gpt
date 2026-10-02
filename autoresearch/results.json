@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "983f834c49a663804e938ca519f7729515321d859861fce1080a5e56adf73ed8",
+      "candidate_sha256": "0a4159b5b969dac2bf0335f193747530f75ab1f2e581cf63737db8bbef92b171",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0323",
-      "parent": "acb44d885ea81c9033460f744675687c39eefa67",
+      "run_id": "0327",
+      "parent": "bb3470c15c68b391f48f63aa05da4b897ea73927",
       "track": "c",
-      "loss": 2.382372,
-      "steps_per_sec": 43840.101815,
-      "loss_gain": -0.018093,
-      "speed_gain": 0.841949,
+      "loss": 2.379112,
+      "steps_per_sec": 45576.25486,
+      "loss_gain": -0.0167,
+      "speed_gain": 0.914894,
       "grad_ratio": 1.004978,
       "status": "keep",
       "reason": "",
-      "description": "Widen the single MLP from 12 to 16 hidden units",
-      "val_loss": 2.379219
+      "description": "Replace linear learning-rate decay with cosine decay over the 1000 training steps",
+      "val_loss": 2.376884
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 315,
-    "keep": 134,
+    "experiments": 316,
+    "keep": 135,
     "discard": 21,
     "crash": 160
   },
@@ -5462,6 +5462,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T00:11:41Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0327",
+      "parent": "bb3470c15c68b391f48f63aa05da4b897ea73927",
+      "track": "c",
+      "loss": 2.379112,
+      "steps_per_sec": 45576.25486,
+      "loss_gain": -0.0167,
+      "speed_gain": 0.914894,
+      "grad_ratio": 1.004978,
+      "status": "keep",
+      "reason": "",
+      "description": "Replace linear learning-rate decay with cosine decay over the 1000 training steps",
+      "val_loss": 2.376884,
+      "measured": "2026-10-02T00:17:12Z",
       "has_record": true
     }
   ],

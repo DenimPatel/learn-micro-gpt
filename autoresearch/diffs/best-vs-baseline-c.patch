@@ -416,7 +416,15 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -998,8 +1151,10 @@
+@@ -993,13 +1146,17 @@
+     backward_all(tokens, n);
+ 
+     /* Adam update */
+-    float lr_t = learning_rate * (1.0f - (float)step / num_steps);
++    float phase = 3.1415926535897932f * (float)step / (float)num_steps;
++    float lr_t =
++        0.5f * learning_rate * (1.0f + cosf(phase));
+     float b1c = 1.0f - powf(beta1, step + 1);
      float b2c = 1.0f - powf(beta2, step + 1);
  
      adam_update(wte, g_wte, m_wte, v_wte, vocab_size * N_EMBD, lr_t, b1c, b2c);
