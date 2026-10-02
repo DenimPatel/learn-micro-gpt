@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "bf6dc2249eeec254ceb5515288f91f04cd4b17cf5a076ed39a57b9c287aa40b4",
+      "candidate_sha256": "80dc22503c52257449ab9614a8e3a348b351313191fa0add0ad825f92b35bd15",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0383",
-      "parent": "dcfee8c73607c934c314c6789ea8672c6f05a948",
+      "run_id": "0393",
+      "parent": "83cec936d90867df5e19804a585438de6806e87f",
       "track": "c",
       "loss": 2.407736,
-      "steps_per_sec": 108631.70162,
+      "steps_per_sec": 54755.01592,
       "loss_gain": -0.028932,
-      "speed_gain": 3.564179,
+      "speed_gain": 1.300541,
       "grad_ratio": 1.108624,
       "status": "keep",
       "reason": "",
-      "description": "Widen the one-layer MLP from two to three hidden units",
-      "val_loss": 2.388505
+      "description": "Skip post-training sampling and use forward-only direct-logit validation",
+      "val_loss": null
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 381,
-    "keep": 154,
+    "experiments": 382,
+    "keep": 155,
     "discard": 28,
     "crash": 199
   },
@@ -6519,6 +6519,22 @@
       "description": "Replace softmax expf with a degree-eight range-reduced exponential polynomial",
       "val_loss": null,
       "measured": "2026-10-02T07:45:30Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0393",
+      "parent": "83cec936d90867df5e19804a585438de6806e87f",
+      "track": "c",
+      "loss": 2.407736,
+      "steps_per_sec": 54755.01592,
+      "loss_gain": -0.028932,
+      "speed_gain": 1.300541,
+      "grad_ratio": 1.108624,
+      "status": "keep",
+      "reason": "",
+      "description": "Skip post-training sampling and use forward-only direct-logit validation",
+      "val_loss": null,
+      "measured": "2026-10-02T07:51:19Z",
       "has_record": true
     }
   ],

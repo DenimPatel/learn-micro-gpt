@@ -606,3 +606,44 @@
                  lr_t, b1c, b2c);
      for (int l = 0; l < N_LAYER; l++) {
        adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
+@@ -1022,7 +1254,7 @@
+   /* ── Inference ─────────────────────────────────────────────────── */
+   float temperature = 0.5f;
+   printf("\n--- inference (new, hallucinated names) ---\n");
+-  for (int sample = 0; sample < 20; sample++) {
++  for (int sample = 0; sample < 0; sample++) {
+     /* Clear KV cache */
+     int token_id = BOS_TOKEN;
+     char name[BLOCK_SIZE + 1];
+@@ -1075,6 +1307,7 @@
+    */
+   double val_total = 0.0;
+   int val_positions = 0;
++  float val_logits[MAX_VOCAB];
+   for (int vi = 0; vi < num_val_docs; vi++) {
+     const char *doc = docs_raw[val_order[vi]];
+     int doc_len = doc_lens[val_order[vi]];
+@@ -1086,12 +1319,18 @@
+     int n = doc_len + 1;
+     if (n > BLOCK_SIZE)
+       n = BLOCK_SIZE;
+-    for (int pos = 0; pos < n; pos++)
+-      forward_pos(tokens[pos], pos, pos + 1);
+     for (int pos = 0; pos < n; pos++) {
+-      float p = saved_probs[pos][tokens[pos + 1]];
+-      if (p < 1e-30f) p = 1e-30f;
+-      val_total += logf(p);
++      forward_inference(tokens[pos], pos, val_logits);
++      float mx = val_logits[0];
++      for (int i = 1; i < vocab_size; i++) {
++        if (val_logits[i] > mx)
++          mx = val_logits[i];
++      }
++      float sum = 0.0f;
++      for (int i = 0; i < vocab_size; i++)
++        sum += expf(val_logits[i] - mx);
++      float target_logit = val_logits[tokens[pos + 1]];
++      val_total += mx + logf(sum) - target_logit;
+       val_positions++;
+     }
+   }
