@@ -343,3 +343,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0341	cbb9efa57b6fdae82411c3d1e6af7dbb06054516	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce residual width to 8 and use two correctly scaled 4D heads	
 0342	bd18d30e79c3e05faafe615c00bf72bc3b1681c3	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention outputs during forward instead of reconstructing them during backward	
 0343	6feafd3f1f1650248cdd92ed1b69ac8f81c6af26	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use two wider heads with cached attention and one fewer RMSNorm	
+0344	afe850ee9b54a8f88975a3300b52ba29c99bd971	c	2.323168	47571.193475	+0.007208	+0.998712	0.995564	discard	no axis improved materially: discarded: loss +0.7%, speed +99.9%; failing learned, loss_material	Add a centered smoothed training-only bigram log-odds prior to output logits	2.324106

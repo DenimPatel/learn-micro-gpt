@@ -1,0 +1,75 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -117,6 +117,9 @@ static float ALIGN128 g_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
+ static float ALIGN128 g_lm_bias[MAX_VOCAB];
+ 
++/* Fixed log-odds learned from training-document transitions. */
++static float ALIGN128 lm_bigram_logit[MAX_VOCAB * MAX_VOCAB];
++
+ /* Adam moment buffers */
+ static float ALIGN128 m_wte[MAX_VOCAB * N_EMBD], v_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 m_lm_head[MAX_VOCAB * N_EMBD],
+@@ -556,7 +559,9 @@ static void init_weights(void) {
+   const float std = 0.08f;
+   float target_counts[MAX_VOCAB] = {0};
+   float target_total = 0.0f;
++  int bigram_counts[MAX_VOCAB * MAX_VOCAB] = {0};
++  int bigram_totals[MAX_VOCAB] = {0};
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+     int doc_len = doc_lens[doc_id];
+@@ -568,6 +573,11 @@ static void init_weights(void) {
+     for (int i = 0; i < n_targets; i++) {
+       int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+                               : BOS_TOKEN;
++      int previous =
++          i == 0 ? BOS_TOKEN : char_to_idx[(int)docs_raw[doc_id][i - 1]];
+       target_counts[token] += 1.0f;
++      bigram_counts[previous * vocab_size + token]++;
++      bigram_totals[previous]++;
+     }
+   }
+   if (target_total > 0.0f) {
+@@ -575,9 +585,23 @@ static void init_weights(void) {
+     const float alpha = 0.1f;
+     float denominator = target_total + alpha * (float)vocab_size;
+-    for (int i = 0; i < vocab_size; i++)
+-      lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++    float unigram[MAX_VOCAB];
++    for (int i = 0; i < vocab_size; i++) {
++      unigram[i] = (target_counts[i] + alpha) / denominator;
++      lm_bias[i] = logf(unigram[i]);
++    }
++    const float bigram_smoothing = 5.0f;
++    for (int previous = 0; previous < vocab_size; previous++) {
++      for (int target = 0; target < vocab_size; target++) {
++        int index = previous * vocab_size + target;
++        float conditional =
++            (bigram_counts[index] + bigram_smoothing * unigram[target]) /
++            (bigram_totals[previous] + bigram_smoothing);
++        lm_bigram_logit[index] = logf(conditional / unigram[target]);
++      }
++    }
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
++    memset(lm_bigram_logit, 0, sizeof(lm_bigram_logit));
+   }
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+@@ -698,7 +722,8 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+   for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++    saved_logits[pos_id][i] +=
++        lm_bias[i] + lm_bigram_logit[token_id * vocab_size + i];
+   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
+ }
+@@ -938,7 +963,8 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
+   for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++    logits_out[i] +=
++        lm_bias[i] + lm_bigram_logit[token_id * vocab_size + i];
+ }

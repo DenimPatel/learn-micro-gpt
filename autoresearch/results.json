@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 332,
+    "experiments": 333,
     "keep": 137,
-    "discard": 23,
+    "discard": 24,
     "crash": 172
   },
   "pareto": {
@@ -5734,6 +5734,22 @@
       "description": "Use two wider heads with cached attention and one fewer RMSNorm",
       "val_loss": null,
       "measured": "2026-10-02T03:35:54Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0344",
+      "parent": "afe850ee9b54a8f88975a3300b52ba29c99bd971",
+      "track": "c",
+      "loss": 2.323168,
+      "steps_per_sec": 47571.193475,
+      "loss_gain": 0.007208,
+      "speed_gain": 0.998712,
+      "grad_ratio": 0.995564,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.7%, speed +99.9%; failing learned, loss_material",
+      "description": "Add a centered smoothed training-only bigram log-odds prior to output logits",
+      "val_loss": 2.324106,
+      "measured": "2026-10-02T03:40:10Z",
       "has_record": true
     }
   ],
