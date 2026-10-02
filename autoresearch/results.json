@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 393,
+    "experiments": 394,
     "keep": 158,
     "discard": 28,
-    "crash": 207
+    "crash": 208
   },
   "pareto": {
     "rust": [
@@ -6711,6 +6711,22 @@
       "description": "Widen the sole MLP bottleneck from three units to four",
       "val_loss": null,
       "measured": "2026-10-02T09:17:22Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0405",
+      "parent": "a2bbf8e49ef883caffa49619e763b44cc6dbbafc",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Remove the redundant pre-layer RMSNorm before the sole block",
+      "val_loss": null,
+      "measured": "2026-10-02T09:19:35Z",
       "has_record": true
     }
   ],

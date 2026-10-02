@@ -404,3 +404,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0402	8596e276a2252cd3d8d9f2b6226e2d35d3a292da	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0403	0cc5cca0b4dda259abd1e662e168ce64c7bec456	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Learn a global direct-attention logit scale initialized to 1.0	
 0404	08bd78d2082292d6b451808389e0921ff3909edc	c	2.412004	48623.942379	-0.030756	+1.042943	1.108498	keep		Widen the sole MLP bottleneck from three units to four	
+0405	a2bbf8e49ef883caffa49619e763b44cc6dbbafc	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Remove the redundant pre-layer RMSNorm before the sole block	
