@@ -1211,10 +1211,6 @@ int main(int argc, char **argv) {
     adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
                 lr_t, b1c, b2c);
     for (int l = 0; l < N_LAYER; l++) {
-      adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
-                  N_EMBD * N_EMBD, lr_t, b1c, b2c);
-      adam_update(attn_wk[l], g_attn_wk[l], m_attn_wk[l], v_attn_wk[l],
-                  N_EMBD * N_EMBD, lr_t, b1c, b2c);
       adam_update(attn_wv[l], g_attn_wv[l], m_attn_wv[l], v_attn_wv[l],
                   N_EMBD * N_EMBD, lr_t, b1c, b2c);
       adam_update(attn_wo[l], g_attn_wo[l], m_attn_wo[l], v_attn_wo[l],

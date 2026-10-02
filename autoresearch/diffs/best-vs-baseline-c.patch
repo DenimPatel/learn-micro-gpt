@@ -726,7 +726,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1189,26 @@
+@@ -993,19 +1189,28 @@
      backward_all(tokens, n);
  
      /* Adam update */
@@ -756,8 +756,14 @@
 +    adam_update(lm_bias, g_lm_bias, m_lm_bias, v_lm_bias, vocab_size,
                  lr_t, b1c, b2c);
      for (int l = 0; l < N_LAYER; l++) {
-       adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
-@@ -1022,7 +1231,7 @@
+-      adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
+-                  N_EMBD * N_EMBD, lr_t, b1c, b2c);
+-      adam_update(attn_wk[l], g_attn_wk[l], m_attn_wk[l], v_attn_wk[l],
+-                  N_EMBD * N_EMBD, lr_t, b1c, b2c);
+       adam_update(attn_wv[l], g_attn_wv[l], m_attn_wv[l], v_attn_wv[l],
+                   N_EMBD * N_EMBD, lr_t, b1c, b2c);
+       adam_update(attn_wo[l], g_attn_wo[l], m_attn_wo[l], v_attn_wo[l],
+@@ -1022,7 +1227,7 @@
    /* ── Inference ─────────────────────────────────────────────────── */
    float temperature = 0.5f;
    printf("\n--- inference (new, hallucinated names) ---\n");
@@ -766,7 +772,7 @@
      /* Clear KV cache */
      int token_id = BOS_TOKEN;
      char name[BLOCK_SIZE + 1];
-@@ -1075,6 +1284,7 @@
+@@ -1075,6 +1280,7 @@
     */
    double val_total = 0.0;
    int val_positions = 0;
@@ -774,7 +780,7 @@
    for (int vi = 0; vi < num_val_docs; vi++) {
      const char *doc = docs_raw[val_order[vi]];
      int doc_len = doc_lens[val_order[vi]];
-@@ -1086,12 +1296,18 @@
+@@ -1086,12 +1292,18 @@
      int n = doc_len + 1;
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
