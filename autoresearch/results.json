@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 341,
+    "experiments": 342,
     "keep": 141,
     "discard": 24,
-    "crash": 176
+    "crash": 177
   },
   "pareto": {
     "rust": [
@@ -5878,6 +5878,22 @@
       "description": "Reduce model width to 10 with two wider heads and support non-multiple-of-four vectors safely",
       "val_loss": null,
       "measured": "2026-10-02T04:20:13Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0353",
+      "parent": "9267c842a1df1a12daa62c78198c78639bf548bb",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T04:29:08Z",
       "has_record": true
     }
   ],
