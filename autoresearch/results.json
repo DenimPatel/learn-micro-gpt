@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 328,
+    "experiments": 329,
     "keep": 137,
     "discard": 23,
-    "crash": 168
+    "crash": 169
   },
   "pareto": {
     "rust": [
@@ -5670,6 +5670,22 @@
       "description": "Halve MLP width to 8 and correct its narrower backward projection",
       "val_loss": 2.38519,
       "measured": "2026-10-02T03:15:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0340",
+      "parent": "38d273a741c3b43e7dfef74d32aa44c0673d4103",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T03:26:28Z",
       "has_record": true
     }
   ],
