@@ -961,6 +961,8 @@ static void backward_all(const int *tokens, int n) {
           float d_input = d_logits_attn[t] * INV_SQRT_HD;
           for (int j = 0; j < HEAD_DIM; j++) {
             dk_pending[t][hs + j] +=
+                d_input * saved_x_normed_attn[pos][hs + j];
+            dk_pending[pos][hs + j] +=
                 d_input * saved_x_normed_attn[t][hs + j];
           }
         }

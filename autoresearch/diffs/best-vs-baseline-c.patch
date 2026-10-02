@@ -554,7 +554,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -722,68 +956,27 @@
+@@ -722,68 +956,29 @@
            d_logits_attn[t] =
                saved_attn_weights[pos][h][t] * (d_attn_w[t] - wdsum);
  
@@ -567,6 +567,8 @@
 -            d_q[hs + j] += dl * saved_k[t][hs + j];
 -            d_k_accum[t][hs + j] += dl * saved_q[pos][hs + j];
 +            dk_pending[t][hs + j] +=
++                d_input * saved_x_normed_attn[pos][hs + j];
++            dk_pending[pos][hs + j] +=
 +                d_input * saved_x_normed_attn[t][hs + j];
            }
          }
@@ -637,7 +639,7 @@
  
        /* Backward through rmsnorm before attention */
        /* dx already contains d(x_residual_attn) from residual */
-@@ -825,13 +1018,11 @@
+@@ -825,13 +1020,11 @@
  
      rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
  
@@ -654,7 +656,7 @@
      memcpy(saved_v[pos_id], v, N_EMBD * sizeof(float));
  
      float x_attn[N_EMBD];
-@@ -843,7 +1034,8 @@
+@@ -843,7 +1036,8 @@
        for (int t = 0; t < num_keys; t++) {
          float dot = 0.0f;
          for (int j = 0; j < HEAD_DIM; j++)
@@ -664,7 +666,7 @@
          attn_logits[t] = dot * INV_SQRT_HD;
        }
  
-@@ -878,7 +1070,16 @@
+@@ -878,7 +1072,16 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -682,7 +684,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -941,8 +1142,9 @@
+@@ -941,8 +1144,9 @@
    init_weights();
  
    /* Adam hyperparams */
@@ -694,7 +696,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,23 +1162,15 @@
+@@ -960,23 +1164,15 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
@@ -724,7 +726,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1187,26 @@
+@@ -993,13 +1189,26 @@
      backward_all(tokens, n);
  
      /* Adam update */
@@ -755,7 +757,7 @@
                  lr_t, b1c, b2c);
      for (int l = 0; l < N_LAYER; l++) {
        adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
-@@ -1022,7 +1229,7 @@
+@@ -1022,7 +1231,7 @@
    /* ── Inference ─────────────────────────────────────────────────── */
    float temperature = 0.5f;
    printf("\n--- inference (new, hallucinated names) ---\n");
@@ -764,7 +766,7 @@
      /* Clear KV cache */
      int token_id = BOS_TOKEN;
      char name[BLOCK_SIZE + 1];
-@@ -1075,6 +1282,7 @@
+@@ -1075,6 +1284,7 @@
     */
    double val_total = 0.0;
    int val_positions = 0;
@@ -772,7 +774,7 @@
    for (int vi = 0; vi < num_val_docs; vi++) {
      const char *doc = docs_raw[val_order[vi]];
      int doc_len = doc_lens[val_order[vi]];
-@@ -1086,12 +1294,18 @@
+@@ -1086,12 +1296,18 @@
      int n = doc_len + 1;
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;

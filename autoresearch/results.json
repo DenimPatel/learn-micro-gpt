@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "99a3dbd36bd8d03f0abaa2da6b3e0c8fd1738e73fe1e9ab4a872cbb7fc2a5143",
+      "candidate_sha256": "ef7f920a79bed4792a1210b781343571689fb3c4caf7d7bc13563db1b2026434",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,17 +174,17 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0404",
-      "parent": "08bd78d2082292d6b451808389e0921ff3909edc",
+      "run_id": "0406",
+      "parent": "e16de604227b4d85a6da816c784c92603703d754",
       "track": "c",
-      "loss": 2.412004,
-      "steps_per_sec": 48623.942379,
-      "loss_gain": -0.030756,
-      "speed_gain": 1.042943,
-      "grad_ratio": 1.108498,
+      "loss": 2.414098,
+      "steps_per_sec": 79044.616535,
+      "loss_gain": -0.031651,
+      "speed_gain": 2.321073,
+      "grad_ratio": 1.100834,
       "status": "keep",
       "reason": "",
-      "description": "Widen the sole MLP bottleneck from three units to four",
+      "description": "Correct query and key gradients in direct normalized-state attention",
       "val_loss": null
     }
   },
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 394,
-    "keep": 158,
+    "experiments": 395,
+    "keep": 159,
     "discard": 28,
     "crash": 208
   },
@@ -6727,6 +6727,22 @@
       "description": "Remove the redundant pre-layer RMSNorm before the sole block",
       "val_loss": null,
       "measured": "2026-10-02T09:19:35Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0406",
+      "parent": "e16de604227b4d85a6da816c784c92603703d754",
+      "track": "c",
+      "loss": 2.414098,
+      "steps_per_sec": 79044.616535,
+      "loss_gain": -0.031651,
+      "speed_gain": 2.321073,
+      "grad_ratio": 1.100834,
+      "status": "keep",
+      "reason": "",
+      "description": "Correct query and key gradients in direct normalized-state attention",
+      "val_loss": null,
+      "measured": "2026-10-02T09:21:53Z",
       "has_record": true
     }
   ],
