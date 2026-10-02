@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "0978af54243aff0554867aec3742b2fe6a6fe3c7957441a95598f2e706183727",
+      "candidate_sha256": "90949dfca2d5aa9c3773a1faaffa81c579e16208c9c6cb1f687c5dc103f3f043",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0345",
-      "parent": "c2e716c8ddca91f2a81433ebf9556cc2f64f9521",
+      "run_id": "0346",
+      "parent": "e30221b31f12de371010547a7f7d189288b243a0",
       "track": "c",
-      "loss": 2.37972,
-      "steps_per_sec": 47972.94417,
-      "loss_gain": -0.01696,
-      "speed_gain": 1.015591,
+      "loss": 2.406132,
+      "steps_per_sec": 58288.220522,
+      "loss_gain": -0.028247,
+      "speed_gain": 1.448989,
       "grad_ratio": 0.992936,
       "status": "keep",
       "reason": "",
-      "description": "Add a 0.001 cosine learning-rate floor for continued optimization near the end",
-      "val_loss": 2.383502
+      "description": "Raise the cosine learning-rate floor from 0.001 to 0.005",
+      "val_loss": 2.395938
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 334,
-    "keep": 138,
+    "experiments": 335,
+    "keep": 139,
     "discard": 24,
     "crash": 172
   },
@@ -5766,6 +5766,22 @@
       "description": "Add a 0.001 cosine learning-rate floor for continued optimization near the end",
       "val_loss": 2.383502,
       "measured": "2026-10-02T03:44:22Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0346",
+      "parent": "e30221b31f12de371010547a7f7d189288b243a0",
+      "track": "c",
+      "loss": 2.406132,
+      "steps_per_sec": 58288.220522,
+      "loss_gain": -0.028247,
+      "speed_gain": 1.448989,
+      "grad_ratio": 0.992936,
+      "status": "keep",
+      "reason": "",
+      "description": "Raise the cosine learning-rate floor from 0.001 to 0.005",
+      "val_loss": 2.395938,
+      "measured": "2026-10-02T03:48:20Z",
       "has_record": true
     }
   ],
