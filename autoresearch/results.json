@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 317,
+    "experiments": 318,
     "keep": 135,
-    "discard": 21,
+    "discard": 22,
     "crash": 161
   },
   "pareto": {
@@ -5494,6 +5494,22 @@
       "description": "Use one correctly scaled full-width attention head",
       "val_loss": null,
       "measured": "2026-10-02T00:20:13Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0329",
+      "parent": "39534cd05d8f2668adcb6550e1a047bf1f083450",
+      "track": "c",
+      "loss": 2.32476,
+      "steps_per_sec": 44876.841842,
+      "loss_gain": 0.006527,
+      "speed_gain": 0.885508,
+      "grad_ratio": 1.004754,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.7%, speed +88.6%; failing learned, loss_material",
+      "description": "Add a smoothed trainable previous-token logit prior with sparse Adam updates",
+      "val_loss": 2.337668,
+      "measured": "2026-10-02T00:25:25Z",
       "has_record": true
     }
   ],

@@ -328,3 +328,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0326	c8494ee012d712c06a8fa254d32fe241dabdeb13	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0327	bb3470c15c68b391f48f63aa05da4b897ea73927	c	2.379112	45576.254860	-0.016700	+0.914894	1.004978	keep		Replace linear learning-rate decay with cosine decay over the 1000 training steps	2.376884
 0328	929ee000ce1803568998abb7aaad1da1ea3917fd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one correctly scaled full-width attention head	
+0329	39534cd05d8f2668adcb6550e1a047bf1f083450	c	2.324760	44876.841842	+0.006527	+0.885508	1.004754	discard	no axis improved materially: discarded: loss +0.7%, speed +88.6%; failing learned, loss_material	Add a smoothed trainable previous-token logit prior with sparse Adam updates	2.337668
