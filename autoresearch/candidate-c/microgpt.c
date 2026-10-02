@@ -475,6 +475,30 @@ static inline void rmsnorm_bwd(const float *__restrict__ dout,
   }
 }
 
+static inline float exp_nonpositive(float x) {
+  if (x < -87.0f)
+    return 0.0f;
+
+  /* Truncation toward zero chooses n = ceil(x / log(2)), leaving
+   * r in [-log(2), 0]. */
+  int n = (int)(x * 1.4426950408889634f);
+  float r = x - (float)n * 0.6931471805599453f;
+  float p =
+      1.0f +
+      r * (1.0f + r *
+               (0.5f + r *
+                    (0.1666666716f + r *
+                         (0.0416666679f + r *
+                              (0.0083333338f + r * 0.0013888889f)))));
+
+  union {
+    int i;
+    float f;
+  } scale;
+  scale.i = (n + 127) << 23;
+  return p * scale.f;
+}
+
 static inline void softmax_fwd(const float *__restrict__ logits,
                                float *__restrict__ probs, int n) {
   float mx = logits[0];
@@ -483,7 +507,7 @@ static inline void softmax_fwd(const float *__restrict__ logits,
       mx = logits[i];
   float sum = 0.0f;
   for (int i = 0; i < n; i++) {
-    probs[i] = expf(logits[i] - mx);
+    probs[i] = exp_nonpositive(logits[i] - mx);
     sum += probs[i];
   }
   float inv = 1.0f / sum;
@@ -1177,19 +1201,7 @@ int main(int argc, char **argv) {
       n = BLOCK_SIZE;
     unsigned char used_wte[MAX_VOCAB] = {0};
 
-    /* Zero gradients */
-    memset(g_wte, 0, sizeof(g_wte));
-    memset(g_wpe, 0, sizeof(g_wpe));
-    memset(g_lm_head, 0, sizeof(g_lm_head));
-    memset(g_lm_bias, 0, sizeof(g_lm_bias));
-    for (int l = 0; l < N_LAYER; l++) {
-      memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
-      memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-      memset(g_attn_wv[l], 0, sizeof(g_attn_wv[l]));
-      memset(g_attn_wo[l], 0, sizeof(g_attn_wo[l]));
-      memset(g_mlp_fc1[l], 0, sizeof(g_mlp_fc1[l]));
-      memset(g_mlp_fc2[l], 0, sizeof(g_mlp_fc2[l]));
-    }
+    /* Adam cleared every gradient touched by the previous step. */
 
     /* Forward pass — all positions */
     for (int pos = 0; pos < n; pos++) {

@@ -284,7 +284,47 @@
    est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
    float scale = vget_lane_f32(est, 0);
    *rms_scale = scale;
-@@ -312,7 +497,7 @@
+@@ -290,6 +475,30 @@
+   }
+ }
+ 
++static inline float exp_nonpositive(float x) {
++  if (x < -87.0f)
++    return 0.0f;
++
++  /* Truncation toward zero chooses n = ceil(x / log(2)), leaving
++   * r in [-log(2), 0]. */
++  int n = (int)(x * 1.4426950408889634f);
++  float r = x - (float)n * 0.6931471805599453f;
++  float p =
++      1.0f +
++      r * (1.0f + r *
++               (0.5f + r *
++                    (0.1666666716f + r *
++                         (0.0416666679f + r *
++                              (0.0083333338f + r * 0.0013888889f)))));
++
++  union {
++    int i;
++    float f;
++  } scale;
++  scale.i = (n + 127) << 23;
++  return p * scale.f;
++}
++
+ static inline void softmax_fwd(const float *__restrict__ logits,
+                                float *__restrict__ probs, int n) {
+   float mx = logits[0];
+@@ -298,7 +507,7 @@
+       mx = logits[i];
+   float sum = 0.0f;
+   for (int i = 0; i < n; i++) {
+-    probs[i] = expf(logits[i] - mx);
++    probs[i] = exp_nonpositive(logits[i] - mx);
+     sum += probs[i];
+   }
+   float inv = 1.0f / sum;
+@@ -312,7 +521,7 @@
                                 float *__restrict__ m_buf,
                                 float *__restrict__ v_buf, int n, float lr_t,
                                 float b1c, float b2c) {
@@ -293,7 +333,7 @@
    const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
    const float eps = 1e-8f;
    const float inv_b1c = 1.0f / b1c;
-@@ -345,8 +530,6 @@
+@@ -345,8 +554,6 @@
      float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
      rsqrt_est = vmulq_f32(rsqrt_est,
                            vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
@@ -302,7 +342,7 @@
      /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
      float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
      p = vsubq_f32(p, update);
-@@ -467,9 +650,32 @@
+@@ -467,9 +674,32 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -336,7 +376,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -479,7 +685,8 @@
+@@ -479,7 +709,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -346,7 +386,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -561,11 +768,8 @@
+@@ -561,11 +792,8 @@
                 saved_mlp_hidden[pos_id], MLP_DIM, N_EMBD);
  
      /* ReLU — NEON */
@@ -360,7 +400,7 @@
  
      float ALIGN128 mlp_out[N_EMBD];
      linear_fwd(saved_mlp_relu[pos_id], mlp_fc2[li], mlp_out, N_EMBD, MLP_DIM);
-@@ -579,7 +783,16 @@
+@@ -579,7 +807,16 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -378,7 +418,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -607,13 +820,31 @@
+@@ -607,13 +844,31 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -414,7 +454,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -626,9 +857,8 @@
+@@ -626,9 +881,8 @@
  
        /* Backward through mlp_fc2: mlp_out = linear(mlp_relu, mlp_fc2) */
        memset(dtmp2, 0, MLP_DIM * sizeof(float));
@@ -426,7 +466,7 @@
  
        /* Backward through ReLU */
        float d_mlp_pre[MLP_DIM];
-@@ -673,25 +903,12 @@
+@@ -673,25 +927,12 @@
          }
        }
  
@@ -454,7 +494,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -703,7 +920,7 @@
+@@ -703,7 +944,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -463,7 +503,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -727,22 +944,13 @@
+@@ -727,22 +968,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -489,7 +529,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -769,21 +977,18 @@
+@@ -769,21 +1001,18 @@
        memset(d_x_normed_attn, 0, N_EMBD * sizeof(float));
  
        /* Q: q = linear(x_normed, wq) */
@@ -519,7 +559,7 @@
  
        /* Backward through rmsnorm before attention */
        /* dx already contains d(x_residual_attn) from residual */
-@@ -878,7 +1083,16 @@
+@@ -878,7 +1107,16 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -537,7 +577,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -941,8 +1155,9 @@
+@@ -941,8 +1179,9 @@
    init_weights();
  
    /* Adam hyperparams */
@@ -549,22 +589,26 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,11 +1175,13 @@
+@@ -960,23 +1199,15 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
+-
+-    /* Zero gradients */
+-    memset(g_wte, 0, sizeof(g_wte));
+-    memset(g_wpe, 0, sizeof(g_wpe));
+-    memset(g_lm_head, 0, sizeof(g_lm_head));
+-    for (int l = 0; l < N_LAYER; l++) {
+-      memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
+-      memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
+-      memset(g_attn_wv[l], 0, sizeof(g_attn_wv[l]));
+-      memset(g_attn_wo[l], 0, sizeof(g_attn_wo[l]));
+-      memset(g_mlp_fc1[l], 0, sizeof(g_mlp_fc1[l]));
+-      memset(g_mlp_fc2[l], 0, sizeof(g_mlp_fc2[l]));
+-    }
 +    unsigned char used_wte[MAX_VOCAB] = {0};
- 
-     /* Zero gradients */
-     memset(g_wte, 0, sizeof(g_wte));
-     memset(g_wpe, 0, sizeof(g_wpe));
-     memset(g_lm_head, 0, sizeof(g_lm_head));
-+    memset(g_lm_bias, 0, sizeof(g_lm_bias));
-     for (int l = 0; l < N_LAYER; l++) {
-       memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
-       memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -975,8 +1192,10 @@
-     }
++
++    /* Adam cleared every gradient touched by the previous step. */
  
      /* Forward pass — all positions */
 -    for (int pos = 0; pos < n; pos++)
@@ -575,7 +619,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1212,26 @@
+@@ -993,13 +1224,26 @@
      backward_all(tokens, n);
  
      /* Adam update */
@@ -606,7 +650,7 @@
                  lr_t, b1c, b2c);
      for (int l = 0; l < N_LAYER; l++) {
        adam_update(attn_wq[l], g_attn_wq[l], m_attn_wq[l], v_attn_wq[l],
-@@ -1022,7 +1254,7 @@
+@@ -1022,7 +1266,7 @@
    /* ── Inference ─────────────────────────────────────────────────── */
    float temperature = 0.5f;
    printf("\n--- inference (new, hallucinated names) ---\n");
@@ -615,7 +659,7 @@
      /* Clear KV cache */
      int token_id = BOS_TOKEN;
      char name[BLOCK_SIZE + 1];
-@@ -1075,6 +1307,7 @@
+@@ -1075,6 +1319,7 @@
     */
    double val_total = 0.0;
    int val_positions = 0;
@@ -623,7 +667,7 @@
    for (int vi = 0; vi < num_val_docs; vi++) {
      const char *doc = docs_raw[val_order[vi]];
      int doc_len = doc_lens[val_order[vi]];
-@@ -1086,12 +1319,18 @@
+@@ -1086,12 +1331,18 @@
      int n = doc_len + 1;
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;

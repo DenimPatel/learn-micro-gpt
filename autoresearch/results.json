@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "80dc22503c52257449ab9614a8e3a348b351313191fa0add0ad825f92b35bd15",
+      "candidate_sha256": "b1a069d6df8eb5c7284ff4b14c420f017e8bc32c6d896d7b5baa9fe119e13905",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,17 +174,17 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0393",
-      "parent": "83cec936d90867df5e19804a585438de6806e87f",
+      "run_id": "0394",
+      "parent": "72eaef73d29585a04ecda8248926fdb16251106c",
       "track": "c",
-      "loss": 2.407736,
-      "steps_per_sec": 54755.01592,
-      "loss_gain": -0.028932,
-      "speed_gain": 1.300541,
-      "grad_ratio": 1.108624,
+      "loss": 2.407734,
+      "steps_per_sec": 54196.990715,
+      "loss_gain": -0.028931,
+      "speed_gain": 1.277096,
+      "grad_ratio": 1.108515,
       "status": "keep",
       "reason": "",
-      "description": "Skip post-training sampling and use forward-only direct-logit validation",
+      "description": "Use bounded polynomial softmax exponentiation and rely on Adam to clear gradients between steps",
       "val_loss": null
     }
   },
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 382,
-    "keep": 155,
+    "experiments": 383,
+    "keep": 156,
     "discard": 28,
     "crash": 199
   },
@@ -6535,6 +6535,22 @@
       "description": "Skip post-training sampling and use forward-only direct-logit validation",
       "val_loss": null,
       "measured": "2026-10-02T07:51:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0394",
+      "parent": "72eaef73d29585a04ecda8248926fdb16251106c",
+      "track": "c",
+      "loss": 2.407734,
+      "steps_per_sec": 54196.990715,
+      "loss_gain": -0.028931,
+      "speed_gain": 1.277096,
+      "grad_ratio": 1.108515,
+      "status": "keep",
+      "reason": "",
+      "description": "Use bounded polynomial softmax exponentiation and rely on Adam to clear gradients between steps",
+      "val_loss": null,
+      "measured": "2026-10-02T07:58:47Z",
       "has_record": true
     }
   ],
