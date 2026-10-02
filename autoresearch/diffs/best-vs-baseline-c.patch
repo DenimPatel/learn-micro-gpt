@@ -360,7 +360,7 @@
  
      float ALIGN128 mlp_out[N_EMBD];
      linear_fwd(saved_mlp_relu[pos_id], mlp_fc2[li], mlp_out, N_EMBD, MLP_DIM);
-@@ -579,7 +783,10 @@
+@@ -579,7 +783,16 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -369,10 +369,16 @@
 +  linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
 +  for (int i = 0; i < vocab_size; i++)
 +    saved_logits[pos_id][i] += lm_bias[i];
++  float skip = 0.0f;
++  const float *skip_embedding = wte + token_id * N_EMBD;
++  for (int i = 0; i < N_EMBD; i++) {
++    skip += saved_x_normed_final[pos_id][i] * skip_embedding[i];
++  }
++  saved_logits[pos_id][token_id] += skip;
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -607,13 +814,22 @@
+@@ -607,13 +820,31 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -391,6 +397,15 @@
 +    linear_bwd_wx(dlogits, lm_head, saved_x_normed_final[pos], g_lm_head, dx,
 +                  vocab_size, N_EMBD);
 +
++    int skip_token = tokens[pos];
++    float d_skip = dlogits[skip_token];
++    float *skip_grad = g_wte + skip_token * N_EMBD;
++    for (int i = 0; i < N_EMBD; i++) {
++      float contribution = d_skip * saved_x_normed_final[pos][i];
++      dx[i] += contribution;
++      skip_grad[i] += contribution;
++    }
++
 +    float d_x_before_blocks[N_EMBD];
 +    memset(d_x_before_blocks, 0, N_EMBD * sizeof(float));
 +    rmsnorm_bwd(dx, saved_x_final[pos], d_x_before_blocks,
@@ -399,7 +414,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -626,9 +842,8 @@
+@@ -626,9 +857,8 @@
  
        /* Backward through mlp_fc2: mlp_out = linear(mlp_relu, mlp_fc2) */
        memset(dtmp2, 0, MLP_DIM * sizeof(float));
@@ -411,7 +426,7 @@
  
        /* Backward through ReLU */
        float d_mlp_pre[MLP_DIM];
-@@ -673,25 +888,12 @@
+@@ -673,25 +903,12 @@
          }
        }
  
@@ -439,7 +454,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -703,7 +905,7 @@
+@@ -703,7 +920,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -448,7 +463,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -727,22 +929,13 @@
+@@ -727,22 +944,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -474,7 +489,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -769,21 +962,18 @@
+@@ -769,21 +977,18 @@
        memset(d_x_normed_attn, 0, N_EMBD * sizeof(float));
  
        /* Q: q = linear(x_normed, wq) */
@@ -504,7 +519,7 @@
  
        /* Backward through rmsnorm before attention */
        /* dx already contains d(x_residual_attn) from residual */
-@@ -878,7 +1068,10 @@
+@@ -878,7 +1083,16 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -513,10 +528,16 @@
 +  linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
 +  for (int i = 0; i < vocab_size; i++)
 +    logits_out[i] += lm_bias[i];
++  float skip = 0.0f;
++  const float *skip_embedding = wte + token_id * N_EMBD;
++  for (int i = 0; i < N_EMBD; i++) {
++    skip += xn[i] * skip_embedding[i];
++  }
++  logits_out[token_id] += skip;
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -942,7 +1135,8 @@
+@@ -942,7 +1156,8 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -526,7 +547,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,11 +1154,13 @@
+@@ -960,11 +1175,13 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
@@ -540,7 +561,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -975,8 +1171,10 @@
+@@ -975,8 +1192,10 @@
      }
  
      /* Forward pass — all positions */
@@ -552,7 +573,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1191,26 @@
+@@ -993,13 +1212,26 @@
      backward_all(tokens, n);
  
      /* Adam update */

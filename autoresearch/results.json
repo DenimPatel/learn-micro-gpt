@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "bbb2472bf444f4c931c56e2b81ca6a8de3ef7320a03e5bd0999bdfe64a2fe35b",
+      "candidate_sha256": "7f4fd3336fef4a66d5a2eebcd0494f54d9eed7daaca2263cf6679a4c2b8b3ee1",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0366",
-      "parent": "c26954619e03e6537b081bde83fbe5fdd874a0bb",
+      "run_id": "0371",
+      "parent": "7ef28dd5dd6a88b0ce6c763d0e8e16d3f77eee23",
       "track": "c",
-      "loss": 2.419184,
-      "steps_per_sec": 43604.809496,
-      "loss_gain": -0.033824,
-      "speed_gain": 0.832063,
-      "grad_ratio": 0.988564,
+      "loss": 2.420088,
+      "steps_per_sec": 63915.631557,
+      "loss_gain": -0.034211,
+      "speed_gain": 1.685426,
+      "grad_ratio": 1.099484,
       "status": "keep",
       "reason": "",
-      "description": "Fuse dominant linear weight and input backward passes",
-      "val_loss": 2.414933
+      "description": "Add a forward and backward tied current-token embedding logit skip",
+      "val_loss": 2.409712
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 359,
-    "keep": 148,
+    "experiments": 360,
+    "keep": 149,
     "discard": 26,
     "crash": 185
   },
@@ -6166,6 +6166,22 @@
       "description": "Add a tied previous-token embedding skip to training and inference",
       "val_loss": null,
       "measured": "2026-10-02T05:50:32Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0371",
+      "parent": "7ef28dd5dd6a88b0ce6c763d0e8e16d3f77eee23",
+      "track": "c",
+      "loss": 2.420088,
+      "steps_per_sec": 63915.631557,
+      "loss_gain": -0.034211,
+      "speed_gain": 1.685426,
+      "grad_ratio": 1.099484,
+      "status": "keep",
+      "reason": "",
+      "description": "Add a forward and backward tied current-token embedding logit skip",
+      "val_loss": 2.409712,
+      "measured": "2026-10-02T05:56:21Z",
       "has_record": true
     }
   ],

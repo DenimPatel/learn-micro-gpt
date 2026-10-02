@@ -787,6 +787,12 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
   for (int i = 0; i < vocab_size; i++)
     saved_logits[pos_id][i] += lm_bias[i];
+  float skip = 0.0f;
+  const float *skip_embedding = wte + token_id * N_EMBD;
+  for (int i = 0; i < N_EMBD; i++) {
+    skip += saved_x_normed_final[pos_id][i] * skip_embedding[i];
+  }
+  saved_logits[pos_id][token_id] += skip;
   softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
 }
 
@@ -824,6 +830,15 @@ static void backward_all(const int *tokens, int n) {
     memset(dx, 0, sizeof(float) * N_EMBD);
     linear_bwd_wx(dlogits, lm_head, saved_x_normed_final[pos], g_lm_head, dx,
                   vocab_size, N_EMBD);
+
+    int skip_token = tokens[pos];
+    float d_skip = dlogits[skip_token];
+    float *skip_grad = g_wte + skip_token * N_EMBD;
+    for (int i = 0; i < N_EMBD; i++) {
+      float contribution = d_skip * saved_x_normed_final[pos][i];
+      dx[i] += contribution;
+      skip_grad[i] += contribution;
+    }
 
     float d_x_before_blocks[N_EMBD];
     memset(d_x_before_blocks, 0, N_EMBD * sizeof(float));
@@ -1072,6 +1087,12 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
   for (int i = 0; i < vocab_size; i++)
     logits_out[i] += lm_bias[i];
+  float skip = 0.0f;
+  const float *skip_embedding = wte + token_id * N_EMBD;
+  for (int i = 0; i < N_EMBD; i++) {
+    skip += xn[i] * skip_embedding[i];
+  }
+  logits_out[token_id] += skip;
 }
 
 /* ── Main ────────────────────────────────────────────────────────────── */

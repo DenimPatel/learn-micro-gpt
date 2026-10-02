@@ -370,3 +370,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0368	6ed196d72628fc5f28f8dae0f8bd8e495e36921b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add held-out-safe position-conditioned trigram and bigram logits	
 0369	2b3724c933106eefd039e81906968f623f57788d	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Vectorize attention forward and backward passes and reuse cached concatenated attention inputs	
 0370	d3f5a543dc94d609888c04f51b3417d4db05449a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a tied previous-token embedding skip to training and inference	
+0371	7ef28dd5dd6a88b0ce6c763d0e8e16d3f77eee23	c	2.420088	63915.631557	-0.034211	+1.685426	1.099484	keep		Add a forward and backward tied current-token embedding logit skip	2.409712
