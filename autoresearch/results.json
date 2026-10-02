@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 405,
+    "experiments": 406,
     "keep": 163,
     "discard": 29,
-    "crash": 213
+    "crash": 214
   },
   "pareto": {
     "rust": [
@@ -6903,6 +6903,22 @@
       "description": "Add a half-strength smoothed bigram backoff logit prior",
       "val_loss": null,
       "measured": "2026-10-02T10:22:53Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0417",
+      "parent": "55d5cdec20bd0d766d1b5e45bbe1c9fc5d2eee2a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Apply the value projection after mixing direct-attention states",
+      "val_loss": null,
+      "measured": "2026-10-02T10:27:44Z",
       "has_record": true
     }
   ],

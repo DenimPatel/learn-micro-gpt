@@ -416,3 +416,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0414	108ed534e6beb1bc9a19f38c66d5ec268acc6a3e	c	2.413162	75467.659621	-0.031251	+2.170786	1.102429	keep		Isolate 2x direct-attention score sharpening	
 0415	cd3f69e693abd6a3ffe736db612eb88dbd9d43e1	c	2.413162	59970.615515	-0.031251	+1.519675	1.102429	keep		Cache direct-attention outputs to eliminate redundant backward reconstruction	
 0416	ff7cf9a38b9cc31fa587fa84acbc8c0da9c8722f	c	2.380148	80583.157376	-0.017142	+2.385715	1.034535	discard	no axis improved materially: discarded: loss -1.7%, speed +238.6%; failing learned, loss_material, validation_reported	Add a half-strength smoothed bigram backoff logit prior	
+0417	55d5cdec20bd0d766d1b5e45bbe1c9fc5d2eee2a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Apply the value projection after mixing direct-attention states	
