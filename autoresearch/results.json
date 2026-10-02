@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 353,
+    "experiments": 354,
     "keep": 147,
     "discard": 26,
-    "crash": 180
+    "crash": 181
   },
   "pareto": {
     "rust": [
@@ -6070,6 +6070,22 @@
       "description": "Halve the MLP bottleneck from 4 to 2 with a width-safe ReLU loop",
       "val_loss": 2.414933,
       "measured": "2026-10-02T05:19:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0365",
+      "parent": "528a1210cb50cd9e2fd4a5ca0be404c2bc14ff5f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Fuse square linear backward passes and cache concatenated attention outputs to eliminate duplicate traversals",
+      "val_loss": null,
+      "measured": "2026-10-02T05:28:32Z",
       "has_record": true
     }
   ],
