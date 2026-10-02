@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 406,
+    "experiments": 407,
     "keep": 163,
     "discard": 29,
-    "crash": 214
+    "crash": 215
   },
   "pareto": {
     "rust": [
@@ -6919,6 +6919,22 @@
       "description": "Apply the value projection after mixing direct-attention states",
       "val_loss": null,
       "measured": "2026-10-02T10:27:44Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0418",
+      "parent": "477d5abaa092395e7ee26ec054de52504ce60873",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Remove the redundant input RMSNorm and propagate gradients directly to the embeddings",
+      "val_loss": null,
+      "measured": "2026-10-02T10:33:40Z",
       "has_record": true
     }
   ],
