@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 363,
+    "experiments": 364,
     "keep": 150,
     "discard": 27,
-    "crash": 186
+    "crash": 187
   },
   "pareto": {
     "rust": [
@@ -6230,6 +6230,22 @@
       "description": "Add a fixed train-only smoothed bigram log-odds logit prior",
       "val_loss": 2.332155,
       "measured": "2026-10-02T06:09:34Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0375",
+      "parent": "61b6c7b4517d47571263ec8263a778ea19217606",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache and vectorize the causal attention value path",
+      "val_loss": null,
+      "measured": "2026-10-02T06:13:04Z",
       "has_record": true
     }
   ],
