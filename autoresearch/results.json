@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 368,
+    "experiments": 369,
     "keep": 151,
     "discard": 27,
-    "crash": 190
+    "crash": 191
   },
   "pareto": {
     "rust": [
@@ -6310,6 +6310,22 @@
       "description": "Cache attention inputs and streamline softmax with a shifted polynomial exponential",
       "val_loss": null,
       "measured": "2026-10-02T06:42:33Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0380",
+      "parent": "1519cd34e6c2444012746b8ca5a74311ef0312c5",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace softmax libm expf calls with a fast polynomial approximation",
+      "val_loss": null,
+      "measured": "2026-10-02T06:48:37Z",
       "has_record": true
     }
   ],
