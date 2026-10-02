@@ -330,3 +330,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0328	929ee000ce1803568998abb7aaad1da1ea3917fd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use one correctly scaled full-width attention head	
 0329	39534cd05d8f2668adcb6550e1a047bf1f083450	c	2.324760	44876.841842	+0.006527	+0.885508	1.004754	discard	no axis improved materially: discarded: loss +0.7%, speed +88.6%; failing learned, loss_material	Add a smoothed trainable previous-token logit prior with sparse Adam updates	2.337668
 0330	e5abceeadf1ecf7abd80c333b55cd737e7cdc93d	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Remove redundant gradient zeroing and reuse fused backward and inference activations	
+0331	6b1c83a23106b56f5bb197a14b03d2b78f631cc1	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the model request failed: The read operation timed out	the model returned nothing usable	

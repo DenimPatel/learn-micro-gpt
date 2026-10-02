@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 319,
+    "experiments": 320,
     "keep": 135,
     "discard": 22,
-    "crash": 162
+    "crash": 163
   },
   "pareto": {
     "rust": [
@@ -5526,6 +5526,22 @@
       "description": "Remove redundant gradient zeroing and reuse fused backward and inference activations",
       "val_loss": null,
       "measured": "2026-10-02T00:30:46Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0331",
+      "parent": "6b1c83a23106b56f5bb197a14b03d2b78f631cc1",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the model request failed: The read operation timed out",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T02:34:39Z",
       "has_record": true
     }
   ],
