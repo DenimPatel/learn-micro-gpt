@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 380,
+    "experiments": 381,
     "keep": 154,
     "discard": 28,
-    "crash": 198
+    "crash": 199
   },
   "pareto": {
     "rust": [
@@ -6503,6 +6503,22 @@
       "description": "Add a frozen smoothed training-only bigram log-prior residual to the logits",
       "val_loss": 2.618325,
       "measured": "2026-10-02T07:42:32Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0392",
+      "parent": "7e721a672b070b00118ddca09c7a9286bd9f4d23",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the gradient check did not pass",
+      "description": "Replace softmax expf with a degree-eight range-reduced exponential polynomial",
+      "val_loss": null,
+      "measured": "2026-10-02T07:45:30Z",
       "has_record": true
     }
   ],
