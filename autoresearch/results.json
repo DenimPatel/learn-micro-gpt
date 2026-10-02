@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 407,
+    "experiments": 408,
     "keep": 163,
     "discard": 29,
-    "crash": 215
+    "crash": 216
   },
   "pareto": {
     "rust": [
@@ -6935,6 +6935,22 @@
       "description": "Remove the redundant input RMSNorm and propagate gradients directly to the embeddings",
       "val_loss": null,
       "measured": "2026-10-02T10:33:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0419",
+      "parent": "ff0dea03ddf484e58e49906c7e48613dccc5857b",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Replace data-dependent direct attention with a uniform causal mean",
+      "val_loss": null,
+      "measured": "2026-10-02T10:38:50Z",
       "has_record": true
     }
   ],
