@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 360,
+    "experiments": 361,
     "keep": 149,
     "discard": 26,
-    "crash": 185
+    "crash": 186
   },
   "pareto": {
     "rust": [
@@ -6182,6 +6182,22 @@
       "description": "Add a forward and backward tied current-token embedding logit skip",
       "val_loss": 2.409712,
       "measured": "2026-10-02T05:56:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0372",
+      "parent": "1737d635819546610acda08d46d5c843c7a410b0",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T06:03:14Z",
       "has_record": true
     }
   ],
