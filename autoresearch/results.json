@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 384,
+    "experiments": 385,
     "keep": 156,
     "discard": 28,
-    "crash": 200
+    "crash": 201
   },
   "pareto": {
     "rust": [
@@ -6567,6 +6567,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T08:11:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0396",
+      "parent": "1991859e2870170dcbe78dc339972e831e9d9582",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T08:21:22Z",
       "has_record": true
     }
   ],
