@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 390,
+    "experiments": 391,
     "keep": 157,
     "discard": 28,
-    "crash": 205
+    "crash": 206
   },
   "pareto": {
     "rust": [
@@ -6663,6 +6663,22 @@
       "description": "Direct normalized-state attention removes Q and K projection work while retaining softmax selectivity",
       "val_loss": null,
       "measured": "2026-10-02T08:58:49Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0402",
+      "parent": "8596e276a2252cd3d8d9f2b6226e2d35d3a292da",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T09:10:04Z",
       "has_record": true
     }
   ],
