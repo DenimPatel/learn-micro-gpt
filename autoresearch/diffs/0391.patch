@@ -1,0 +1,109 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -166,6 +166,10 @@ static float ALIGN128 m_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD],
+     v_mlp_fc1[N_LAYER][MLP_DIM * N_EMBD];
+ static float ALIGN128 m_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM],
+     v_mlp_fc2[N_LAYER][N_EMBD * MLP_DIM];
+ static float ALIGN128 m_lm_bias[MAX_VOCAB], v_lm_bias[MAX_VOCAB];
++
++/* Frozen log P(next | previous) minus the global token log-prior. */
++static float ALIGN128 bigram_logprob[MAX_VOCAB][MAX_VOCAB];
+ 
+ /* ── Dataset ─────────────────────────────────────────────────────────── */
+ static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
+@@ -194,6 +198,7 @@ static int char_to_idx[128];    /* ASCII lookup table */
+ 
+ /* ── Activation buffers (pre-allocated, zero malloc in hot loop) ─────── */
+ /* Per-position saved activations for backward pass */
++static int forward_input_tokens[BLOCK_SIZE];
+ static float ALIGN128 saved_x_embed[BLOCK_SIZE][N_EMBD];
+ static float ALIGN128 saved_x_normed_pre[BLOCK_SIZE][N_EMBD];
+ static float saved_rms_pre[BLOCK_SIZE];
+@@ -687,11 +692,14 @@ static void init_weights(void) {
+   const float std = 0.08f;
+   float target_counts[MAX_VOCAB] = {0};
+   float target_total = 0.0f;
++  int bigram_counts[MAX_VOCAB][MAX_VOCAB] = {{0}};
++  int bigram_totals[MAX_VOCAB] = {0};
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+     int doc_len = doc_lens[doc_id];
+     int n_targets = doc_len + 1;
+     if (n_targets > BLOCK_SIZE)
+       n_targets = BLOCK_SIZE;
++    int prev_token = BOS_TOKEN;
+     target_total += (float)n_targets;
+     for (int i = 0; i < n_targets; i++) {
+       int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+                               : BOS_TOKEN;
+       target_counts[token] += 1.0f;
++      bigram_counts[prev_token][token]++;
++      bigram_totals[prev_token]++;
++      prev_token = token;
+     }
+   }
+   if (target_total > 0.0f) {
+@@ -699,7 +707,18 @@ static void init_weights(void) {
+     float denominator = target_total + alpha * (float)vocab_size;
+-    for (int i = 0; i < vocab_size; i++)
++    for (int i = 0; i < vocab_size; i++) {
+       lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++    }
++    for (int prev = 0; prev < vocab_size; prev++) {
++      float context_denominator =
++          (float)bigram_totals[prev] + alpha * (float)vocab_size;
++      for (int token = 0; token < vocab_size; token++) {
++        float conditional =
++            ((float)bigram_counts[prev][token] + alpha) / context_denominator;
++        float marginal = (target_counts[token] + alpha) / denominator;
++        bigram_logprob[prev][token] =
++            logf(conditional) - logf(marginal);
++      }
++    }
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
++    memset(bigram_logprob, 0, sizeof(bigram_logprob));
+   }
+   init_matrix(wte, vocab_size, N_EMBD, std);
+   init_matrix(wpe, BLOCK_SIZE, N_EMBD, std);
+@@ -772,6 +791,7 @@ static void init_weights(void) {
+ /* ── Forward pass (single position, causal attention via KV cache) ─── */
+ static void forward_pos(int token_id, int pos_id, int seq_len) {
++  forward_input_tokens[pos_id] = token_id;
+   /* `x` is the running residual stream, and it is a local on purpose. It used to
+    * alias saved_x_embed[pos_id], and the pre-layer rmsnorm below wrote its
+    * normalised output straight back over that array -- so the only record of the
+@@ -862,8 +882,11 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+   memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++  int prev_token =
++      pos_id > 0 ? forward_input_tokens[pos_id - 1] : BOS_TOKEN;
++  for (int i = 0; i < vocab_size; i++)
++    saved_logits[pos_id][i] += lm_bias[i] + bigram_logprob[prev_token][i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {
+@@ -1046,6 +1069,7 @@ static void backward_all(const int *tokens, int n) {
+ 
+ /* ── Forward-only for inference (no saving for backward) ─────────────── */
+ static void forward_inference(int token_id, int pos_id, float *logits_out) {
++  forward_input_tokens[pos_id] = token_id;
+   float x[N_EMBD];
+   const float *te = wte + token_id * N_EMBD;
+   const float *pe = wpe + pos_id * N_EMBD;
+@@ -1110,8 +1134,11 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+ 
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++  int prev_token =
++      pos_id > 0 ? forward_input_tokens[pos_id - 1] : BOS_TOKEN;
++  for (int i = 0; i < vocab_size; i++)
++    logits_out[i] += lm_bias[i] + bigram_logprob[prev_token][i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {

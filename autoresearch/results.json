@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 379,
+    "experiments": 380,
     "keep": 154,
-    "discard": 27,
+    "discard": 28,
     "crash": 198
   },
   "pareto": {
@@ -6487,6 +6487,22 @@
       "description": "Vectorize softmax exponentials with accurate binary range reduction",
       "val_loss": null,
       "measured": "2026-10-02T07:38:07Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0391",
+      "parent": "aed16388487257b8d431ac43b7c736f9f244f736",
+      "track": "c",
+      "loss": 2.609602,
+      "steps_per_sec": 83836.942055,
+      "loss_gain": -0.115198,
+      "speed_gain": 2.522423,
+      "grad_ratio": 1.1472,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -11.5%, speed +252.2%; failing loss_material, loss_tolerance, validation_tolerance",
+      "description": "Add a frozen smoothed training-only bigram log-prior residual to the logits",
+      "val_loss": 2.618325,
+      "measured": "2026-10-02T07:42:32Z",
       "has_record": true
     }
   ],
