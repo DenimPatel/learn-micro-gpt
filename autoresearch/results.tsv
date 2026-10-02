@@ -396,3 +396,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0394	72eaef73d29585a04ecda8248926fdb16251106c	c	2.407734	54196.990715	-0.028931	+1.277096	1.108515	keep		Use bounded polynomial softmax exponentiation and rely on Adam to clear gradients between steps	
 0395	764bec634cdffb7c2a52043a46049f891f2892b3	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0396	1991859e2870170dcbe78dc339972e831e9d9582	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0397	73f481950f4f0b514ed0f8526e9f43263477c374	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
