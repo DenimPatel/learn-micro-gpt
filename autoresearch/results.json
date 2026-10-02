@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 336,
+    "experiments": 337,
     "keep": 139,
     "discard": 24,
-    "crash": 173
+    "crash": 174
   },
   "pareto": {
     "rust": [
@@ -5798,6 +5798,22 @@
       "description": "Use three four-dimensional attention heads",
       "val_loss": null,
       "measured": "2026-10-02T03:54:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0348",
+      "parent": "afa0a02a72eb9c94a92b9a643205d07cdf8577f1",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T04:04:05Z",
       "has_record": true
     }
   ],
