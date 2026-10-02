@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 318,
+    "experiments": 319,
     "keep": 135,
     "discard": 22,
-    "crash": 161
+    "crash": 162
   },
   "pareto": {
     "rust": [
@@ -5510,6 +5510,22 @@
       "description": "Add a smoothed trainable previous-token logit prior with sparse Adam updates",
       "val_loss": 2.337668,
       "measured": "2026-10-02T00:25:25Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0330",
+      "parent": "e5abceeadf1ecf7abd80c333b55cd737e7cdc93d",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Remove redundant gradient zeroing and reuse fused backward and inference activations",
+      "val_loss": null,
+      "measured": "2026-10-02T00:30:46Z",
       "has_record": true
     }
   ],
