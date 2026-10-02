@@ -1,0 +1,151 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -331,6 +331,101 @@ static inline void linear_bwd_x(const float *__restrict__ dout,
+     for (; j < nin; j++)
+       dx_out[j] += dout[i] * row[j];
+   }
+ }
++
++/* Compute a linear layer's parameter and input gradients in one traversal. */
++static inline void linear_bwd_wx(const float *__restrict__ dout,
++                                 const float *__restrict__ w,
++                                 const float *__restrict__ x,
++                                 float *__restrict__ gw,
++                                 float *__restrict__ dx_out, int nout,
++                                 int nin) {
++  int i = 0;
++  for (; i + 3 < nout; i += 4) {
++    const float32x4_t di0 = vdupq_n_f32(dout[i]);
++    const float32x4_t di1 = vdupq_n_f32(dout[i + 1]);
++    const float32x4_t di2 = vdupq_n_f32(dout[i + 2]);
++    const float32x4_t di3 = vdupq_n_f32(dout[i + 3]);
++    const float *row0 = w + i * nin;
++    const float *row1 = row0 + nin;
++    const float *row2 = row1 + nin;
++    const float *row3 = row2 + nin;
++    float *grow0 = gw + i * nin;
++    float *grow1 = grow0 + nin;
++    float *grow2 = grow1 + nin;
++    float *grow3 = grow2 + nin;
++    int j = 0;
++    for (; j + 3 < nin; j += 4) {
++      const float32x4_t xv = vld1q_f32(x + j);
++      float32x4_t g0 = vld1q_f32(grow0 + j);
++      float32x4_t g1 = vld1q_f32(grow1 + j);
++      float32x4_t g2 = vld1q_f32(grow2 + j);
++      float32x4_t g3 = vld1q_f32(grow3 + j);
++      float32x4_t dxv = vld1q_f32(dx_out + j);
++      g0 = vfmaq_f32(g0, di0, xv);
++      g1 = vfmaq_f32(g1, di1, xv);
++      g2 = vfmaq_f32(g2, di2, xv);
++      g3 = vfmaq_f32(g3, di3, xv);
++      dxv = vfmaq_f32(dxv, di0, vld1q_f32(row0 + j));
++      dxv = vfmaq_f32(dxv, di1, vld1q_f32(row1 + j));
++      dxv = vfmaq_f32(dxv, di2, vld1q_f32(row2 + j));
++      dxv = vfmaq_f32(dxv, di3, vld1q_f32(row3 + j));
++      vst1q_f32(grow0 + j, g0);
++      vst1q_f32(grow1 + j, g1);
++      vst1q_f32(grow2 + j, g2);
++      vst1q_f32(grow3 + j, g3);
++      vst1q_f32(dx_out + j, dxv);
++    }
++    for (; j < nin; j++) {
++      grow0[j] += dout[i] * x[j];
++      grow1[j] += dout[i + 1] * x[j];
++      grow2[j] += dout[i + 2] * x[j];
++      grow3[j] += dout[i + 3] * x[j];
++      dx_out[j] += dout[i] * row0[j];
++      dx_out[j] += dout[i + 1] * row1[j];
++      dx_out[j] += dout[i + 2] * row2[j];
++      dx_out[j] += dout[i + 3] * row3[j];
++    }
++  }
++  for (; i < nout; i++) {
++    const float32x4_t di = vdupq_n_f32(dout[i]);
++    const float *row = w + i * nin;
++    float *grow = gw + i * nin;
++    int j = 0;
++    for (; j + 3 < nin; j += 4) {
++      float32x4_t g = vld1q_f32(grow + j);
++      float32x4_t dxv = vld1q_f32(dx_out + j);
++      g = vfmaq_f32(g, di, vld1q_f32(x + j));
++      dxv = vfmaq_f32(dxv, di, vld1q_f32(row + j));
++      vst1q_f32(grow + j, g);
++      vst1q_f32(dx_out + j, dxv);
++    }
++    for (; j < nin; j++) {
++      grow[j] += dout[i] * x[j];
++      dx_out[j] += dout[i] * row[j];
++    }
++  }
++}
+ 
+ static inline void rmsnorm_fwd(const float *__restrict__ x,
+                                float *__restrict__ out, int n,
+@@ -872,10 +967,8 @@ static void backward_all(const int *tokens, int n) {
+ 
+     /* Backward through lm_head linear: logits = linear(x_final, lm_head) */
+     memset(dx, 0, sizeof(float) * N_EMBD);
+-    linear_bwd_w(dlogits, saved_x_normed_final[pos], g_lm_head, vocab_size,
+-                 N_EMBD);
+-    linear_bwd_x(dlogits, lm_head, dx, vocab_size, N_EMBD);
++    linear_bwd_wx(dlogits, lm_head, saved_x_normed_final[pos], g_lm_head, dx,
++                  vocab_size, N_EMBD);
+ 
+     float d_x_before_blocks[N_EMBD];
+     memset(d_x_before_blocks, 0, N_EMBD * sizeof(float));
+@@ -899,9 +992,8 @@ static void backward_all(const int *tokens, int n) {
+ 
+       /* Backward through mlp_fc2: mlp_out = linear(mlp_relu, mlp_fc2) */
+       memset(dtmp2, 0, MLP_DIM * sizeof(float));
+-      linear_bwd_w(d_mlp_out, saved_mlp_relu[pos], g_mlp_fc2[li],
+-                   N_EMBD, MLP_DIM);
+-      linear_bwd_x(d_mlp_out, mlp_fc2[li], dtmp2, N_EMBD, MLP_DIM);
++      linear_bwd_wx(d_mlp_out, mlp_fc2[li], saved_mlp_relu[pos],
++                    g_mlp_fc2[li], dtmp2, N_EMBD, MLP_DIM);
+ 
+       /* Backward through ReLU */
+       float d_mlp_pre[MLP_DIM];
+@@ -977,10 +1069,8 @@ static void backward_all(const int *tokens, int n) {
+         }
+       }
+ 
+-      linear_bwd_w(d_attn_proj_out, x_attn_reconstructed,
+-                   g_attn_wo[li], N_EMBD, N_EMBD);
+-      linear_bwd_x(d_attn_proj_out, attn_wo[li], d_x_attn, N_EMBD,
+-                   N_EMBD);
++      linear_bwd_wx(d_attn_proj_out, attn_wo[li], x_attn_reconstructed,
++                    g_attn_wo[li], d_x_attn, N_EMBD, N_EMBD);
+ 
+       /* Backward through multi-head attention */
+       float d_q[N_EMBD] = {0};
+@@ -1066,18 +1156,15 @@ static void backward_all(const int *tokens, int n) {
+       memset(d_x_normed_attn, 0, N_EMBD * sizeof(float));
+ 
+       /* Q: q = linear(x_normed, wq) */
+-      linear_bwd_w(d_q, saved_x_normed_attn[pos], g_attn_wq[li],
+-                   N_EMBD, N_EMBD);
+-      linear_bwd_x(d_q, attn_wq[li], d_x_normed_attn, N_EMBD, N_EMBD);
++      linear_bwd_wx(d_q, attn_wq[li], saved_x_normed_attn[pos],
++                    g_attn_wq[li], d_x_normed_attn, N_EMBD, N_EMBD);
+ 
+       /* K: k[pos] = linear(x_normed[pos], wk) */
+-      linear_bwd_w(dk_pending[pos], saved_x_normed_attn[pos],
+-                   g_attn_wk[li], N_EMBD, N_EMBD);
+-      linear_bwd_x(dk_pending[pos], attn_wk[li], d_x_normed_attn, N_EMBD,
+-                   N_EMBD);
++      linear_bwd_wx(dk_pending[pos], attn_wk[li],
++                    saved_x_normed_attn[pos], g_attn_wk[li],
++                    d_x_normed_attn, N_EMBD, N_EMBD);
+ 
+       /* V: v[pos] = linear(x_normed[pos], wv) */
+-      linear_bwd_w(dv_pending[pos], saved_x_normed_attn[pos],
+-                   g_attn_wv[li], N_EMBD, N_EMBD);
+-      linear_bwd_x(dv_pending[pos], attn_wv[li], d_x_normed_attn, N_EMBD,
+-                   N_EMBD);
++      linear_bwd_wx(dv_pending[pos], attn_wv[li],
++                    saved_x_normed_attn[pos], g_attn_wv[li],
++                    d_x_normed_attn, N_EMBD, N_EMBD);
+ 
+       /* Backward through rmsnorm before attention */
+       /* dx already contains d(x_residual_attn) from residual */

@@ -365,3 +365,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0363	75103352476b4a2e987ce58c536559b6f74cdfc0	c	2.415212	89905.152712	-0.032127	+2.777380	0.992553	keep		Let the cosine learning rate decay fully to zero	2.413716
 0364	1289453e25aa3c77319762cb2b05a075a453d8eb	c	2.419184	50946.543224	-0.033824	+1.140527	0.988564	keep		Halve the MLP bottleneck from 4 to 2 with a width-safe ReLU loop	2.414933
 0365	528a1210cb50cd9e2fd4a5ca0be404c2bc14ff5f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse square linear backward passes and cache concatenated attention outputs to eliminate duplicate traversals	
+0366	c26954619e03e6537b081bde83fbe5fdd874a0bb	c	2.419184	43604.809496	-0.033824	+0.832063	0.988564	keep		Fuse dominant linear weight and input backward passes	2.414933
