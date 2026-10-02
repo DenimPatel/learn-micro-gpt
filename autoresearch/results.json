@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 358,
+    "experiments": 359,
     "keep": 148,
     "discard": 26,
-    "crash": 184
+    "crash": 185
   },
   "pareto": {
     "rust": [
@@ -6150,6 +6150,22 @@
       "description": "Vectorize attention forward and backward passes and reuse cached concatenated attention inputs",
       "val_loss": null,
       "measured": "2026-10-02T05:46:00Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0370",
+      "parent": "d3f5a543dc94d609888c04f51b3417d4db05449a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a tied previous-token embedding skip to training and inference",
+      "val_loss": null,
+      "measured": "2026-10-02T05:50:32Z",
       "has_record": true
     }
   ],
