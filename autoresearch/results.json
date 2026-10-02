@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "b89734afd422c5e3901f7084887f593eba5123ebed489818da0f75326dd22bca",
+      "candidate_sha256": "b46693e47c766370aa634877c7094e250de270208c2b081b433b7c0719540871",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0350",
-      "parent": "a21d95b779aefeca154cd3a34ecdefb37621013f",
+      "run_id": "0354",
+      "parent": "1c8a10d22c7f15fb22a93e49a482ac7dfe02d195",
       "track": "c",
-      "loss": 2.431634,
-      "steps_per_sec": 63655.579638,
-      "loss_gain": -0.039145,
-      "speed_gain": 1.6745,
+      "loss": 2.377164,
+      "steps_per_sec": 59847.839381,
+      "loss_gain": -0.015867,
+      "speed_gain": 1.514517,
       "grad_ratio": 0.9981,
       "status": "keep",
       "reason": "",
-      "description": "Halve MLP width from 8 to 4 for cheaper projections",
-      "val_loss": 2.416341
+      "description": "Lower cosine learning-rate floor from 0.0075 to 0.001",
+      "val_loss": 2.3835
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 342,
-    "keep": 141,
+    "experiments": 343,
+    "keep": 142,
     "discard": 24,
     "crash": 177
   },
@@ -5894,6 +5894,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T04:29:08Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0354",
+      "parent": "1c8a10d22c7f15fb22a93e49a482ac7dfe02d195",
+      "track": "c",
+      "loss": 2.377164,
+      "steps_per_sec": 59847.839381,
+      "loss_gain": -0.015867,
+      "speed_gain": 1.514517,
+      "grad_ratio": 0.9981,
+      "status": "keep",
+      "reason": "",
+      "description": "Lower cosine learning-rate floor from 0.0075 to 0.001",
+      "val_loss": 2.3835,
+      "measured": "2026-10-02T04:30:18Z",
       "has_record": true
     }
   ],
