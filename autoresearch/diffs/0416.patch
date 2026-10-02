@@ -1,0 +1,86 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -111,6 +111,10 @@
+ /* Direct output-class prior learned alongside the language model. */
+ static float ALIGN128 lm_bias[MAX_VOCAB];
+ 
++/* Fixed half-strength bigram correction with Bayesian backoff to the
++ * unigram prior. It is data-derived but not a trainable parameter. */
++static float ALIGN128 transition_bias[MAX_VOCAB * MAX_VOCAB];
++
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
+@@ -506,6 +510,9 @@
+   const float std = 0.08f;
+   float target_counts[MAX_VOCAB] = {0};
+   float target_total = 0.0f;
++  float transition_counts[MAX_VOCAB * MAX_VOCAB] = {0};
++  float unigram_prob[MAX_VOCAB] = {0};
++  memset(transition_bias, 0, sizeof(transition_bias));
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+     int doc_len = doc_lens[doc_id];
+@@ -516,6 +523,10 @@
+       int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+                               : BOS_TOKEN;
+       target_counts[token] += 1.0f;
++      int previous_token =
++          i == 0 ? BOS_TOKEN
++                 : char_to_idx[(int)docs_raw[doc_id][i - 1]];
++      transition_counts[previous_token * vocab_size + token] += 1.0f;
+     }
+   }
+   if (target_total > 0.0f) {
+@@ -523,9 +534,29 @@
+     const float alpha = 0.1f;
+     float denominator = target_total + alpha * (float)vocab_size;
+-    for (int i = 0; i < vocab_size; i++)
+-      lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++    for (int i = 0; i < vocab_size; i++) {
++      unigram_prob[i] = (target_counts[i] + alpha) / denominator;
++      lm_bias[i] = logf(unigram_prob[i]);
++    }
++
++    const float transition_alpha = 4.0f;
++    const float transition_strength = 0.5f;
++    for (int previous = 0; previous < vocab_size; previous++) {
++      float row_total = 0.0f;
++      for (int next = 0; next < vocab_size; next++)
++        row_total +=
++            transition_counts[previous * vocab_size + next];
++      for (int next = 0; next < vocab_size; next++) {
++        float conditional =
++            (transition_counts[previous * vocab_size + next] +
++             transition_alpha * unigram_prob[next]) /
++            (row_total + transition_alpha);
++        transition_bias[previous * vocab_size + next] =
++            transition_strength * (logf(conditional) - lm_bias[next]);
++      }
++    }
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
+   }
+@@ -702,8 +733,10 @@
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
++  const float *transition =
++      transition_bias + token_id * vocab_size;
+   for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++    saved_logits[pos_id][i] += lm_bias[i] + transition[i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {
+@@ -944,8 +977,10 @@
+ 
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
++  const float *transition =
++      transition_bias + token_id * vocab_size;
+   for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++    logits_out[i] += lm_bias[i] + transition[i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {

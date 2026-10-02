@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 404,
+    "experiments": 405,
     "keep": 163,
-    "discard": 28,
+    "discard": 29,
     "crash": 213
   },
   "pareto": {
@@ -6887,6 +6887,22 @@
       "description": "Cache direct-attention outputs to eliminate redundant backward reconstruction",
       "val_loss": null,
       "measured": "2026-10-02T10:11:31Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0416",
+      "parent": "ff7cf9a38b9cc31fa587fa84acbc8c0da9c8722f",
+      "track": "c",
+      "loss": 2.380148,
+      "steps_per_sec": 80583.157376,
+      "loss_gain": -0.017142,
+      "speed_gain": 2.385715,
+      "grad_ratio": 1.034535,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -1.7%, speed +238.6%; failing learned, loss_material, validation_reported",
+      "description": "Add a half-strength smoothed bigram backoff logit prior",
+      "val_loss": null,
+      "measured": "2026-10-02T10:22:53Z",
       "has_record": true
     }
   ],
