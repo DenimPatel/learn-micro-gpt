@@ -394,3 +394,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0392	7e721a672b070b00118ddca09c7a9286bd9f4d23	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the gradient check did not pass	Replace softmax expf with a degree-eight range-reduced exponential polynomial	
 0393	83cec936d90867df5e19804a585438de6806e87f	c	2.407736	54755.015920	-0.028932	+1.300541	1.108624	keep		Skip post-training sampling and use forward-only direct-logit validation	
 0394	72eaef73d29585a04ecda8248926fdb16251106c	c	2.407734	54196.990715	-0.028931	+1.277096	1.108515	keep		Use bounded polynomial softmax exponentiation and rely on Adam to clear gradients between steps	
+0395	764bec634cdffb7c2a52043a46049f891f2892b3	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
