@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 356,
+    "experiments": 357,
     "keep": 148,
     "discard": 26,
-    "crash": 182
+    "crash": 183
   },
   "pareto": {
     "rust": [
@@ -6118,6 +6118,22 @@
       "description": "Remove the redundant pre-layer RMSNorm and its backward pass",
       "val_loss": null,
       "measured": "2026-10-02T05:32:40Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0368",
+      "parent": "6ed196d72628fc5f28f8dae0f8bd8e495e36921b",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add held-out-safe position-conditioned trigram and bigram logits",
+      "val_loss": null,
+      "measured": "2026-10-02T05:38:05Z",
       "has_record": true
     }
   ],

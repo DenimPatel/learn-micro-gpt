@@ -367,3 +367,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0365	528a1210cb50cd9e2fd4a5ca0be404c2bc14ff5f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Fuse square linear backward passes and cache concatenated attention outputs to eliminate duplicate traversals	
 0366	c26954619e03e6537b081bde83fbe5fdd874a0bb	c	2.419184	43604.809496	-0.033824	+0.832063	0.988564	keep		Fuse dominant linear weight and input backward passes	2.414933
 0367	739b22fabfab03f2ed59a7fbd776a1a969c1d601	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Remove the redundant pre-layer RMSNorm and its backward pass	
+0368	6ed196d72628fc5f28f8dae0f8bd8e495e36921b	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add held-out-safe position-conditioned trigram and bigram logits	
