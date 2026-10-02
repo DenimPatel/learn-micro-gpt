@@ -349,3 +349,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0347	65d6c0783076fc1957a588a23d5cdd9d9ea2a7a7	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use three four-dimensional attention heads	
 0348	afa0a02a72eb9c94a92b9a643205d07cdf8577f1	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0349	71bcb9f191dc0776336ee339a8ca1e66d3e1ebad	c	2.436850	50451.966382	-0.041374	+1.119748	0.992936	keep		Raise cosine learning-rate floor from 0.005 to 0.0075	2.413664
+0350	a21d95b779aefeca154cd3a34ecdefb37621013f	c	2.431634	63655.579638	-0.039145	+1.674500	0.998100	keep		Halve MLP width from 8 to 4 for cheaper projections	2.416341
