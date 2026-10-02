@@ -1071,7 +1071,7 @@ int main(int argc, char **argv) {
 
   /* Adam hyperparams */
   const float learning_rate = 0.01f;
-  const float learning_rate_floor = 0.001f;
+  const float learning_rate_floor = 0.0f;
   const float beta1 = 0.85f, beta2 = 0.98f;
 
   /* Training loop */

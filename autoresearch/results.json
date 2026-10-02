@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "1172c20183bf925a3b46a579bd06a8ba67532d12db8f414b1aefff7d340a25f3",
+      "candidate_sha256": "c0be70c086fbf2c15b5afe26cab12cc75bee5d01502195bce60a1abe70695851",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0360",
-      "parent": "89bc55610e72adbe7fdf2f15788b04a773bf62f1",
+      "run_id": "0363",
+      "parent": "75103352476b4a2e987ce58c536559b6f74cdfc0",
       "track": "c",
-      "loss": 2.405452,
-      "steps_per_sec": 85995.916755,
-      "loss_gain": -0.027956,
-      "speed_gain": 2.613133,
+      "loss": 2.415212,
+      "steps_per_sec": 89905.152712,
+      "loss_gain": -0.032127,
+      "speed_gain": 2.77738,
       "grad_ratio": 0.992553,
       "status": "keep",
       "reason": "",
-      "description": "Halve MLP width from 8 to 4 for a cheaper bottleneck",
-      "val_loss": 2.407436
+      "description": "Let the cosine learning rate decay fully to zero",
+      "val_loss": 2.413716
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 351,
-    "keep": 145,
+    "experiments": 352,
+    "keep": 146,
     "discard": 26,
     "crash": 180
   },
@@ -6038,6 +6038,22 @@
       "description": "Reduce model width from 8 to 4 for fully vector-aligned projections",
       "val_loss": null,
       "measured": "2026-10-02T05:11:39Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0363",
+      "parent": "75103352476b4a2e987ce58c536559b6f74cdfc0",
+      "track": "c",
+      "loss": 2.415212,
+      "steps_per_sec": 89905.152712,
+      "loss_gain": -0.032127,
+      "speed_gain": 2.77738,
+      "grad_ratio": 0.992553,
+      "status": "keep",
+      "reason": "",
+      "description": "Let the cosine learning rate decay fully to zero",
+      "val_loss": 2.413716,
+      "measured": "2026-10-02T05:16:57Z",
       "has_record": true
     }
   ],
