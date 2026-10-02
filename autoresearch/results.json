@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "9c79a89bd1c94476c07a5b56e196eab06e83a694a9c1630467d90bff641548ff",
+      "candidate_sha256": "73c3cd6235c6586518304b3e8b2d5a5a55ae105aaacb95b6f24382ac400e9ef3",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0355",
-      "parent": "b81515fa3b95097395beb45a0449ea9715de654b",
+      "run_id": "0358",
+      "parent": "d6537d564897b61d39b0aacffe35556a82b88afc",
       "track": "c",
-      "loss": 2.405018,
-      "steps_per_sec": 48414.52355,
-      "loss_gain": -0.027771,
-      "speed_gain": 1.034144,
-      "grad_ratio": 0.994681,
+      "loss": 2.404588,
+      "steps_per_sec": 61660.359534,
+      "loss_gain": -0.027587,
+      "speed_gain": 1.59067,
+      "grad_ratio": 0.99462,
       "status": "keep",
       "reason": "",
-      "description": "Reduce residual width to 8 use two 4D heads widen the MLP to 8 and make vector backpropagation dimension safe",
-      "val_loss": 2.405061
+      "description": "Merge attention into one full-width 8D head with the matching scale",
+      "val_loss": 2.405486
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 346,
-    "keep": 143,
+    "experiments": 347,
+    "keep": 144,
     "discard": 25,
     "crash": 178
   },
@@ -5958,6 +5958,22 @@
       "description": "Add a training-only smoothed trigram backoff prior to the logits",
       "val_loss": 2.162111,
       "measured": "2026-10-02T04:42:54Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0358",
+      "parent": "d6537d564897b61d39b0aacffe35556a82b88afc",
+      "track": "c",
+      "loss": 2.404588,
+      "steps_per_sec": 61660.359534,
+      "loss_gain": -0.027587,
+      "speed_gain": 1.59067,
+      "grad_ratio": 0.99462,
+      "status": "keep",
+      "reason": "",
+      "description": "Merge attention into one full-width 8D head with the matching scale",
+      "val_loss": 2.405486,
+      "measured": "2026-10-02T04:46:29Z",
       "has_record": true
     }
   ],
