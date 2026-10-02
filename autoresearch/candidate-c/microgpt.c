@@ -31,7 +31,7 @@
 #define N_LAYER 1
 #define BLOCK_SIZE 16
 #define HEAD_DIM (N_EMBD / N_HEAD) /* 3 */
-#define MLP_DIM 16
+#define MLP_DIM 8
 #define MAX_DOCS 40000
 #define MAX_DOC_LEN 20
 #define NUM_STEPS 1000
@@ -324,20 +324,14 @@ static inline void linear_bwd_x(const float *__restrict__ dout,
   if (nin == MLP_DIM) {
     float32x4_t acc0 = vld1q_f32(dx_out);
     float32x4_t acc1 = vld1q_f32(dx_out + 4);
-    float32x4_t acc2 = vld1q_f32(dx_out + 8);
-    float32x4_t acc3 = vld1q_f32(dx_out + 12);
     for (int i = 0; i < nout; i++) {
       const float32x4_t di = vdupq_n_f32(dout[i]);
       const float *row = w + i * nin;
       acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
       acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
-      acc2 = vfmaq_f32(acc2, di, vld1q_f32(row + 8));
-      acc3 = vfmaq_f32(acc3, di, vld1q_f32(row + 12));
     }
     vst1q_f32(dx_out, acc0);
     vst1q_f32(dx_out + 4, acc1);
-    vst1q_f32(dx_out + 8, acc2);
-    vst1q_f32(dx_out + 12, acc3);
     return;
   }
   for (int i = 0; i < nout; i++) {

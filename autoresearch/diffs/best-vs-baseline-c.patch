@@ -12,7 +12,7 @@
 -#define HEAD_DIM (N_EMBD / N_HEAD) /* 4 */
 -#define MLP_DIM (4 * N_EMBD)       /* 64 */
 +#define HEAD_DIM (N_EMBD / N_HEAD) /* 3 */
-+#define MLP_DIM 16
++#define MLP_DIM 8
  #define MAX_DOCS 40000
  #define MAX_DOC_LEN 20
  #define NUM_STEPS 1000
@@ -63,7 +63,7 @@
  static float saved_logits[BLOCK_SIZE][MAX_VOCAB];
  static float saved_probs[BLOCK_SIZE][MAX_VOCAB];
  
-@@ -199,24 +206,152 @@
+@@ -199,24 +206,146 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
@@ -193,20 +193,14 @@
 +  if (nin == MLP_DIM) {
 +    float32x4_t acc0 = vld1q_f32(dx_out);
 +    float32x4_t acc1 = vld1q_f32(dx_out + 4);
-+    float32x4_t acc2 = vld1q_f32(dx_out + 8);
-+    float32x4_t acc3 = vld1q_f32(dx_out + 12);
 +    for (int i = 0; i < nout; i++) {
 +      const float32x4_t di = vdupq_n_f32(dout[i]);
 +      const float *row = w + i * nin;
 +      acc0 = vfmaq_f32(acc0, di, vld1q_f32(row));
 +      acc1 = vfmaq_f32(acc1, di, vld1q_f32(row + 4));
-+      acc2 = vfmaq_f32(acc2, di, vld1q_f32(row + 8));
-+      acc3 = vfmaq_f32(acc3, di, vld1q_f32(row + 12));
 +    }
 +    vst1q_f32(dx_out, acc0);
 +    vst1q_f32(dx_out + 4, acc1);
-+    vst1q_f32(dx_out + 8, acc2);
-+    vst1q_f32(dx_out + 12, acc3);
 +    return;
 +  }
 +  for (int i = 0; i < nout; i++) {
@@ -224,7 +218,7 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -241,7 +376,6 @@
+@@ -241,7 +370,6 @@
    float val = ms + 1e-5f;
    float32x2_t v2 = vdup_n_f32(val);
    float32x2_t est = vrsqrte_f32(v2);
@@ -232,7 +226,7 @@
    est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
    float scale = vget_lane_f32(est, 0);
    *rms_scale = scale;
-@@ -312,7 +446,7 @@
+@@ -312,7 +440,7 @@
                                 float *__restrict__ m_buf,
                                 float *__restrict__ v_buf, int n, float lr_t,
                                 float b1c, float b2c) {
@@ -241,7 +235,7 @@
    const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
    const float eps = 1e-8f;
    const float inv_b1c = 1.0f / b1c;
-@@ -345,8 +479,6 @@
+@@ -345,8 +473,6 @@
      float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
      rsqrt_est = vmulq_f32(rsqrt_est,
                            vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
@@ -250,7 +244,7 @@
      /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
      float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
      p = vsubq_f32(p, update);
-@@ -467,9 +599,32 @@
+@@ -467,9 +593,32 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -284,7 +278,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -479,7 +634,8 @@
+@@ -479,7 +628,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -294,7 +288,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -579,7 +735,10 @@
+@@ -579,7 +729,10 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -306,7 +300,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -607,13 +766,23 @@
+@@ -607,13 +760,23 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -333,7 +327,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -680,18 +849,7 @@
+@@ -680,18 +843,7 @@
  
        /* Backward through multi-head attention */
        float d_q[N_EMBD] = {0};
@@ -352,7 +346,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -703,7 +861,7 @@
+@@ -703,7 +855,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -361,7 +355,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -727,22 +885,13 @@
+@@ -727,22 +879,13 @@
            float dl = d_logits_attn[t] * INV_SQRT_HD;
            for (int j = 0; j < HEAD_DIM; j++) {
              d_q[hs + j] += dl * saved_k[t][hs + j];
@@ -387,7 +381,7 @@
  
        /* Backward through Q, K, V linear projections.
         *
-@@ -878,7 +1027,10 @@
+@@ -878,7 +1021,10 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -399,7 +393,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -942,7 +1094,7 @@
+@@ -942,7 +1088,7 @@
  
    /* Adam hyperparams */
    const float learning_rate = 0.01f;
@@ -408,7 +402,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,11 +1112,13 @@
+@@ -960,11 +1106,13 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
@@ -422,7 +416,7 @@
      for (int l = 0; l < N_LAYER; l++) {
        memset(g_attn_wq[l], 0, sizeof(g_attn_wq[l]));
        memset(g_attn_wk[l], 0, sizeof(g_attn_wk[l]));
-@@ -975,8 +1129,10 @@
+@@ -975,8 +1123,10 @@
      }
  
      /* Forward pass — all positions */
@@ -434,7 +428,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,13 +1149,24 @@
+@@ -993,13 +1143,24 @@
      backward_all(tokens, n);
  
      /* Adam update */
