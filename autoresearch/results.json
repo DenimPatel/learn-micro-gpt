@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 395,
+    "experiments": 396,
     "keep": 159,
     "discard": 28,
-    "crash": 208
+    "crash": 209
   },
   "pareto": {
     "rust": [
@@ -6743,6 +6743,22 @@
       "description": "Correct query and key gradients in direct normalized-state attention",
       "val_loss": null,
       "measured": "2026-10-02T09:21:53Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0407",
+      "parent": "b3cf442c58466bc8ecee819410fe46d0fdb7b907",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache direct-attention outputs for backward and skip dead Q and K Adam updates",
+      "val_loss": null,
+      "measured": "2026-10-02T09:25:28Z",
       "has_record": true
     }
   ],
