@@ -18,7 +18,7 @@
  #define MAX_DOC_LEN 20
  #define NUM_STEPS 1000
 -#define INV_SQRT_HD 0.5f /* 1/sqrt(HEAD_DIM=4) */
-+#define INV_SQRT_HD 1.0f /* Direct normalized-state scores are cosines. */
++#define INV_SQRT_HD 2.0f /* Scaled cosines sharpen state matching. */
  
  /* Alignment for M-series 128-byte cache lines */
  #define ALIGN128 __attribute__((aligned(128)))
