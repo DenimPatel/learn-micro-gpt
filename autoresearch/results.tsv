@@ -407,3 +407,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0405	a2bbf8e49ef883caffa49619e763b44cc6dbbafc	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Remove the redundant pre-layer RMSNorm before the sole block	
 0406	e16de604227b4d85a6da816c784c92603703d754	c	2.414098	79044.616535	-0.031651	+2.321073	1.100834	keep		Correct query and key gradients in direct normalized-state attention	
 0407	b3cf442c58466bc8ecee819410fe46d0fdb7b907	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache direct-attention outputs for backward and skip dead Q and K Adam updates	
+0408	a1bb5ffa8224ad661cd3bcddb97590dac89aac05	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention outputs and remove redundant backward and Adam work	

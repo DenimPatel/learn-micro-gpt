@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 396,
+    "experiments": 397,
     "keep": 159,
     "discard": 28,
-    "crash": 209
+    "crash": 210
   },
   "pareto": {
     "rust": [
@@ -6759,6 +6759,22 @@
       "description": "Cache direct-attention outputs for backward and skip dead Q and K Adam updates",
       "val_loss": null,
       "measured": "2026-10-02T09:25:28Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0408",
+      "parent": "a1bb5ffa8224ad661cd3bcddb97590dac89aac05",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache attention outputs and remove redundant backward and Adam work",
+      "val_loss": null,
+      "measured": "2026-10-02T09:29:17Z",
       "has_record": true
     }
   ],
