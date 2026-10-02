@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 362,
+    "experiments": 363,
     "keep": 150,
-    "discard": 26,
+    "discard": 27,
     "crash": 186
   },
   "pareto": {
@@ -6214,6 +6214,22 @@
       "description": "Raise the peak learning rate from 0.01 to 0.015",
       "val_loss": 2.404233,
       "measured": "2026-10-02T06:06:13Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0374",
+      "parent": "26e3de53a94f4f634879274fa74349de46f12f49",
+      "track": "c",
+      "loss": 2.336248,
+      "steps_per_sec": 61486.117109,
+      "loss_gain": 0.001618,
+      "speed_gain": 1.583349,
+      "grad_ratio": 1.007744,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss +0.2%, speed +158.3%; failing learned, loss_material",
+      "description": "Add a fixed train-only smoothed bigram log-odds logit prior",
+      "val_loss": 2.332155,
+      "measured": "2026-10-02T06:09:34Z",
       "has_record": true
     }
   ],

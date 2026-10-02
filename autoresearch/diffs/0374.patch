@@ -1,0 +1,83 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -111,6 +111,10 @@ static float ALIGN128 lm_head[MAX_VOCAB * N_EMBD];
+ /* Direct output-class prior learned alongside the language model. */
+ static float ALIGN128 lm_bias[MAX_VOCAB];
+ 
++/* Additive character-transition log-odds derived only from training data. */
++static float ALIGN128
++    bigram_logit_prior[MAX_VOCAB * MAX_VOCAB];
++
+ /* Gradient arrays */
+ static float ALIGN128 g_wte[MAX_VOCAB * N_EMBD];
+ static float ALIGN128 g_wpe[BLOCK_SIZE * N_EMBD];
+@@ -580,7 +584,11 @@ static void init_weights(void) {
+ static void init_weights(void) {
+   const float std = 0.08f;
+   float target_counts[MAX_VOCAB] = {0};
++  float context_counts[MAX_VOCAB] = {0};
++  float bigram_counts[MAX_VOCAB * MAX_VOCAB] = {0};
++  float global_prob[MAX_VOCAB];
+   float target_total = 0.0f;
+   for (int di = 0; di < num_train_docs; di++) {
+     int doc_id = doc_order[di];
+@@ -590,15 +598,37 @@ static void init_weights(void) {
+     target_total += (float)n_targets;
+     for (int i = 0; i < n_targets; i++) {
+       int token = i < doc_len ? char_to_idx[(int)docs_raw[doc_id][i]]
+                               : BOS_TOKEN;
++      int context =
++          i == 0 ? BOS_TOKEN : char_to_idx[(int)docs_raw[doc_id][i - 1]];
+       target_counts[token] += 1.0f;
++      context_counts[context] += 1.0f;
++      bigram_counts[context * MAX_VOCAB + token] += 1.0f;
+     }
+   }
++  memset(bigram_logit_prior, 0, sizeof(bigram_logit_prior));
++  for (int i = 0; i < vocab_size; i++)
++    global_prob[i] = 1.0f / (float)vocab_size;
+   if (target_total > 0.0f) {
+     const float alpha = 0.1f;
+     float denominator = target_total + alpha * (float)vocab_size;
+-    for (int i = 0; i < vocab_size; i++)
+-      lm_bias[i] = logf((target_counts[i] + alpha) / denominator);
++    for (int i = 0; i < vocab_size; i++) {
++      global_prob[i] = (target_counts[i] + alpha) / denominator;
++      lm_bias[i] = logf(global_prob[i]);
++    }
++    for (int context = 0; context < vocab_size; context++) {
++      float context_denominator = context_counts[context] + alpha;
++      for (int target = 0; target < vocab_size; target++) {
++        float conditional =
++            (bigram_counts[context * MAX_VOCAB + target] +
++             alpha * global_prob[target]) /
++            context_denominator;
++        bigram_logit_prior[context * MAX_VOCAB + target] =
++            logf(conditional / global_prob[target]);
++      }
++    }
+   } else {
+     memset(lm_bias, 0, sizeof(lm_bias));
+   }
+@@ -756,8 +786,10 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
+   rmsnorm_fwd(x, saved_x_normed_final[pos_id], N_EMBD, &saved_rms_final[pos_id]);
+   linear_fwd(saved_x_normed_final[pos_id], lm_head, saved_logits[pos_id], vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    saved_logits[pos_id][i] += lm_bias[i];
++  const float *bigram_prior = bigram_logit_prior + token_id * MAX_VOCAB;
++  for (int i = 0; i < vocab_size; i++)
++    saved_logits[pos_id][i] += lm_bias[i] + bigram_prior[i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {
+@@ -1095,8 +1127,9 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
+   rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
+   linear_fwd(xn, lm_head, logits_out, vocab_size, N_EMBD);
+-  for (int i = 0; i < vocab_size; i++)
+-    logits_out[i] += lm_bias[i];
++  const float *bigram_prior = bigram_logit_prior + token_id * MAX_VOCAB;
++  for (int i = 0; i < vocab_size; i++)
++    logits_out[i] += lm_bias[i] + bigram_prior[i];
+   float skip = 0.0f;
+   const float *skip_embedding = wte + token_id * N_EMBD;
+   for (int i = 0; i < N_EMBD; i++) {
