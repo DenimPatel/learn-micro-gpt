@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 357,
+    "experiments": 358,
     "keep": 148,
     "discard": 26,
-    "crash": 183
+    "crash": 184
   },
   "pareto": {
     "rust": [
@@ -6134,6 +6134,22 @@
       "description": "Add held-out-safe position-conditioned trigram and bigram logits",
       "val_loss": null,
       "measured": "2026-10-02T05:38:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0369",
+      "parent": "2b3724c933106eefd039e81906968f623f57788d",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Vectorize attention forward and backward passes and reuse cached concatenated attention inputs",
+      "val_loss": null,
+      "measured": "2026-10-02T05:46:00Z",
       "has_record": true
     }
   ],
