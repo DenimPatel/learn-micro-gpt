@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 399,
+    "experiments": 400,
     "keep": 160,
     "discard": 28,
-    "crash": 211
+    "crash": 212
   },
   "pareto": {
     "rust": [
@@ -6807,6 +6807,22 @@
       "description": "Cache direct-attention states and remove redundant normalization optimizer and backward work",
       "val_loss": null,
       "measured": "2026-10-02T09:58:19Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0411",
+      "parent": "2cdde96140358925f26ba9caa4604e9e4f852695",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Sharpen direct attention to 2x and remove duplicate normalization dead Q/K updates and attention recomputation",
+      "val_loss": null,
+      "measured": "2026-10-02T10:04:27Z",
       "has_record": true
     }
   ],

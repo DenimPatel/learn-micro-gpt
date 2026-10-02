@@ -410,3 +410,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0408	a1bb5ffa8224ad661cd3bcddb97590dac89aac05	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention outputs and remove redundant backward and Adam work	
 0409	0546c68cb60250fa84a0ee76e4c44c97f8c46873	c	2.412688	63579.694253	-0.031048	+1.671311	1.102242	keep		Use unit scaling for direct normalized-state attention logits	
 0410	7da6b66051d7901c41d39d516b27d27011eeff2f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache direct-attention states and remove redundant normalization optimizer and backward work	
+0411	2cdde96140358925f26ba9caa4604e9e4f852695	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Sharpen direct attention to 2x and remove duplicate normalization dead Q/K updates and attention recomputation	
