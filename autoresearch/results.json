@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 326,
+    "experiments": 327,
     "keep": 136,
     "discard": 23,
-    "crash": 167
+    "crash": 168
   },
   "pareto": {
     "rust": [
@@ -5638,6 +5638,22 @@
       "description": "Use one full-width attention head and remove redundant gradient clearing and attention reconstruction",
       "val_loss": null,
       "measured": "2026-10-02T03:07:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0338",
+      "parent": "43fe137266334695a799ab0b72c8ad8c9aad3dec",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Accumulate gradients over document pairs and double the cosine peak learning rate",
+      "val_loss": null,
+      "measured": "2026-10-02T03:11:21Z",
       "has_record": true
     }
   ],
