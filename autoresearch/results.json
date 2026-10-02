@@ -195,9 +195,9 @@
     "c": ""
   },
   "counts": {
-    "experiments": 324,
+    "experiments": 325,
     "keep": 136,
-    "discard": 22,
+    "discard": 23,
     "crash": 166
   },
   "pareto": {
@@ -5606,6 +5606,22 @@
       "description": "Halve residual width to 8 and correctly scale four attention heads",
       "val_loss": null,
       "measured": "2026-10-02T02:53:42Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0336",
+      "parent": "eb21ba30ac3fe2f32f14efcfee939841176226c1",
+      "track": "c",
+      "loss": 2.574614,
+      "steps_per_sec": 45794.798704,
+      "loss_gain": -0.100246,
+      "speed_gain": 0.924076,
+      "grad_ratio": 1.004978,
+      "status": "discard",
+      "reason": "no axis improved materially: discarded: loss -10.0%, speed +92.4%; failing learned, loss_material, loss_tolerance, validation_tolerance",
+      "description": "Tie input and output embeddings with one correctly aggregated Adam update",
+      "val_loss": 2.558478,
+      "measured": "2026-10-02T02:58:13Z",
       "has_record": true
     }
   ],
