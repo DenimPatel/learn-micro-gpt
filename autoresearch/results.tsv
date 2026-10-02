@@ -334,3 +334,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0332	7dcf0916aabf68f94ab267e966a094dfc2f02bcc	c	2.381984	60336.524661	-0.017927	+1.535049	1.004978	keep		Update only token and position embeddings used by each document	2.385616
 0333	4adcc31bc12166ac2610acb7bedc3e1b72972ac4	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0334	82aa203937b43a07c720d82a2379558fcbbc1c36	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Halve embedding width to 8 and correct attention scaling	
+0335	6e1f91c304afbae60d233d71f209456d63a3d89e	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Halve residual width to 8 and correctly scale four attention heads	

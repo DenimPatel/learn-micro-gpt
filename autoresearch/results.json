@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 323,
+    "experiments": 324,
     "keep": 136,
     "discard": 22,
-    "crash": 165
+    "crash": 166
   },
   "pareto": {
     "rust": [
@@ -5590,6 +5590,22 @@
       "description": "Halve embedding width to 8 and correct attention scaling",
       "val_loss": null,
       "measured": "2026-10-02T02:51:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0335",
+      "parent": "6e1f91c304afbae60d233d71f209456d63a3d89e",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Halve residual width to 8 and correctly scale four attention heads",
+      "val_loss": null,
+      "measured": "2026-10-02T02:53:42Z",
       "has_record": true
     }
   ],
