@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 322,
+    "experiments": 323,
     "keep": 136,
     "discard": 22,
-    "crash": 164
+    "crash": 165
   },
   "pareto": {
     "rust": [
@@ -5574,6 +5574,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T02:49:03Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0334",
+      "parent": "82aa203937b43a07c720d82a2379558fcbbc1c36",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Halve embedding width to 8 and correct attention scaling",
+      "val_loss": null,
+      "measured": "2026-10-02T02:51:05Z",
       "has_record": true
     }
   ],
