@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 374,
+    "experiments": 375,
     "keep": 154,
     "discard": 27,
-    "crash": 193
+    "crash": 194
   },
   "pareto": {
     "rust": [
@@ -6407,6 +6407,22 @@
       "description": "Reduce the one-layer MLP width from four hidden units to three",
       "val_loss": 2.388505,
       "measured": "2026-10-02T07:05:54Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0386",
+      "parent": "0b426bae6990a2295ec780f7eceb410b54c15159",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T07:16:34Z",
       "has_record": true
     }
   ],
