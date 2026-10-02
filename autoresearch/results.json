@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "ef7f920a79bed4792a1210b781343571689fb3c4caf7d7bc13563db1b2026434",
+      "candidate_sha256": "9b651653ec5e12cbc09d6225a5a8a4b6625c32435878dd38b4e2d286d5d2f99d",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,17 +174,17 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0406",
-      "parent": "e16de604227b4d85a6da816c784c92603703d754",
+      "run_id": "0409",
+      "parent": "0546c68cb60250fa84a0ee76e4c44c97f8c46873",
       "track": "c",
-      "loss": 2.414098,
-      "steps_per_sec": 79044.616535,
-      "loss_gain": -0.031651,
-      "speed_gain": 2.321073,
-      "grad_ratio": 1.100834,
+      "loss": 2.412688,
+      "steps_per_sec": 63579.694253,
+      "loss_gain": -0.031048,
+      "speed_gain": 1.671311,
+      "grad_ratio": 1.102242,
       "status": "keep",
       "reason": "",
-      "description": "Correct query and key gradients in direct normalized-state attention",
+      "description": "Use unit scaling for direct normalized-state attention logits",
       "val_loss": null
     }
   },
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 397,
-    "keep": 159,
+    "experiments": 398,
+    "keep": 160,
     "discard": 28,
     "crash": 210
   },
@@ -6775,6 +6775,22 @@
       "description": "Cache attention outputs and remove redundant backward and Adam work",
       "val_loss": null,
       "measured": "2026-10-02T09:29:17Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0409",
+      "parent": "0546c68cb60250fa84a0ee76e4c44c97f8c46873",
+      "track": "c",
+      "loss": 2.412688,
+      "steps_per_sec": 63579.694253,
+      "loss_gain": -0.031048,
+      "speed_gain": 1.671311,
+      "grad_ratio": 1.102242,
+      "status": "keep",
+      "reason": "",
+      "description": "Use unit scaling for direct normalized-state attention logits",
+      "val_loss": null,
+      "measured": "2026-10-02T09:33:22Z",
       "has_record": true
     }
   ],
