@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 398,
+    "experiments": 399,
     "keep": 160,
     "discard": 28,
-    "crash": 210
+    "crash": 211
   },
   "pareto": {
     "rust": [
@@ -6791,6 +6791,22 @@
       "description": "Use unit scaling for direct normalized-state attention logits",
       "val_loss": null,
       "measured": "2026-10-02T09:33:22Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0410",
+      "parent": "7da6b66051d7901c41d39d516b27d27011eeff2f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache direct-attention states and remove redundant normalization optimizer and backward work",
+      "val_loss": null,
+      "measured": "2026-10-02T09:58:19Z",
       "has_record": true
     }
   ],
