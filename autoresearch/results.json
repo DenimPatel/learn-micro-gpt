@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 316,
+    "experiments": 317,
     "keep": 135,
     "discard": 21,
-    "crash": 160
+    "crash": 161
   },
   "pareto": {
     "rust": [
@@ -5478,6 +5478,22 @@
       "description": "Replace linear learning-rate decay with cosine decay over the 1000 training steps",
       "val_loss": 2.376884,
       "measured": "2026-10-02T00:17:12Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0328",
+      "parent": "929ee000ce1803568998abb7aaad1da1ea3917fd",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use one correctly scaled full-width attention head",
+      "val_loss": null,
+      "measured": "2026-10-02T00:20:13Z",
       "has_record": true
     }
   ],
