@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 377,
+    "experiments": 378,
     "keep": 154,
     "discard": 27,
-    "crash": 196
+    "crash": 197
   },
   "pareto": {
     "rust": [
@@ -6455,6 +6455,22 @@
       "description": "Add a smoothed train-only positional log-prior residual",
       "val_loss": null,
       "measured": "2026-10-02T07:27:12Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0389",
+      "parent": "6f9c62ae36f1620ad4fb831a0147d6ee40f19b7f",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache attention inputs for exact reuse during backward",
+      "val_loss": null,
+      "measured": "2026-10-02T07:31:46Z",
       "has_record": true
     }
   ],
