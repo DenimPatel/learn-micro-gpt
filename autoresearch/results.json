@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 387,
+    "experiments": 388,
     "keep": 156,
     "discard": 28,
-    "crash": 203
+    "crash": 204
   },
   "pareto": {
     "rust": [
@@ -6615,6 +6615,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T08:31:21Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0399",
+      "parent": "f0908eed035b5cb1cc79ab83682db1afd802bdd7",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Use fixed adjacent-token average attention and remove Q K projection work",
+      "val_loss": null,
+      "measured": "2026-10-02T08:42:55Z",
       "has_record": true
     }
   ],
