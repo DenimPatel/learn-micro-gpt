@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "969e2aa304500084553d47cbbf61f0d9401d95cb0dee930101d2ad9e61c72404",
+      "candidate_sha256": "bf6dc2249eeec254ceb5515288f91f04cd4b17cf5a076ed39a57b9c287aa40b4",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0376",
-      "parent": "c4fee85ca7dbf248517e99b65f7abf5461ea1ddb",
+      "run_id": "0383",
+      "parent": "dcfee8c73607c934c314c6789ea8672c6f05a948",
       "track": "c",
-      "loss": 2.412338,
-      "steps_per_sec": 60083.21282,
-      "loss_gain": -0.030899,
-      "speed_gain": 1.524406,
-      "grad_ratio": 1.099484,
+      "loss": 2.407736,
+      "steps_per_sec": 108631.70162,
+      "loss_gain": -0.028932,
+      "speed_gain": 3.564179,
+      "grad_ratio": 1.108624,
       "status": "keep",
       "reason": "",
-      "description": "Raise the peak cosine learning rate from 0.015 to 0.02",
-      "val_loss": 2.387714
+      "description": "Widen the one-layer MLP from two to three hidden units",
+      "val_loss": 2.388505
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 371,
-    "keep": 151,
+    "experiments": 372,
+    "keep": 152,
     "discard": 27,
     "crash": 193
   },
@@ -228,7 +228,8 @@
     ],
     "c": [
       "0295",
-      "0305"
+      "0305",
+      "0383"
     ]
   },
   "runs": [
@@ -6358,6 +6359,22 @@
       "description": "Split attention into two four-dimensional heads",
       "val_loss": null,
       "measured": "2026-10-02T07:00:24Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0383",
+      "parent": "dcfee8c73607c934c314c6789ea8672c6f05a948",
+      "track": "c",
+      "loss": 2.407736,
+      "steps_per_sec": 108631.70162,
+      "loss_gain": -0.028932,
+      "speed_gain": 3.564179,
+      "grad_ratio": 1.108624,
+      "status": "keep",
+      "reason": "",
+      "description": "Widen the one-layer MLP from two to three hidden units",
+      "val_loss": 2.388505,
+      "measured": "2026-10-02T07:03:15Z",
       "has_record": true
     }
   ],
