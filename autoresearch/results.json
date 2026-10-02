@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 314,
+    "experiments": 315,
     "keep": 134,
     "discard": 21,
-    "crash": 159
+    "crash": 160
   },
   "pareto": {
     "rust": [
@@ -5446,6 +5446,22 @@
       "description": "Halve the MLP and remove exact redundant attention and zeroing work",
       "val_loss": null,
       "measured": "2026-10-02T00:01:53Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0326",
+      "parent": "c8494ee012d712c06a8fa254d32fe241dabdeb13",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T00:11:41Z",
       "has_record": true
     }
   ],
