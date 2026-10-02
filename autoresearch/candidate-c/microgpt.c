@@ -171,6 +171,7 @@ static float ALIGN128 saved_x_residual_attn[BLOCK_SIZE][N_EMBD];
 static float ALIGN128 saved_x_normed_attn[BLOCK_SIZE][N_EMBD];
 static float saved_rms_attn[BLOCK_SIZE];
 static float ALIGN128 saved_v[BLOCK_SIZE][N_EMBD];
+static float ALIGN128 saved_x_attn[BLOCK_SIZE][N_EMBD];
 static float saved_attn_weights[BLOCK_SIZE][N_HEAD][BLOCK_SIZE];
 static float ALIGN128 saved_x_attn_out[BLOCK_SIZE][N_EMBD];
 static float ALIGN128 saved_x_post_attn[BLOCK_SIZE][N_EMBD];
@@ -768,6 +769,7 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
         x_attn[hs + j] = s;
       }
     }
+    memcpy(saved_x_attn[pos_id], x_attn, N_EMBD * sizeof(float));
 
     linear_fwd(x_attn, attn_wo[li], saved_x_attn_out[pos_id], N_EMBD, N_EMBD);
 
@@ -907,21 +909,7 @@ static void backward_all(const int *tokens, int n) {
       float d_x_attn[N_EMBD];
       memset(d_x_attn, 0, N_EMBD * sizeof(float));
 
-      /* We need x_attn — reconstruct it from saved attention weights and values
-       */
-      float x_attn_reconstructed[N_EMBD];
-      for (int h = 0; h < N_HEAD; h++) {
-        int hs = h * HEAD_DIM;
-        int num_keys = pos + 1;
-        for (int j = 0; j < HEAD_DIM; j++) {
-          float s = 0.0f;
-          for (int t = 0; t < num_keys; t++)
-            s += saved_attn_weights[pos][h][t] * saved_v[t][hs + j];
-          x_attn_reconstructed[hs + j] = s;
-        }
-      }
-
-      linear_bwd_wx(d_attn_proj_out, attn_wo[li], x_attn_reconstructed,
+      linear_bwd_wx(d_attn_proj_out, attn_wo[li], saved_x_attn[pos],
                     g_attn_wo[li], d_x_attn, N_EMBD, N_EMBD);
 
       /* Backward through multi-head attention */

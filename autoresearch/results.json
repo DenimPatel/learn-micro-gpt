@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "03187164615ef2da00bb6cdf60df639385ae401d73dccd61b08fba4f9f640a42",
+      "candidate_sha256": "e9c51e6bf9403daae31397feb9e9406cc3e7e5d75c9bfda4045622735915386d",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,17 +174,17 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0414",
-      "parent": "108ed534e6beb1bc9a19f38c66d5ec268acc6a3e",
+      "run_id": "0415",
+      "parent": "cd3f69e693abd6a3ffe736db612eb88dbd9d43e1",
       "track": "c",
       "loss": 2.413162,
-      "steps_per_sec": 75467.659621,
+      "steps_per_sec": 59970.615515,
       "loss_gain": -0.031251,
-      "speed_gain": 2.170786,
+      "speed_gain": 1.519675,
       "grad_ratio": 1.102429,
       "status": "keep",
       "reason": "",
-      "description": "Isolate 2x direct-attention score sharpening",
+      "description": "Cache direct-attention outputs to eliminate redundant backward reconstruction",
       "val_loss": null
     }
   },
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 403,
-    "keep": 162,
+    "experiments": 404,
+    "keep": 163,
     "discard": 28,
     "crash": 213
   },
@@ -6871,6 +6871,22 @@
       "description": "Isolate 2x direct-attention score sharpening",
       "val_loss": null,
       "measured": "2026-10-02T10:11:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0415",
+      "parent": "cd3f69e693abd6a3ffe736db612eb88dbd9d43e1",
+      "track": "c",
+      "loss": 2.413162,
+      "steps_per_sec": 59970.615515,
+      "loss_gain": -0.031251,
+      "speed_gain": 1.519675,
+      "grad_ratio": 1.102429,
+      "status": "keep",
+      "reason": "",
+      "description": "Cache direct-attention outputs to eliminate redundant backward reconstruction",
+      "val_loss": null,
+      "measured": "2026-10-02T10:11:31Z",
       "has_record": true
     }
   ],

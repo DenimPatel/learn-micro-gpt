@@ -55,16 +55,18 @@
  
  /* ── Dataset ─────────────────────────────────────────────────────────── */
  static char docs_raw[MAX_DOCS][MAX_DOC_LEN];
-@@ -165,8 +170,6 @@
+@@ -165,9 +170,8 @@
  static float ALIGN128 saved_x_residual_attn[BLOCK_SIZE][N_EMBD];
  static float ALIGN128 saved_x_normed_attn[BLOCK_SIZE][N_EMBD];
  static float saved_rms_attn[BLOCK_SIZE];
 -static float ALIGN128 saved_q[BLOCK_SIZE][N_EMBD];
 -static float ALIGN128 saved_k[BLOCK_SIZE][N_EMBD];
  static float ALIGN128 saved_v[BLOCK_SIZE][N_EMBD];
++static float ALIGN128 saved_x_attn[BLOCK_SIZE][N_EMBD];
  static float saved_attn_weights[BLOCK_SIZE][N_HEAD][BLOCK_SIZE];
  static float ALIGN128 saved_x_attn_out[BLOCK_SIZE][N_EMBD];
-@@ -179,6 +182,8 @@
+ static float ALIGN128 saved_x_post_attn[BLOCK_SIZE][N_EMBD];
+@@ -179,6 +183,8 @@
  static float ALIGN128 saved_mlp_relu[BLOCK_SIZE][MLP_DIM];
  
  static float ALIGN128 saved_x_final[BLOCK_SIZE][N_EMBD];
@@ -73,7 +75,7 @@
  static float saved_logits[BLOCK_SIZE][MAX_VOCAB];
  static float saved_probs[BLOCK_SIZE][MAX_VOCAB];
  
-@@ -186,11 +191,10 @@
+@@ -186,11 +192,10 @@
  static float ALIGN128 dx[N_EMBD];
  static float ALIGN128 dtmp2[MLP_DIM];
  
@@ -89,7 +91,7 @@
  static float ALIGN128 dk_pending[BLOCK_SIZE][N_EMBD];
  static float ALIGN128 dv_pending[BLOCK_SIZE][N_EMBD];
  
-@@ -199,24 +203,203 @@
+@@ -199,24 +204,203 @@
  static inline void linear_fwd(const float *__restrict__ x,
                                const float *__restrict__ w,
                                float *__restrict__ out, int nout, int nin) {
@@ -301,7 +303,7 @@
  }
  
  static inline void rmsnorm_fwd(const float *__restrict__ x,
-@@ -241,7 +424,6 @@
+@@ -241,7 +425,6 @@
    float val = ms + 1e-5f;
    float32x2_t v2 = vdup_n_f32(val);
    float32x2_t est = vrsqrte_f32(v2);
@@ -309,7 +311,7 @@
    est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
    float scale = vget_lane_f32(est, 0);
    *rms_scale = scale;
-@@ -290,6 +472,30 @@
+@@ -290,6 +473,30 @@
    }
  }
  
@@ -340,7 +342,7 @@
  static inline void softmax_fwd(const float *__restrict__ logits,
                                 float *__restrict__ probs, int n) {
    float mx = logits[0];
-@@ -298,7 +504,7 @@
+@@ -298,7 +505,7 @@
        mx = logits[i];
    float sum = 0.0f;
    for (int i = 0; i < n; i++) {
@@ -349,7 +351,7 @@
      sum += probs[i];
    }
    float inv = 1.0f / sum;
-@@ -312,7 +518,7 @@
+@@ -312,7 +519,7 @@
                                 float *__restrict__ m_buf,
                                 float *__restrict__ v_buf, int n, float lr_t,
                                 float b1c, float b2c) {
@@ -358,7 +360,7 @@
    const float one_m_b1 = 1.0f - beta1, one_m_b2 = 1.0f - beta2;
    const float eps = 1e-8f;
    const float inv_b1c = 1.0f / b1c;
-@@ -345,8 +551,6 @@
+@@ -345,8 +552,6 @@
      float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
      rsqrt_est = vmulq_f32(rsqrt_est,
                            vrsqrtsq_f32(vmulq_f32(vhat, rsqrt_est), rsqrt_est));
@@ -367,7 +369,7 @@
      /* Compute update: lr * mhat * (1/sqrt(vhat+eps)) */
      float32x4_t update = vmulq_f32(vlr, vmulq_f32(mhat, rsqrt_est));
      p = vsubq_f32(p, update);
-@@ -467,9 +671,32 @@
+@@ -467,9 +672,32 @@
  
  static void init_weights(void) {
    const float std = 0.08f;
@@ -401,7 +403,7 @@
    for (int l = 0; l < N_LAYER; l++) {
      init_matrix(attn_wq[l], N_EMBD, N_EMBD, std);
      init_matrix(attn_wk[l], N_EMBD, N_EMBD, std);
-@@ -479,7 +706,8 @@
+@@ -479,7 +707,8 @@
      init_matrix(mlp_fc2[l], N_EMBD, MLP_DIM, std);
    }
  
@@ -411,7 +413,7 @@
    for (int l = 0; l < N_LAYER; l++)
      total += 4 * N_EMBD * N_EMBD + MLP_DIM * N_EMBD + N_EMBD * MLP_DIM;
    printf("num params: %d\n", total);
-@@ -516,14 +744,10 @@
+@@ -516,14 +745,10 @@
      rmsnorm_fwd(x, saved_x_normed_attn[pos_id], N_EMBD,
                  &saved_rms_attn[pos_id]);
  
@@ -427,7 +429,7 @@
      float ALIGN128 x_attn[N_EMBD];
      for (int h = 0; h < N_HEAD; h++) {
        int hs = h * HEAD_DIM;
-@@ -532,7 +756,8 @@
+@@ -532,7 +757,8 @@
        for (int t = 0; t < num_keys; t++) {
          float dot = 0.0f;
          for (int j = 0; j < HEAD_DIM; j++)
@@ -437,7 +439,15 @@
          attn_logits[t] = dot * INV_SQRT_HD;
        }
        softmax_fwd(attn_logits, saved_attn_weights[pos_id][h], num_keys);
-@@ -561,11 +786,8 @@
+@@ -543,6 +769,7 @@
+         x_attn[hs + j] = s;
+       }
+     }
++    memcpy(saved_x_attn[pos_id], x_attn, N_EMBD * sizeof(float));
+ 
+     linear_fwd(x_attn, attn_wo[li], saved_x_attn_out[pos_id], N_EMBD, N_EMBD);
+ 
+@@ -561,11 +788,8 @@
                 saved_mlp_hidden[pos_id], MLP_DIM, N_EMBD);
  
      /* ReLU — NEON */
@@ -451,7 +461,7 @@
  
      float ALIGN128 mlp_out[N_EMBD];
      linear_fwd(saved_mlp_relu[pos_id], mlp_fc2[li], mlp_out, N_EMBD, MLP_DIM);
-@@ -579,7 +801,16 @@
+@@ -579,7 +803,16 @@
    }
  
    memcpy(saved_x_final[pos_id], x, N_EMBD * sizeof(float));
@@ -469,7 +479,7 @@
    softmax_fwd(saved_logits[pos_id], saved_probs[pos_id], vocab_size);
  }
  
-@@ -607,13 +838,31 @@
+@@ -607,13 +840,31 @@
  
      /* dL/d(logits) = (probs - one_hot(target)) / n */
      float dlogits[MAX_VOCAB];
@@ -505,7 +515,7 @@
  
      /* Backward through layers (reverse order) */
      for (int li = N_LAYER - 1; li >= 0; li--) {
-@@ -626,9 +875,8 @@
+@@ -626,9 +877,8 @@
  
        /* Backward through mlp_fc2: mlp_out = linear(mlp_relu, mlp_fc2) */
        memset(dtmp2, 0, MLP_DIM * sizeof(float));
@@ -517,15 +527,29 @@
  
        /* Backward through ReLU */
        float d_mlp_pre[MLP_DIM];
-@@ -673,25 +921,11 @@
-         }
-       }
+@@ -659,39 +909,11 @@
+       float d_x_attn[N_EMBD];
+       memset(d_x_attn, 0, N_EMBD * sizeof(float));
  
+-      /* We need x_attn — reconstruct it from saved attention weights and values
+-       */
+-      float x_attn_reconstructed[N_EMBD];
+-      for (int h = 0; h < N_HEAD; h++) {
+-        int hs = h * HEAD_DIM;
+-        int num_keys = pos + 1;
+-        for (int j = 0; j < HEAD_DIM; j++) {
+-          float s = 0.0f;
+-          for (int t = 0; t < num_keys; t++)
+-            s += saved_attn_weights[pos][h][t] * saved_v[t][hs + j];
+-          x_attn_reconstructed[hs + j] = s;
+-        }
+-      }
+-
 -      linear_bwd_w(d_attn_proj_out, x_attn_reconstructed,
 -                   g_attn_wo[li], N_EMBD, N_EMBD);
 -      linear_bwd_x(d_attn_proj_out, attn_wo[li], d_x_attn, N_EMBD,
 -                   N_EMBD);
-+      linear_bwd_wx(d_attn_proj_out, attn_wo[li], x_attn_reconstructed,
++      linear_bwd_wx(d_attn_proj_out, attn_wo[li], saved_x_attn[pos],
 +                    g_attn_wo[li], d_x_attn, N_EMBD, N_EMBD);
  
        /* Backward through multi-head attention */
@@ -545,7 +569,7 @@
  
        for (int h = 0; h < N_HEAD; h++) {
          int hs = h * HEAD_DIM;
-@@ -703,7 +937,7 @@
+@@ -703,7 +925,7 @@
          for (int t = 0; t < num_keys; t++) {
            float dot = 0.0f;
            for (int j = 0; j < HEAD_DIM; j++) {
@@ -554,7 +578,7 @@
                  saved_attn_weights[pos][h][t] * d_x_attn[hs + j];
              dot += d_x_attn[hs + j] * saved_v[t][hs + j];
            }
-@@ -722,68 +956,29 @@
+@@ -722,68 +944,29 @@
            d_logits_attn[t] =
                saved_attn_weights[pos][h][t] * (d_attn_w[t] - wdsum);
  
@@ -639,7 +663,7 @@
  
        /* Backward through rmsnorm before attention */
        /* dx already contains d(x_residual_attn) from residual */
-@@ -825,13 +1020,11 @@
+@@ -825,13 +1008,11 @@
  
      rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
  
@@ -656,7 +680,7 @@
      memcpy(saved_v[pos_id], v, N_EMBD * sizeof(float));
  
      float x_attn[N_EMBD];
-@@ -843,7 +1036,8 @@
+@@ -843,7 +1024,8 @@
        for (int t = 0; t < num_keys; t++) {
          float dot = 0.0f;
          for (int j = 0; j < HEAD_DIM; j++)
@@ -666,7 +690,7 @@
          attn_logits[t] = dot * INV_SQRT_HD;
        }
  
-@@ -878,7 +1072,16 @@
+@@ -878,7 +1060,16 @@
        x[i] = mlp_out[i] + x_res[i];
    }
  
@@ -684,7 +708,7 @@
  }
  
  /* ── Main ────────────────────────────────────────────────────────────── */
-@@ -941,8 +1144,9 @@
+@@ -941,8 +1132,9 @@
    init_weights();
  
    /* Adam hyperparams */
@@ -696,7 +720,7 @@
  
    /* Training loop */
    for (int step = 0; step < num_steps; step++) {
-@@ -960,23 +1164,15 @@
+@@ -960,23 +1152,15 @@
      int n = seq_len - 1;       /* number of prediction positions */
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
@@ -726,7 +750,7 @@
  
      /* Compute loss */
      float loss = 0.0f;
-@@ -993,19 +1189,28 @@
+@@ -993,19 +1177,28 @@
      backward_all(tokens, n);
  
      /* Adam update */
@@ -763,7 +787,7 @@
        adam_update(attn_wv[l], g_attn_wv[l], m_attn_wv[l], v_attn_wv[l],
                    N_EMBD * N_EMBD, lr_t, b1c, b2c);
        adam_update(attn_wo[l], g_attn_wo[l], m_attn_wo[l], v_attn_wo[l],
-@@ -1022,7 +1227,7 @@
+@@ -1022,7 +1215,7 @@
    /* ── Inference ─────────────────────────────────────────────────── */
    float temperature = 0.5f;
    printf("\n--- inference (new, hallucinated names) ---\n");
@@ -772,7 +796,7 @@
      /* Clear KV cache */
      int token_id = BOS_TOKEN;
      char name[BLOCK_SIZE + 1];
-@@ -1075,6 +1280,7 @@
+@@ -1075,6 +1268,7 @@
     */
    double val_total = 0.0;
    int val_positions = 0;
@@ -780,7 +804,7 @@
    for (int vi = 0; vi < num_val_docs; vi++) {
      const char *doc = docs_raw[val_order[vi]];
      int doc_len = doc_lens[val_order[vi]];
-@@ -1086,12 +1292,18 @@
+@@ -1086,12 +1280,18 @@
      int n = doc_len + 1;
      if (n > BLOCK_SIZE)
        n = BLOCK_SIZE;
