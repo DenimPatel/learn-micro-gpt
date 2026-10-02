@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "73c3cd6235c6586518304b3e8b2d5a5a55ae105aaacb95b6f24382ac400e9ef3",
+      "candidate_sha256": "1172c20183bf925a3b46a579bd06a8ba67532d12db8f414b1aefff7d340a25f3",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0358",
-      "parent": "d6537d564897b61d39b0aacffe35556a82b88afc",
+      "run_id": "0360",
+      "parent": "89bc55610e72adbe7fdf2f15788b04a773bf62f1",
       "track": "c",
-      "loss": 2.404588,
-      "steps_per_sec": 61660.359534,
-      "loss_gain": -0.027587,
-      "speed_gain": 1.59067,
-      "grad_ratio": 0.99462,
+      "loss": 2.405452,
+      "steps_per_sec": 85995.916755,
+      "loss_gain": -0.027956,
+      "speed_gain": 2.613133,
+      "grad_ratio": 0.992553,
       "status": "keep",
       "reason": "",
-      "description": "Merge attention into one full-width 8D head with the matching scale",
-      "val_loss": 2.405486
+      "description": "Halve MLP width from 8 to 4 for a cheaper bottleneck",
+      "val_loss": 2.407436
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 348,
-    "keep": 144,
+    "experiments": 349,
+    "keep": 145,
     "discard": 26,
     "crash": 178
   },
@@ -5990,6 +5990,22 @@
       "description": "Tie wte and lm_head by summing their gradients and updating one shared matrix",
       "val_loss": 2.569941,
       "measured": "2026-10-02T04:49:14Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0360",
+      "parent": "89bc55610e72adbe7fdf2f15788b04a773bf62f1",
+      "track": "c",
+      "loss": 2.405452,
+      "steps_per_sec": 85995.916755,
+      "loss_gain": -0.027956,
+      "speed_gain": 2.613133,
+      "grad_ratio": 0.992553,
+      "status": "keep",
+      "reason": "",
+      "description": "Halve MLP width from 8 to 4 for a cheaper bottleneck",
+      "val_loss": 2.407436,
+      "measured": "2026-10-02T04:55:41Z",
       "has_record": true
     }
   ],

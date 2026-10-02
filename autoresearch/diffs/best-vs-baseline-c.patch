@@ -13,7 +13,7 @@
 -#define HEAD_DIM (N_EMBD / N_HEAD) /* 4 */
 -#define MLP_DIM (4 * N_EMBD)       /* 64 */
 +#define HEAD_DIM (N_EMBD / N_HEAD) /* 8 */
-+#define MLP_DIM 8
++#define MLP_DIM 4
  #define MAX_DOCS 40000
  #define MAX_DOC_LEN 20
  #define NUM_STEPS 1000
