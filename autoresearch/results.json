@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "c0be70c086fbf2c15b5afe26cab12cc75bee5d01502195bce60a1abe70695851",
+      "candidate_sha256": "9d54a1c3197eb660af8ad685d01548a0d1f3f998027e07db859f573aef62c043",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,18 +174,18 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0363",
-      "parent": "75103352476b4a2e987ce58c536559b6f74cdfc0",
+      "run_id": "0364",
+      "parent": "1289453e25aa3c77319762cb2b05a075a453d8eb",
       "track": "c",
-      "loss": 2.415212,
-      "steps_per_sec": 89905.152712,
-      "loss_gain": -0.032127,
-      "speed_gain": 2.77738,
-      "grad_ratio": 0.992553,
+      "loss": 2.419184,
+      "steps_per_sec": 50946.543224,
+      "loss_gain": -0.033824,
+      "speed_gain": 1.140527,
+      "grad_ratio": 0.988564,
       "status": "keep",
       "reason": "",
-      "description": "Let the cosine learning rate decay fully to zero",
-      "val_loss": 2.413716
+      "description": "Halve the MLP bottleneck from 4 to 2 with a width-safe ReLU loop",
+      "val_loss": 2.414933
     }
   },
   "best_status": {
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 352,
-    "keep": 146,
+    "experiments": 353,
+    "keep": 147,
     "discard": 26,
     "crash": 180
   },
@@ -6054,6 +6054,22 @@
       "description": "Let the cosine learning rate decay fully to zero",
       "val_loss": 2.413716,
       "measured": "2026-10-02T05:16:57Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0364",
+      "parent": "1289453e25aa3c77319762cb2b05a075a453d8eb",
+      "track": "c",
+      "loss": 2.419184,
+      "steps_per_sec": 50946.543224,
+      "loss_gain": -0.033824,
+      "speed_gain": 1.140527,
+      "grad_ratio": 0.988564,
+      "status": "keep",
+      "reason": "",
+      "description": "Halve the MLP bottleneck from 4 to 2 with a width-safe ReLU loop",
+      "val_loss": 2.414933,
+      "measured": "2026-10-02T05:19:49Z",
       "has_record": true
     }
   ],

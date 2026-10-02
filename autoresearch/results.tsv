@@ -363,3 +363,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0361	bd1bc0c7df8a294ff5545a22e3be2a38a174f4b2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0362	8983078fa55e7a4fd3e586fcc4c750e9b6780336	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Reduce model width from 8 to 4 for fully vector-aligned projections	
 0363	75103352476b4a2e987ce58c536559b6f74cdfc0	c	2.415212	89905.152712	-0.032127	+2.777380	0.992553	keep		Let the cosine learning rate decay fully to zero	2.413716
+0364	1289453e25aa3c77319762cb2b05a075a453d8eb	c	2.419184	50946.543224	-0.033824	+1.140527	0.988564	keep		Halve the MLP bottleneck from 4 to 2 with a width-safe ReLU loop	2.414933

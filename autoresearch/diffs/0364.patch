@@ -1,0 +1,27 @@
+--- a/autoresearch/candidate-c/microgpt.c
++++ b/autoresearch/candidate-c/microgpt.c
+@@ -27,7 +27,7 @@
+ #define N_LAYER 1
+ #define BLOCK_SIZE 16
+ #define HEAD_DIM (N_EMBD / N_HEAD) /* 8 */
+-#define MLP_DIM 4
++#define MLP_DIM 2
+ #define MAX_DOCS 40000
+ #define MAX_DOC_LEN 20
+ #define NUM_STEPS 1000
+@@ -666,12 +666,9 @@
+     linear_fwd(saved_x_normed_mlp[pos_id], mlp_fc1[li],
+                saved_mlp_hidden[pos_id], MLP_DIM, N_EMBD);
+ 
+-    /* ReLU — NEON */
+-    float32x4_t vzero = vdupq_n_f32(0.0f);
+-    for (int i = 0; i < MLP_DIM; i += 4) {
+-      float32x4_t v = vld1q_f32(saved_mlp_hidden[pos_id] + i);
+-      vst1q_f32(saved_mlp_relu[pos_id] + i, vmaxq_f32(v, vzero));
+-    }
++    /* ReLU — NEON */
++    for (int i = 0; i < MLP_DIM; i++)
++      saved_mlp_relu[pos_id][i] = saved_mlp_hidden[pos_id][i] > 0.0f ? saved_mlp_hidden[pos_id][i] : 0.0f;
+ 
+     float ALIGN128 mlp_out[N_EMBD];
+     linear_fwd(saved_mlp_relu[pos_id], mlp_fc2[li], mlp_out, N_EMBD, MLP_DIM);
