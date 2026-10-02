@@ -402,3 +402,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0400	0f7f86aa061107b05cb5023882c661e6dd307ee2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0401	47ddc572007b9cca49404d6dece0d540e4eaa2d5	c	2.413252	48420.384219	-0.031289	+1.034390	1.111036	keep		Direct normalized-state attention removes Q and K projection work while retaining softmax selectivity	
 0402	8596e276a2252cd3d8d9f2b6226e2d35d3a292da	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0403	0cc5cca0b4dda259abd1e662e168ce64c7bec456	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Learn a global direct-attention logit scale initialized to 1.0	

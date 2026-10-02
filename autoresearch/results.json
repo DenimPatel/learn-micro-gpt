@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 391,
+    "experiments": 392,
     "keep": 157,
     "discard": 28,
-    "crash": 206
+    "crash": 207
   },
   "pareto": {
     "rust": [
@@ -6679,6 +6679,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T09:10:04Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0403",
+      "parent": "0cc5cca0b4dda259abd1e662e168ce64c7bec456",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Learn a global direct-attention logit scale initialized to 1.0",
+      "val_loss": null,
+      "measured": "2026-10-02T09:14:48Z",
       "has_record": true
     }
   ],
