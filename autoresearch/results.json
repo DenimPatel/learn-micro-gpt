@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 355,
+    "experiments": 356,
     "keep": 148,
     "discard": 26,
-    "crash": 181
+    "crash": 182
   },
   "pareto": {
     "rust": [
@@ -6102,6 +6102,22 @@
       "description": "Fuse dominant linear weight and input backward passes",
       "val_loss": 2.414933,
       "measured": "2026-10-02T05:31:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0367",
+      "parent": "739b22fabfab03f2ed59a7fbd776a1a969c1d601",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Remove the redundant pre-layer RMSNorm and its backward pass",
+      "val_loss": null,
+      "measured": "2026-10-02T05:32:40Z",
       "has_record": true
     }
   ],
