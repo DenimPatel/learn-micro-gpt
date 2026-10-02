@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 388,
+    "experiments": 389,
     "keep": 156,
     "discard": 28,
-    "crash": 204
+    "crash": 205
   },
   "pareto": {
     "rust": [
@@ -6631,6 +6631,22 @@
       "description": "Use fixed adjacent-token average attention and remove Q K projection work",
       "val_loss": null,
       "measured": "2026-10-02T08:42:55Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0400",
+      "parent": "0f7f86aa061107b05cb5023882c661e6dd307ee2",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the response contained no fenced code block, so there is no patch to apply.",
+      "description": "the model returned nothing usable",
+      "val_loss": null,
+      "measured": "2026-10-02T08:48:05Z",
       "has_record": true
     }
   ],
