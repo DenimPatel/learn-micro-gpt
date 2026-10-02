@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 401,
+    "experiments": 402,
     "keep": 161,
     "discard": 28,
-    "crash": 212
+    "crash": 213
   },
   "pareto": {
     "rust": [
@@ -6839,6 +6839,22 @@
       "description": "Skip Adam updates for unused direct-attention query and key matrices",
       "val_loss": null,
       "measured": "2026-10-02T10:07:02Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0413",
+      "parent": "9c17d24f45770206e116ae961b94b1e2ff1c09bd",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Add a fixed bigram log-odds prior to output logits",
+      "val_loss": null,
+      "measured": "2026-10-02T10:09:00Z",
       "has_record": true
     }
   ],

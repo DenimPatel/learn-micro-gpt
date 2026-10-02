@@ -412,3 +412,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0410	7da6b66051d7901c41d39d516b27d27011eeff2f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache direct-attention states and remove redundant normalization optimizer and backward work	
 0411	2cdde96140358925f26ba9caa4604e9e4f852695	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Sharpen direct attention to 2x and remove duplicate normalization dead Q/K updates and attention recomputation	
 0412	917496fc107598b0dac3c9ccf1d4a6c44208f3a0	c	2.412688	74314.682703	-0.031048	+2.122344	1.102242	keep		Skip Adam updates for unused direct-attention query and key matrices	
+0413	9c17d24f45770206e116ae961b94b1e2ff1c09bd	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a fixed bigram log-odds prior to output logits	
