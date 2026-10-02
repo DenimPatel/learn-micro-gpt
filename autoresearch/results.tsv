@@ -355,3 +355,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0353	9267c842a1df1a12daa62c78198c78639bf548bb	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0354	1c8a10d22c7f15fb22a93e49a482ac7dfe02d195	c	2.377164	59847.839381	-0.015867	+1.514517	0.998100	keep		Lower cosine learning-rate floor from 0.0075 to 0.001	2.383500
 0355	b81515fa3b95097395beb45a0449ea9715de654b	c	2.405018	48414.523550	-0.027771	+1.034144	0.994681	keep		Reduce residual width to 8 use two 4D heads widen the MLP to 8 and make vector backpropagation dimension safe	2.405061
+0356	23b05474b359fd7f359fb0c1b066933fdac1e79a	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache concatenated attention outputs for exact backward-pass reuse	

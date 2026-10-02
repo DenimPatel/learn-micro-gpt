@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 344,
+    "experiments": 345,
     "keep": 143,
     "discard": 24,
-    "crash": 177
+    "crash": 178
   },
   "pareto": {
     "rust": [
@@ -5926,6 +5926,22 @@
       "description": "Reduce residual width to 8 use two 4D heads widen the MLP to 8 and make vector backpropagation dimension safe",
       "val_loss": 2.405061,
       "measured": "2026-10-02T04:34:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0356",
+      "parent": "23b05474b359fd7f359fb0c1b066933fdac1e79a",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Cache concatenated attention outputs for exact backward-pass reuse",
+      "val_loss": null,
+      "measured": "2026-10-02T04:38:29Z",
       "has_record": true
     }
   ],
