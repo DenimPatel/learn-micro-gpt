@@ -400,3 +400,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0398	1b48fd8b9b0cc396aaf6cca343ae597cee006cd1	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
 0399	f0908eed035b5cb1cc79ab83682db1afd802bdd7	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Use fixed adjacent-token average attention and remove Q K projection work	
 0400	0f7f86aa061107b05cb5023882c661e6dd307ee2	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the response contained no fenced code block, so there is no patch to apply.	the model returned nothing usable	
+0401	47ddc572007b9cca49404d6dece0d540e4eaa2d5	c	2.413252	48420.384219	-0.031289	+1.034390	1.111036	keep		Direct normalized-state attention removes Q and K projection work while retaining softmax selectivity	

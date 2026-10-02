@@ -170,8 +170,6 @@ static float saved_rms_pre[BLOCK_SIZE];
 static float ALIGN128 saved_x_residual_attn[BLOCK_SIZE][N_EMBD];
 static float ALIGN128 saved_x_normed_attn[BLOCK_SIZE][N_EMBD];
 static float saved_rms_attn[BLOCK_SIZE];
-static float ALIGN128 saved_q[BLOCK_SIZE][N_EMBD];
-static float ALIGN128 saved_k[BLOCK_SIZE][N_EMBD];
 static float ALIGN128 saved_v[BLOCK_SIZE][N_EMBD];
 static float saved_attn_weights[BLOCK_SIZE][N_HEAD][BLOCK_SIZE];
 static float ALIGN128 saved_x_attn_out[BLOCK_SIZE][N_EMBD];
@@ -193,11 +191,10 @@ static float saved_probs[BLOCK_SIZE][MAX_VOCAB];
 static float ALIGN128 dx[N_EMBD];
 static float ALIGN128 dtmp2[MLP_DIM];
 
-/* dL/dk[t] and dL/dv[t], banked per key position. Every query at position t'
- * reads the keys and values of positions 0..t', so the gradient on key t is
- * only complete once the query loop has been past t. The loop walks queries
- * from the last position down to the first, which is what makes it safe to
- * consume dk_pending[t] inside position t's own pass; see the note there. */
+/* dL/d(normalized attention input)[t] and dL/dv[t], banked per position.
+ * Every query at position t' reads the inputs and values of positions 0..t',
+ * so either gradient at position t is only complete once the query loop has
+ * passed t. Walking queries backward makes both banks safe to consume at t. */
 static float ALIGN128 dk_pending[BLOCK_SIZE][N_EMBD];
 static float ALIGN128 dv_pending[BLOCK_SIZE][N_EMBD];
 
@@ -747,14 +744,10 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
     rmsnorm_fwd(x, saved_x_normed_attn[pos_id], N_EMBD,
                 &saved_rms_attn[pos_id]);
 
-    linear_fwd(saved_x_normed_attn[pos_id], attn_wq[li], saved_q[pos_id],
-               N_EMBD, N_EMBD);
-    linear_fwd(saved_x_normed_attn[pos_id], attn_wk[li], saved_k[pos_id],
-               N_EMBD, N_EMBD);
     linear_fwd(saved_x_normed_attn[pos_id], attn_wv[li], saved_v[pos_id],
                N_EMBD, N_EMBD);
 
-    /* Multi-head attention */
+    /* Multi-head direct normalized-state attention */
     float ALIGN128 x_attn[N_EMBD];
     for (int h = 0; h < N_HEAD; h++) {
       int hs = h * HEAD_DIM;
@@ -763,7 +756,8 @@ static void forward_pos(int token_id, int pos_id, int seq_len) {
       for (int t = 0; t < num_keys; t++) {
         float dot = 0.0f;
         for (int j = 0; j < HEAD_DIM; j++)
-          dot += saved_q[pos_id][hs + j] * saved_k[t][hs + j];
+          dot += saved_x_normed_attn[pos_id][hs + j] *
+                 saved_x_normed_attn[t][hs + j];
         attn_logits[t] = dot * INV_SQRT_HD;
       }
       softmax_fwd(attn_logits, saved_attn_weights[pos_id][h], num_keys);
@@ -931,7 +925,6 @@ static void backward_all(const int *tokens, int n) {
                     g_attn_wo[li], d_x_attn, N_EMBD, N_EMBD);
 
       /* Backward through multi-head attention */
-      float d_q[N_EMBD] = {0};
       int num_keys = pos + 1;
 
       for (int h = 0; h < N_HEAD; h++) {
@@ -963,53 +956,24 @@ static void backward_all(const int *tokens, int n) {
           d_logits_attn[t] =
               saved_attn_weights[pos][h][t] * (d_attn_w[t] - wdsum);
 
-        /* Backward through attn_logits[t] = (q.k[t]) * INV_SQRT_HD */
+        /* Backward through the direct normalized-input score. */
         for (int t = 0; t < num_keys; t++) {
-          float dl = d_logits_attn[t] * INV_SQRT_HD;
+          float d_input = d_logits_attn[t] * INV_SQRT_HD;
           for (int j = 0; j < HEAD_DIM; j++) {
-            d_q[hs + j] += dl * saved_k[t][hs + j];
-            dk_pending[t][hs + j] += dl * saved_q[pos][hs + j];
+            dk_pending[t][hs + j] +=
+                d_input * saved_x_normed_attn[t][hs + j];
           }
         }
       }
 
-      /* Reverse query order makes bank pos complete once the current position
-       * has added its contribution, so it can be consumed immediately below. */
-
-      /* Backward through Q, K, V linear projections.
-       *
-       * This is the path the C port was missing, and it is worth being precise
-       * about why it is not optional. In the Python reference, k[t] and v[t]
-       * are Value objects built during an earlier call to gpt(), so the tape
-       * already contains the route from them back to that position's own
-       * x_normed and embeddings, and backward() follows it for free. C has no
-       * tape, so the route has to be written down. It used to be deferred to
-       * the end of the whole pass and then pushed straight into the embeddings,
-       * which skipped everything in between -- the attention output projection,
-       * the MLP, and any layer below this one. Every key and value gradient
-       * therefore died at the embedding and the rest of the position was
-       * trained on a gradient that was missing its dominant term.
-       *
-       * Consumed here instead: position pos's bank holds the sum over every
-       * query from pos onward, which is every query that can read key pos. The
-       * bank is then pushed through the key and value projections into
-       * d_x_normed_attn, and from there it joins the same residual stream that
-       * pos's own loss gradient travels down, so it reaches the embeddings, the
-       * position's Q/K/V/MLP weight gradients, and the pre-layer norm the long
-       * way round, through the computation that actually produced them. */
+      /* Reverse query order makes both banks complete at position pos: every
+       * query that can read this value or normalized input has been visited.
+       * The input bank is already in the coordinate system of x_normed_attn. */
       float d_x_normed_attn[N_EMBD];
-      memset(d_x_normed_attn, 0, N_EMBD * sizeof(float));
+      for (int i = 0; i < N_EMBD; i++)
+        d_x_normed_attn[i] = dk_pending[pos][i];
 
-      /* Q: q = linear(x_normed, wq) */
-      linear_bwd_wx(d_q, attn_wq[li], saved_x_normed_attn[pos],
-                    g_attn_wq[li], d_x_normed_attn, N_EMBD, N_EMBD);
-
-      /* K: k[pos] = linear(x_normed[pos], wk) */
-      linear_bwd_wx(dk_pending[pos], attn_wk[li],
-                    saved_x_normed_attn[pos], g_attn_wk[li],
-                    d_x_normed_attn, N_EMBD, N_EMBD);
-
-      /* V: v[pos] = linear(x_normed[pos], wv) */
+      /* Add the value projection's input gradient. */
       linear_bwd_wx(dv_pending[pos], attn_wv[li],
                     saved_x_normed_attn[pos], g_attn_wv[li],
                     d_x_normed_attn, N_EMBD, N_EMBD);
@@ -1054,13 +1018,11 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
 
     rmsnorm_fwd(x, xn, N_EMBD, &rms_tmp);
 
-    float q[N_EMBD], k[N_EMBD], v[N_EMBD];
-    linear_fwd(xn, attn_wq[li], q, N_EMBD, N_EMBD);
-    linear_fwd(xn, attn_wk[li], k, N_EMBD, N_EMBD);
+    float v[N_EMBD];
     linear_fwd(xn, attn_wv[li], v, N_EMBD, N_EMBD);
 
-    /* Save K, V into cache (reuse saved_k/saved_v) */
-    memcpy(saved_k[pos_id], k, N_EMBD * sizeof(float));
+    /* Save normalized inputs and V for direct attention. */
+    memcpy(saved_x_normed_attn[pos_id], xn, N_EMBD * sizeof(float));
     memcpy(saved_v[pos_id], v, N_EMBD * sizeof(float));
 
     float x_attn[N_EMBD];
@@ -1072,7 +1034,8 @@ static void forward_inference(int token_id, int pos_id, float *logits_out) {
       for (int t = 0; t < num_keys; t++) {
         float dot = 0.0f;
         for (int j = 0; j < HEAD_DIM; j++)
-          dot += q[hs + j] * saved_k[t][hs + j];
+          dot += saved_x_normed_attn[pos_id][hs + j] *
+                 saved_x_normed_attn[t][hs + j];
         attn_logits[t] = dot * INV_SQRT_HD;
       }
 

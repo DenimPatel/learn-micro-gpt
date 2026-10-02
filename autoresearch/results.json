@@ -61,7 +61,7 @@
       "baseline_source": "implementations/c/microgpt.c",
       "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
-      "candidate_sha256": "b1a069d6df8eb5c7284ff4b14c420f017e8bc32c6d896d7b5baa9fe119e13905",
+      "candidate_sha256": "3b212cb7328e0154665daaa73367f8dc656345eb80cd2f7892687f4f0052c4ab",
       "gradient_probe": "autoresearch/candidate-c/probe.c",
       "gradient_probe_sha256": "4c6e6572f83913e8a2f4d824087228253dab6122df3e504b1158c05271df59bc"
     }
@@ -174,17 +174,17 @@
     "go": null,
     "typescript": null,
     "c": {
-      "run_id": "0394",
-      "parent": "72eaef73d29585a04ecda8248926fdb16251106c",
+      "run_id": "0401",
+      "parent": "47ddc572007b9cca49404d6dece0d540e4eaa2d5",
       "track": "c",
-      "loss": 2.407734,
-      "steps_per_sec": 54196.990715,
-      "loss_gain": -0.028931,
-      "speed_gain": 1.277096,
-      "grad_ratio": 1.108515,
+      "loss": 2.413252,
+      "steps_per_sec": 48420.384219,
+      "loss_gain": -0.031289,
+      "speed_gain": 1.03439,
+      "grad_ratio": 1.111036,
       "status": "keep",
       "reason": "",
-      "description": "Use bounded polynomial softmax exponentiation and rely on Adam to clear gradients between steps",
+      "description": "Direct normalized-state attention removes Q and K projection work while retaining softmax selectivity",
       "val_loss": null
     }
   },
@@ -195,8 +195,8 @@
     "c": ""
   },
   "counts": {
-    "experiments": 389,
-    "keep": 156,
+    "experiments": 390,
+    "keep": 157,
     "discard": 28,
     "crash": 205
   },
@@ -6647,6 +6647,22 @@
       "description": "the model returned nothing usable",
       "val_loss": null,
       "measured": "2026-10-02T08:48:05Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0401",
+      "parent": "47ddc572007b9cca49404d6dece0d540e4eaa2d5",
+      "track": "c",
+      "loss": 2.413252,
+      "steps_per_sec": 48420.384219,
+      "loss_gain": -0.031289,
+      "speed_gain": 1.03439,
+      "grad_ratio": 1.111036,
+      "status": "keep",
+      "reason": "",
+      "description": "Direct normalized-state attention removes Q and K projection work while retaining softmax selectivity",
+      "val_loss": null,
+      "measured": "2026-10-02T08:58:49Z",
       "has_record": true
     }
   ],
