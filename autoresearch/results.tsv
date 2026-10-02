@@ -389,3 +389,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0387	c091123c5f7c80e74b0bf6ada5fe8caa751dc771	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Restrict attention to the current token value path	
 0388	b451ec44333426edfdac843973bb6bb8556d2fcc	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Add a smoothed train-only positional log-prior residual	
 0389	6f9c62ae36f1620ad4fb831a0147d6ee40f19b7f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Cache attention inputs for exact reuse during backward	
+0390	098af8cf24a57635be3b6cf602193d1d7b569b6f	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Vectorize softmax exponentials with accurate binary range reduction	
