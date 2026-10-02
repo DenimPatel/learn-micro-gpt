@@ -195,10 +195,10 @@
     "c": ""
   },
   "counts": {
-    "experiments": 313,
+    "experiments": 314,
     "keep": 134,
     "discard": 21,
-    "crash": 158
+    "crash": 159
   },
   "pareto": {
     "rust": [
@@ -5430,6 +5430,22 @@
       "description": "Add a smoothed training-only bigram log-prior to output logits",
       "val_loss": 2.321815,
       "measured": "2026-10-01T23:56:20Z",
+      "has_record": true
+    },
+    {
+      "run_id": "0325",
+      "parent": "4c13453dc794b3a90e07437be1f589dd08504f38",
+      "track": "c",
+      "loss": 0.0,
+      "steps_per_sec": 0.0,
+      "loss_gain": 0.0,
+      "speed_gain": 0.0,
+      "grad_ratio": 0.0,
+      "status": "crash",
+      "reason": "the patch did not apply",
+      "description": "Halve the MLP and remove exact redundant attention and zeroing work",
+      "val_loss": null,
+      "measured": "2026-10-02T00:01:53Z",
       "has_record": true
     }
   ],

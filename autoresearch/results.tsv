@@ -324,3 +324,4 @@ run_id	parent	track	loss	steps_per_sec	loss_gain	speed_gain	grad_ratio	status	re
 0322	d34e7843e5a99e092d1a2d3e8f6f45a7977c6409	c	2.376446	44308.156611	-0.015560	+0.861615	0.988062	keep		Seed the output bias from smoothed training target frequencies	2.374148
 0323	acb44d885ea81c9033460f744675687c39eefa67	c	2.382372	43840.101815	-0.018093	+0.841949	1.004978	keep		Widen the single MLP from 12 to 16 hidden units	2.379219
 0324	99491184a3bd19b9a70bdc77928270f46f7f3d84	c	2.330538	45879.803347	+0.004058	+0.927648	1.004761	discard	no axis improved materially: discarded: loss +0.4%, speed +92.8%; failing learned, loss_material	Add a smoothed training-only bigram log-prior to output logits	2.321815
+0325	4c13453dc794b3a90e07437be1f589dd08504f38	c	0.000000	0.000000	+0.000000	+0.000000	0.000000	crash	the patch did not apply	Halve the MLP and remove exact redundant attention and zeroing work	
