@@ -283,15 +283,16 @@ every push, because a benchmark change is a thing a human should look at.
 ## The research track, and the three things it is fenced off from
 
 `autoresearch/` is a set of candidate copies that a model rewrites unsupervised
-&mdash; one per port, currently Rust, Go and TypeScript &mdash; a harness that
+&mdash; one per port, currently Rust, Go, TypeScript and C &mdash; a harness that
 measures them, and a ledger. `docs/AUTORESEARCH.md` explains how it works; this
 section is about why it is shaped the way it is, because the constraints are ones
 that would look arbitrary without the reasoning.
 
 **A track is a comparator pair, which is why the ledger carries a `track` column.**
-Each candidate has its own directory (`candidate/`, `candidate-go/`,
-`candidate-ts/`), its own frozen comparator, its own gradient probe, its own
-session baseline and its own `results.json` slots for bests, frontiers and digests.
+Each candidate has its own directory (`candidate/`, `candidate-c/`,
+`candidate-go/`, `candidate-ts/`), its own frozen comparator, its own gradient
+probe, its own session baseline and its own `results.json` slots for bests,
+frontiers and digests.
 The reason is arithmetic rather than tidiness: a steps-per-second is a *ratio*, and
 the ratio is against a particular frozen build. A Go candidate at 89 steps/s and a
 Rust one at 95 are not two points on one axis &mdash; they are two unrelated

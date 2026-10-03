@@ -11,7 +11,7 @@ make autoresearch-rust TRACK=go EXPERIMENTS=5
 make autoresearch-rust TRACK=typescript EXPERIMENTS=5
 ```
 
-**A track is a comparator pair, not a label.** Rust, Go and TypeScript each have
+**A track is a comparator pair, not a label.** Rust, Go, TypeScript and C each have
 their own candidate directory, their own frozen comparator, their own
 finite-difference gradient probe and their own session baseline, and nothing is
 compared across them: a Go steps-per-second is a ratio against the frozen Go
@@ -32,8 +32,8 @@ below, with the reason.
 the `provenance` CI job &mdash; which every deploy depends on &mdash; fails if a
 byte moves. The Go and TypeScript tracks are pinned the same way by the parity
 gate and by the site, which read them as tracks. The tuned code lives in a separate
-directory: `autoresearch/candidate/`, `autoresearch/candidate-go/`,
-`autoresearch/candidate-ts/`. The site
+directory: `autoresearch/candidate/`, `autoresearch/candidate-c/`,
+`autoresearch/candidate-go/`, `autoresearch/candidate-ts/`. The site
 renders the frozen one, 18 concepts cross-link to it, and its own doc comment
 claims a parameter count; a model rewriting it would make the site teach something
 false with total confidence, which is the failure mode the rest of this repository

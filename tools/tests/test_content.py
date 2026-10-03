@@ -936,6 +936,45 @@ class TestDocsQuoteTheCurrentCounts(unittest.TestCase):
         self.assertNotIn("all five tracks", self.readme)
         self.assertIn("four port tracks", self.readme)
 
+    def test_the_candidate_list_matches_the_autoresearch_tree(self) -> None:
+        # The architecture doc enumerates the research candidates twice: once in
+        # prose ("one per port, currently ...") and once as a backticked list of
+        # directories. Both said three while `autoresearch/` held four --
+        # `candidate-c/` was added and neither sentence moved. Deriving the list
+        # from the tree means a fifth candidate fails here until both are updated.
+        candidates = sorted(
+            d.name
+            for d in (REPO_ROOT / "autoresearch").iterdir()
+            if d.is_dir() and d.name.startswith("candidate")
+        )
+        self.assertEqual(
+            len(candidates), 4, f"autoresearch/ holds {candidates}"
+        )
+        # The directory list: every candidate dir (minus the `autoresearch/`
+        # prefix, which the sentence omits) must appear backticked.
+        sentence = re.search(
+            r"Each candidate has its own directory \((.*?)\)",
+            self.architecture,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(sentence, "the candidate directory list is gone")
+        listed = set(re.findall(r"`([^`]+)`", sentence.group(1)))
+        self.assertEqual(
+            listed,
+            {name + "/" for name in candidates},
+            f"docs/ARCHITECTURE.md lists {sorted(listed)}",
+        )
+        # The prose enumeration: the languages named in the "one per port,
+        # currently ..." clause. Ordering is the doc's own; only membership is
+        # pinned, so wording can change without churn.
+        prose = re.search(
+            r"one per port, currently ([^&]+) &mdash;", self.architecture
+        )
+        self.assertIsNotNone(prose, "the 'one per port, currently' clause is gone")
+        for language in ("Rust", "Go", "TypeScript", "C"):
+            with self.subTest(language=language):
+                self.assertIn(language, prose.group(1))
+
     def test_the_maths_count_matches_the_concepts(self) -> None:
         # Every concept has a `math:` block, and ConceptPage renders each one as a
         # display formula, so the count is all of them -- not the "three" the
