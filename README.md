@@ -153,7 +153,7 @@ for the purpose, and it has a test suite.
 | see what a model did to the Rust track | [`docs/AUTORESEARCH.md`](docs/AUTORESEARCH.md), or `#/research` on the site |
 | add a sixth language | [`docs/ADDING-A-LANGUAGE.md`](docs/ADDING-A-LANGUAGE.md) |
 | understand the numbers | [`docs/BENCHMARKS.md`](docs/BENCHMARKS.md) |
-| write a concept | `content/concepts/*.md` and `content/schema.json` |
+| write a concept | [`docs/ADDING-A-CONCEPT.md`](docs/ADDING-A-CONCEPT.md) |
 | add a widget | [`docs/TRACE-FORMAT.md`](docs/TRACE-FORMAT.md) |
 
 ## The reference, in full, for reference
