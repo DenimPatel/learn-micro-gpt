@@ -87,12 +87,15 @@ export function Math({
   })
   return createElement('span', {
     className: display ? 'math-display' : 'math-inline',
-    // One of the app's three `dangerouslySetInnerHTML` call sites, and the only
-    // one fed markdown-adjacent content: it receives KaTeX's own rendered output
-    // for a string literal that came out of a frontmatter file -- not from user
-    // input, and not from raw markdown. (The other two are in `CodePanel.tsx`,
-    // which feeds Shiki's syntax-highlight HTML -- `html` for the light theme and
-    // `darkHtml` for the dark one -- into the two theme spans.)
+    // Trust boundary: one of the app's three `dangerouslySetInnerHTML` call
+    // sites, and the only one fed markdown-adjacent content. It receives KaTeX's
+    // own rendered output for `value` -- a formula literal from a frontmatter
+    // file, not user input and not raw markdown. (The other two are in
+    // `CodePanel.tsx`, which feeds Shiki's syntax-highlight HTML -- `html` for
+    // the light theme and `darkHtml` for the dark one -- into the two theme
+    // spans.) Nothing a reader types reaches this line; the call-site allow-list
+    // is pinned by `tests/trust-boundary.test.ts`, so a fourth site fails the
+    // suite rather than appearing silently.
     dangerouslySetInnerHTML: { __html: html },
     // A screen reader should hear the formula's source, not "visual formula".
     ...(label ? { 'aria-label': label } : { 'aria-hidden': 'true' }),

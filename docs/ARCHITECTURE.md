@@ -246,6 +246,15 @@ own output for a frontmatter literal). The reasoning: "the content is trusted" i
 exactly the assumption that rots, and a fork with a bad edit should render broken
 rather than execute.
 
+Each of the three sites says so at the line that uses it -- a "trust boundary"
+comment naming the provenance of the HTML it injects -- and the count is a guard,
+not a comment: `visualizer/tests/trust-boundary.test.ts` reads the source tree
+from disk and fails if the set of files with a live call site is not exactly this
+allow-list. A fourth call site cannot appear silently; adding one means adding it
+to the allow-list, with its provenance, in the same commit. The test counts code
+(`dangerouslySetInnerHTML={`/`dangerouslySetInnerHTML:` on a non-comment line),
+not the comments that mention the identifier.
+
 **Highlighting cannot split a token.** The old site ran Prism and then split its
 output on newlines, one line at a time — and the reference opens with a
 multi-line docstring, which is a *single* token, so the very first code block

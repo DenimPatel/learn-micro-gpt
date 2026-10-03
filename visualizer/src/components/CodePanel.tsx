@@ -178,6 +178,17 @@ export function CodePanel({
           its own `<pre>` below.
         */}
         <div className="code-panel__code" tabIndex={0} role="group" aria-label={label}>
+          {/*
+            Trust boundary: these two `dangerouslySetInnerHTML` sites -- the
+            app's second and third, the first is in `content/markdown.tsx` --
+            receive Shiki's syntax-highlight HTML (`html` for the light theme,
+            `darkHtml` for the dark one) for the pinned source this panel was
+            handed. The input is the reference file, read at build time; raw
+            markdown and other user text do *not* reach here, and neither does
+            anything the reader types. If that ever changes -- a panel fed
+            concept prose, say -- this becomes an injection path, which is why
+            the guard lives in `tests/trust-boundary.test.ts`.
+          */}
           {ready && darkReady ? (
             <>
               <span className="light-only" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
