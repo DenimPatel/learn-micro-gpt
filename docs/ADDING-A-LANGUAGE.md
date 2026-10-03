@@ -81,8 +81,17 @@ a finite-difference probe before it is allowed to compete, and it is why
 requirement 5 exists rather than the loss-band check.
 
 The C port is now fixed, at 1.03 — inside the float32 noise floor of the
-difference itself — and it is the one track here that satisfies this
-requirement. It is worth being precise about what that costs, because it is the
+difference itself — and of the tracks here it is the one whose ratio is close
+enough to 1.0 to satisfy this requirement as written. The other three are not:
+each reimplemented the reference's autograd tape and still takes `rmsnorm`
+outside it, which measures 1.063 (Rust), 1.127 (Go) and 0.722 (TypeScript) —
+`docs/KNOWN-ISSUES.md` issue 5. That is not a defect in the tape, and it is not
+caught by the loss curve either; it is why requirement 5 asks for the probe
+rather than a band, and why the probe's tolerance has to be chosen against your
+own measured ratio and not borrowed. Issue 6 is the consequence: a band centred
+on 1.0 does not contain any port's real ratio.
+
+It is worth being precise about what the C port's fix cost, because it is the
 part a hand-written backward pass does not give you: nothing in the code says
 whether it is right. `docs/KNOWN-ISSUES.md` issue 1 has the measurements, the
 two bugs, and the number the test now asserts.
@@ -108,12 +117,18 @@ Two traps, both of which cost real time here:
   whatever your program happens to have consumed. It is checked on every run, so
   it has to be the same direction every time.
 
-The cheapest way to be correct by construction, and the route the Go, Rust, and
-TypeScript tracks took: **reimplement the reference's autograd tape** rather than
-hand-writing a backward pass. A tape computes the chain rule; a hand-written one
-is somebody remembering it. The cost is that you then need a small arena or
-`RefCell`, and your code will not be as direct as the Python's. The benefit is
-that the check above passes the first time.
+The usual route, and the one the Go, Rust, and TypeScript tracks took, is to
+**reimplement the reference's autograd tape** rather than hand-write a backward
+pass. A tape computes the chain rule; a hand-written one is somebody remembering
+it. The cost is that you then need a small arena or `RefCell`, and your code will
+not be as direct as the Python's. The benefit is narrower than it sounds: a tape
+gives you the *derivatives* for free, but only for the operations you put on it.
+Anything you compute outside it — a normalisation applied to the raw weights, a
+scale folded in by hand — is invisible to it and to the loss curve. All three of
+those tracks did exactly that with `rmsnorm` and none of them measured 1.0
+(`docs/KNOWN-ISSUES.md` issue 5). Do not read "reimplement the tape" as
+"the check passes the first time"; it makes the check likely to pass, which is
+not the same thing, and the probe is what tells you which one you got.
 
 ### 6. Ship a test that can fail
 

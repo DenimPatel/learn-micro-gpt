@@ -757,6 +757,66 @@ class TestDocsQuoteTheCurrentCounts(unittest.TestCase):
                 self.assertNotIn("five port tracks", text)
 
 
+class TestAddingALanguageGuideIsAccurate(unittest.TestCase):
+    """The guide that tells you how to add a port does not mislead you.
+
+    `docs/ADDING-A-LANGUAGE.md` requirement 5 recommends reimplementing the
+    autograd tape "rather than hand-writing a backward pass", and used to imply
+    the probe then passes by construction. Three tracks that took exactly that
+    route still fail the probe -- they left `rmsnorm` off the tape, which is
+    `docs/KNOWN-ISSUES.md` issue 5 -- so the recommendation as written sends a
+    contributor at a known bug while reading as a guarantee. These checks keep
+    the guide tied to the measurements it now cites.
+    """
+
+    def setUp(self) -> None:
+        self.guide = (REPO_ROOT / "docs" / "ADDING-A-LANGUAGE.md").read_text(
+            encoding="utf-8"
+        )
+        self.issues = (REPO_ROOT / "docs" / "KNOWN-ISSUES.md").read_text(
+            encoding="utf-8"
+        )
+
+    def test_the_guide_cites_the_rmsnorm_and_band_issues(self) -> None:
+        # Both issues are the direct consequence of the guide's own advice, so a
+        # reader who follows it has to be pointed at them.
+        low = self.guide.lower()
+        self.assertIn("issue 5", low)
+        self.assertIn("issue 6", low)
+
+    def test_the_tape_route_is_not_sold_as_correct_by_construction(self) -> None:
+        # The sentence that made reimplementing the tape sound sufficient. It is
+        # not: the tape only carries the ops you put on it.
+        self.assertNotIn("the check above passes the first time", self.guide)
+        # And the narrower claim that replaced it must still be there.
+        self.assertIn("not the same thing", self.guide)
+
+    def test_the_one_track_claim_carries_its_qualifier(self) -> None:
+        # "the one track here that satisfies this requirement" reads, literally,
+        # as excluding Go/Rust/TypeScript. C is the only one whose *ratio* is
+        # close enough to 1.0; the others satisfy the requirement by measuring
+        # and documenting, which is the whole point of the probe.
+        self.assertNotIn(
+            "it is the one track here that satisfies this\nrequirement", self.guide
+        )
+        self.assertIn("close\nenough to 1.0 to satisfy this requirement", self.guide)
+
+    def test_the_quoted_ratios_match_the_issue(self) -> None:
+        # The three measured ratios are quoted in the guide; each must appear in
+        # the issue that measures them, so a re-measurement updates both.
+        for ratio, track in (("1.063", "Rust"), ("1.127", "Go"), ("0.722", "TypeScript")):
+            with self.subTest(track=track):
+                self.assertIn(f"{ratio} ({track})", self.guide)
+
+    def test_the_guide_does_not_reintroduce_a_centred_band(self) -> None:
+        # Issue 6's point is that no port's ratio is 1.0, so the guide must not
+        # tell a contributor the ratio is 1.0 for a correct gradient without the
+        # caveat that their measured value will differ.
+        self.assertNotIn(
+            "For a correct gradient the ratio is `1.0`", self.guide
+        )
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy
