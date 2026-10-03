@@ -61,8 +61,8 @@ optimisation there is, because it turns generation from O(n²) into O(n). The
 same 37 lines serve both, and the mechanism is the same four-argument signature.
 
 :::callout "The cost of this design, measured"
-The reference trains 1,000 steps in about 108 seconds on an M-series Mac, and the
-C port does the same work in about 0.04 seconds. None of that 2,700x is the
+The reference trains 1,000 steps in about 116 seconds on an M-series Mac, and the
+C port does the same work in about 0.43 seconds. None of that 271x is the
 arithmetic. It is: not rebuilding a Python graph 1,000 times, and not walking the
 document one position at a time. See [linear](../concepts/linear.md) for the
 split and `docs/BENCHMARKS.md` for the methodology.

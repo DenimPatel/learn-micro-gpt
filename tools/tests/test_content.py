@@ -561,6 +561,108 @@ class TestBenchmarksDoc(unittest.TestCase):
                 self.assertIn(marker, self.doc)
 
 
+class TestBenchmarkFiguresInProse(unittest.TestCase):
+    """The numbers quoted in the teaching prose track `benchmarks/results.json`.
+
+    `linear.md` and `gpt-forward.md` both quote the Python and C wall times for
+    the 1,000-step micro run, and both tell the reader the exact figures are in
+    `benchmarks/results.json`. Before this test the two had drifted apart by
+    ~10x on the C figure (prose said 0.04 s; the recorded run is 0.4268 s) and
+    the prose called the runner "pinned" when the JSON sets `"pinned": false`.
+    A reader cannot check either claim without doing the arithmetic, which is
+    exactly the kind of wrongness a test should catch and a reviewer will not.
+    """
+
+    #: The prose rounds to these; the JSON holds 115.9043 and 0.4268.
+    ROUNDINGS = {"python": 116, "c": 0.43}
+
+    def setUp(self) -> None:
+        self.data = json.loads((REPO_ROOT / "benchmarks" / "results.json").read_text())
+        self.by_lang = {row["lang"]: row for row in self.data["results"]}
+        self.concepts = content.load_all(REPO_ROOT)
+
+    def _body(self, concept_id: str) -> str:
+        return next(c.body for c in self.concepts if c.id == concept_id)
+
+    def test_the_quoted_wall_times_match_the_recorded_run(self) -> None:
+        # Each concept must quote the figure its recorded run rounds to, so a
+        # hardcoded "108" or "0.04" here fails rather than passing by accident.
+        for concept_id in ("linear", "gpt-forward"):
+            body = self._body(concept_id)
+            with self.subTest(concept=concept_id, lang="python"):
+                self.assertIn(
+                    f"about {self.ROUNDINGS['python']}",
+                    body,
+                    f"{concept_id} should quote the Python wall time rounded from "
+                    f"{self.by_lang['python']['wall_seconds']} s",
+                )
+            with self.subTest(concept=concept_id, lang="c"):
+                self.assertIn(
+                    f"about {self.ROUNDINGS['c']}",
+                    body,
+                    f"{concept_id} should quote the C wall time rounded from "
+                    f"{self.by_lang['c']['wall_seconds']} s",
+                )
+
+    def test_no_other_wall_time_seconds_are_quoted(self) -> None:
+        # Presence alone is too weak: adding a *second*, contradictory figure
+        # alongside the right one used to pass. Every "N seconds" (or "N.N")
+        # figure in the benchmark sentence must sit near a recorded value.
+        accepted = {self.by_lang["python"]["wall_seconds"]}
+        accepted.add(self.by_lang["c"]["wall_seconds"])
+        for concept_id in ("linear", "gpt-forward"):
+            body = self._body(concept_id)
+            for match in re.finditer(r"(\d+(?:\.\d+)?)\s*seconds", body):
+                value = float(match.group(1))
+                with self.subTest(concept=concept_id, value=value):
+                    self.assertTrue(
+                        any(abs(value - a) <= max(0.5, a * 0.05) for a in accepted),
+                        f"{concept_id} quotes {value} seconds, which matches no "
+                        f"recorded wall time in benchmarks/results.json "
+                        f"({sorted(accepted)})",
+                    )
+
+    def test_the_quoted_speedup_matches_the_recorded_ratio(self) -> None:
+        # 271.48x is recorded; "2,700x" was an order-of-magnitude error, so this
+        # pins the quoted figure to the recorded ratio's whole-number form.
+        ratio = self.by_lang["c"]["relative_to_python"]
+        body = self._body("gpt-forward")
+        self.assertIn(f"{ratio:.0f}x", body.replace(",", ""))
+
+    def test_the_stale_figures_are_gone_from_both_concepts(self) -> None:
+        # Guards the regression directly rather than by demonstration: read the
+        # real prose and assert the old, wrong strings are not in it. Reverting
+        # the numbers makes this fail; a self-contained string literal would not.
+        stale = (
+            f"about {self.ROUNDINGS['python'] - 8}",  # the old "about 108"
+            f"about {self.ROUNDINGS['c'] - 0.39}",  # the old "about 0.04"
+            "2,700x",
+            "figures for a pinned runner",
+        )
+        for concept_id in ("linear", "gpt-forward"):
+            body = self._body(concept_id)
+            for fragment in stale:
+                with self.subTest(concept=concept_id, fragment=fragment):
+                    self.assertNotIn(fragment, body)
+
+    def test_the_prose_does_not_call_the_runner_pinned(self) -> None:
+        # `results.json` is explicit that it is not pinned. The old prose said the
+        # figures were "for a pinned runner", which the JSON contradicts. Match any
+        # wording that presents this run as pinned, so a paraphrase ("from a
+        # pinned runner") does not slip through; the concept bodies are the raw
+        # file text, so ordinary punctuation is present.
+        self.assertFalse(self.data["runner"]["pinned"])
+        for concept_id in ("linear", "gpt-forward"):
+            body = self._body(concept_id)
+            with self.subTest(concept=concept_id):
+                for phrase in (
+                    "figures for a pinned runner",
+                    "from a pinned runner",
+                    "for a pinned runner",
+                ):
+                    self.assertNotIn(phrase, body)
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy

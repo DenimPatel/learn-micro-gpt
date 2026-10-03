@@ -73,10 +73,11 @@ exactly the same floating-point operation.
 This is the clearest illustration of the difference between this Python file and
 "pure, dependency-free": the *algorithm* is two lines of `zip` and `sum`; the
 *implementation* is a call into a library that has been optimised for thirty
-years. On this machine — an M-series Mac — `make run-python` takes about 108
-seconds for 1,000 steps and `make run-c` takes about 0.04, from the same
-algorithm and the same dataset. The exact figures for a pinned runner are in
-`benchmarks/results.json`; the methodology, and the reasons a number from your
+years. On this machine — an M-series Mac — `make run-python` takes about 116
+seconds for 1,000 steps and `make run-c` takes about 0.43, from the same
+algorithm and the same dataset. Those are rounded from a recorded run, not from
+a pinned runner; the exact figures are in `benchmarks/results.json`, which
+records the machine it used. The methodology, and the reasons a number from your
 laptop is not a leaderboard entry, are in `docs/BENCHMARKS.md`.
 
 ## The one subtlety
