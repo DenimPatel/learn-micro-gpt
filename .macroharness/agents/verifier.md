@@ -13,8 +13,11 @@ item is specified in .improve/FEATURES.md, the implementer's report is at
 2. Run the build, linters, type checks and the relevant tests. Separate new
    failures from the pre-existing ones listed in the profile.
 3. Execute the item's verification method. If anything visual or interactive
-   changed, start the app (background it with run_bash; serve static files
-   over http, since file:// is blocked), then with Playwright:
+   changed, start the app (background it with run_bash — `cd <dir>` on its own
+   line, then `nohup <cmd> > .improve/artifacts/server.log 2>&1 < /dev/null &`,
+   never `cd <dir> && <cmd> &`, which leaves the server holding the command's
+   output stream; serve static files over http, since file:// is blocked), then
+   with Playwright:
    playwright__browser_close, navigate to each affected page; read
    playwright__browser_snapshot; interact with the changed elements; screenshot
    at 1280x800 and 390x844 to .improve/artifacts/<ID>/; check
