@@ -413,4 +413,35 @@ test.describe('scroll on navigation', () => {
     await toc.click()
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
   })
+
+  test('clicking next twice moves two concepts forward, not one', async ({ page }) => {
+    // The regression this exists for: `navigate()` once bailed on
+    // `window.location.hash === href`, so a click whose target href already
+    // matched the hash did nothing and the second "next" looked dead. Asserting
+    // the *title* after each click rather than the hash is deliberate -- the hash
+    // is what the bug compared and what a stale test would agree with.
+    await page.goto('#/learn/softmax')
+    await expect(page.getByRole('heading', { level: 1, name: 'Softmax' })).toBeVisible()
+
+    await page.getByRole('link', { name: /next/i }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'RMSNorm' })).toBeVisible()
+
+    await page.getByRole('link', { name: /next/i }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Embedding' })).toBeVisible()
+    expect(new URL(page.url()).hash).toBe('#/learn/embedding')
+  })
+
+  test('clicking previous twice moves two concepts back', async ({ page }) => {
+    await page.goto('#/learn/multi-head-attention')
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Multi-head attention' }),
+    ).toBeVisible()
+
+    await page.getByRole('link', { name: /previous/i }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Embedding' })).toBeVisible()
+
+    await page.getByRole('link', { name: /previous/i }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'RMSNorm' })).toBeVisible()
+    expect(new URL(page.url()).hash).toBe('#/learn/rmsnorm')
+  })
 })
