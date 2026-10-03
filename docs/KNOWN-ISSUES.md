@@ -193,6 +193,15 @@ downloaded. The bug is unreachable through the Makefile.
 It is still reachable by running `python3 reference/microgpt.py` from a
 directory that has no `input.txt`. That is worth knowing about before you do it.
 
+The browser playground is the second consumer of this caveat. It cannot copy
+files into a scratch directory the way the Makefile does, so the worker writes
+the dataset into Pyodide's virtual filesystem and the driver `os.chdir`s to that
+directory before executing the reference. If the write path and the read path
+ever disagreed, the symptom would be the same silent network dependency
+described above — except the download fails inside a worker, so a mismatch is a
+loud `FileNotFoundError` instead of a quiet fallback. See
+`visualizer/src/worker/driver.ts`.
+
 **Why it was not "fixed":** the fix would be to change the file, and
 `reference/microgpt.py` is byte-pinned to upstream on purpose. It is the
 reference track: the browser runs it, the parity gate measures against it, and
