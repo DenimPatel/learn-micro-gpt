@@ -9,13 +9,26 @@ two things are the format the content authors actually write.
 
 from __future__ import annotations
 
-import json
-import re
-from dataclasses import dataclass, field
+import importlib.util
 from pathlib import Path
-from typing import Any, Iterator
 
-from tools import yamlite
+# Run as `python3 -m tools.concepts`; see tools/_entrypoint.py. This must precede
+# `from tools import ...`: a script run leaves `tools/` on sys.path but not the
+# repository root, so the package is not importable and the import below dies
+# with an unhelpful `ModuleNotFoundError: No module named 'tools'`.
+_spec = importlib.util.spec_from_file_location(
+    "_tools_entrypoint", Path(__file__).resolve().parent / "_entrypoint.py"
+)
+_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_guard)
+_guard.require_module_invocation("concepts", __package__)
+
+import json  # noqa: E402
+import re  # noqa: E402
+from dataclasses import dataclass, field  # noqa: E402
+from typing import Any, Iterator  # noqa: E402
+
+from tools import yamlite  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR = REPO_ROOT / "content"

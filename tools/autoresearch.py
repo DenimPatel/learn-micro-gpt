@@ -89,6 +89,20 @@ Run `make autoresearch-rust`, optionally with `TRACK=go` or `TRACK=typescript`.
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
+# Run as `python3 -m tools.autoresearch`; see tools/_entrypoint.py. This must
+# precede any `import subprocess`/`selectors`: a script run makes
+# `tools/selectors.py` shadow the standard library, so the failure happens *at*
+# that import.
+_spec = importlib.util.spec_from_file_location(
+    "_tools_entrypoint", Path(__file__).resolve().parent / "_entrypoint.py"
+)
+_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_guard)
+_guard.require_module_invocation("autoresearch", __package__)
+
 import argparse
 import difflib
 import hashlib

@@ -37,6 +37,17 @@ A few practical notes:
   If you need YAML, extend the strict subset in `tools/yamlite.py`, which has its
   own tests. This is a deliberate constraint, not an oversight; see
   `docs/ARCHITECTURE.md`.
+- **Run every tool as a module: `python3 -m tools.<name>`.** This is what every
+  `Makefile` target does, and it is not just a style preference. A plain
+  `python3 tools/trace.py` puts `tools/` on `sys.path`, where `tools/selectors.py`
+  shadows the standard-library `selectors` module that `subprocess` imports — so
+  the tool dies with an error that names neither the real file nor the real
+  cause — and `from tools import ...` cannot resolve because the repository root
+  is not on the path. The module form `python3 -m tools.trace` puts the
+  repository root there instead and avoids the shadow. The eight tools that are
+  most exposed to this (`autoresearch`, `bench`, `fmt`, `lint`, `parity`, `trace`,
+  `validate_concepts`, `check_provenance`) abort a direct-script run with a
+  message that says so; the guard lives in `tools/_entrypoint.py`.
 - **`make fmt` edits files in place.** Run it, then review the diff — it is the
   one target whose whole job is to write.
 - **First run of `make check` is slow** (it builds four language tracks and the

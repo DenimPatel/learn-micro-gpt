@@ -17,7 +17,19 @@ number in this repository silently becomes a lie.
 
 from __future__ import annotations
 
+import importlib.util
 import sys
+from pathlib import Path
+
+# Run as `python3 -m tools.check_provenance`; see tools/_entrypoint.py. This must
+# precede `from tools import ...`: a script run leaves `tools/` on sys.path but
+# not the repository root, so the package is not importable at all.
+_spec = importlib.util.spec_from_file_location(
+    "_tools_entrypoint", Path(__file__).resolve().parent / "_entrypoint.py"
+)
+_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_guard)
+_guard.require_module_invocation("check_provenance", __package__)
 
 from tools.provenance import all_entries
 

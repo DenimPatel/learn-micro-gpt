@@ -147,6 +147,12 @@ but a standard library, and the tooling that checks it should be auditable
 without a package manager. `tools/yamlite.py` is a strict YAML subset written
 for the purpose, and it has a test suite.
 
+Run these tools as modules — `python3 -m tools.trace`, not `python3 tools/trace.py`
+— which is what every `make` target does. Run as a script, `tools/selectors.py`
+lands on `sys.path` and shadows the standard-library `selectors` module, breaking
+the tool with an error that points at neither file. The exposed tools detect this
+and tell you the module form; the rest of the story is in `CONTRIBUTING.md`.
+
 ## Where to go next
 
 | If you want to | Go to |

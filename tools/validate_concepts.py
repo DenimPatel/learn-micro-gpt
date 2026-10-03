@@ -26,11 +26,23 @@ Exit code 0 means the Atlas can be trusted to say what it says.
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
+# Run as `python3 -m tools.validate_concepts`; see tools/_entrypoint.py. This
+# must precede `from tools import ...`: a script run leaves `tools/` on sys.path
+# but not the repository root, so the package is not importable at all.
+_spec = importlib.util.spec_from_file_location(
+    "_tools_entrypoint", Path(__file__).resolve().parent / "_entrypoint.py"
+)
+_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_guard)
+_guard.require_module_invocation("validate_concepts", __package__)
+
 import hashlib
 import json
 import math
 import sys
-from pathlib import Path
 from typing import Any, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

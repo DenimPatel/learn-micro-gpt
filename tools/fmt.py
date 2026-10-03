@@ -9,9 +9,21 @@ often than they are edited.
 
 from __future__ import annotations
 
+import importlib.util
+from pathlib import Path
+
+# Run as `python3 -m tools.fmt`; see tools/_entrypoint.py. This must precede any
+# `import subprocess`/`selectors`: a script run makes `tools/selectors.py`
+# shadow the standard library, so the failure happens *at* that import.
+_spec = importlib.util.spec_from_file_location(
+    "_tools_entrypoint", Path(__file__).resolve().parent / "_entrypoint.py"
+)
+_guard = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_guard)
+_guard.require_module_invocation("fmt", __package__)
+
 import subprocess
 import sys
-from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 VIS = REPO_ROOT / "visualizer"
