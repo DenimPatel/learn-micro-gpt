@@ -44,7 +44,18 @@ export interface Route {
   conceptId?: string
 }
 
-const ROUTES: {
+/**
+ * Every route the app recognises, in match order.
+ *
+ * Exported so a test can iterate the real table instead of restating it. A
+ * hand-written copy in a test is the failure mode this export exists to stop: if
+ * a route is added here and the copy is not updated, the round-trip test keeps
+ * passing while covering less and less -- and a route no test ever round-trips
+ * is exactly the one that ships with a `hrefFor`/`parseRoute` disagreement.
+ * The `pattern` is a matcher for a hash, not the hash `hrefFor` writes; that
+ * pair is what the round-trip test proves agree.
+ */
+export const ROUTES: {
   pattern: RegExp
   name: RouteName
   concept?: (m: RegExpMatchArray) => string | undefined

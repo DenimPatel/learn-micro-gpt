@@ -14,7 +14,15 @@ export default defineConfig({
     // the loss smoothing, the selector data that reached the browser. Anything
     // needing a DOM is a Playwright test, which runs against a real build.
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    // Both the `tests/` directory and tests colocated with the source.
+    //
+    // The glob used to be `tests/**` only, which meant a test written beside the
+    // module it covers (`src/app/router.test.ts`) was *silently* not run: it was
+    // a green suite that had never executed the file. Colocated tests are the
+    // pattern here, so the glob has to follow them rather than the other way
+    // round. Keep the two families in sync -- a pattern present in one list and
+    // not the other reintroduces exactly this bug for that family.
+    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
     reporters: 'default',
   },
 })
