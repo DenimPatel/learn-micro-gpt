@@ -30,7 +30,7 @@ they will not catch the ones that moved slightly, and those are worth a look.
 | the traces regenerate identically | — |
 | every track builds, and is within the parity band | **whether a track's gradient is correct** — see below |
 | the site builds with no absolute fetches, and works from a subpath | — |
-| 306 Python tests, 116 unit, 38 e2e | — |
+| 306 Python tests, 116 unit, 46 e2e | — |
 
 **The parity gate cannot catch a mis-scaled gradient**, because Adam divides by
 an estimate of the gradient's own magnitude. The C port's gradient used to be

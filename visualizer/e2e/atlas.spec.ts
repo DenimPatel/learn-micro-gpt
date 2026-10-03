@@ -491,3 +491,52 @@ test.describe('scroll on navigation', () => {
     expect(new URL(page.url()).hash).toBe('#/learn/rmsnorm')
   })
 })
+
+test.describe('no horizontal overflow on a phone', () => {
+  /**
+   * A 390px viewport is an iPhone 12/13/14 in CSS pixels -- the narrowest a
+   * reader is likely to hold. The document must fit it: if any element's
+   * intrinsic width exceeds the viewport, `scrollWidth` grows past `clientWidth`
+   * and the whole page pans sideways, so the reader loses the gutter and the
+   * layout reads as broken.
+   *
+   * This is the assertion #/research was missing. Its experiment `<select>`
+   * listed a long `<option>` per run, and a native `<select>` sizes itself to
+   * its widest option; unconstrained inside a flex `.widget__controls` it made
+   * the document 1212px wide at a 390px viewport. Nothing checked, so nothing
+   * failed -- the page just looked wrong on a phone.
+   *
+   * It checks `documentElement.scrollWidth`, not a particular element, because
+   * the failure mode is always "the whole page is wider than the window" and any
+   * of a dozen causes can produce it. The route list is the primary navigation,
+   * so a new route that overflows is a new route that has to fix itself.
+   */
+  const PHONE = { width: 390, height: 844 }
+  const ROUTES = [
+    ['home', './'],
+    ['concepts', '#/learn'],
+    ['explore', '#/explore'],
+    ['compare', '#/compare'],
+    ['research', '#/research'],
+    ['run', '#/run'],
+    ['about', '#/about'],
+    ['a concept', '#/learn/softmax'],
+  ] as const
+
+  for (const [name, route] of ROUTES) {
+    test(`${name} does not scroll sideways at 390px`, async ({ page }) => {
+      await page.setViewportSize(PHONE)
+      await page.goto(route)
+      // Let the route render and any charts settle before measuring.
+      await expect(page.locator('main#main')).toBeVisible()
+      const overflow = await page.evaluate(() => {
+        const root = document.documentElement
+        return { scrollWidth: root.scrollWidth, clientWidth: root.clientWidth }
+      })
+      expect(
+        overflow.scrollWidth,
+        `${name} (${route}) is ${overflow.scrollWidth}px wide at a ${overflow.clientWidth}px viewport`,
+      ).toBeLessThanOrEqual(overflow.clientWidth)
+    })
+  }
+})

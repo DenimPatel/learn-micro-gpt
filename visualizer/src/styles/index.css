@@ -1235,6 +1235,15 @@ td {
   padding: clamp(20px, 3vw, 34px) 0 clamp(26px, 3vw, 40px);
   margin-bottom: 8px;
   isolation: isolate;
+  /*
+   * The bloom below is decorative and deliberately bleeds a little past the
+   * hero, but on narrow screens that bleed (inset-inline: -10vw at <=980px)
+   * reached past the viewport and made the whole page scroll sideways.
+   * `overflow-x: clip` trims the horizontal bleed without creating a scroll
+   * container, so the vertical bleed above/below the hero is preserved.
+   */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /*
@@ -2971,6 +2980,22 @@ select:hover {
 .research__lookup select {
   width: 100%;
   max-width: 32rem;
+}
+
+/* The experiment picker under the divergence chart lists a long
+   `<option>` label per run, and a native `<select>` sizes itself to its
+   widest option. Unconstrained inside a flex `.widget__controls`, that
+   intrinsic width (~1100px) pushed the whole #/research document wider
+   than a 390px phone and the page panned sideways. Let the label shrink
+   and cap the select so the long options truncate inside their column
+   instead of stretching the layout. */
+.research__experiment label {
+  min-width: 0;
+  max-width: 100%;
+}
+.research__experiment select {
+  min-width: 0;
+  max-width: 100%;
 }
 .research__lookup-readout {
   color: var(--ink-2);

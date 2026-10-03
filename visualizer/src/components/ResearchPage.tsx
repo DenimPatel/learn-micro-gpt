@@ -1524,7 +1524,7 @@ function RunPatches({ track }: { track: ResearchTrack }) {
         experiment, loaded when you ask for it &mdash; a hundred experiments is a hundred patches
         and nobody should download them to look at one.
       </p>
-      <div className="widget__controls">
+      <div className="widget__controls research__experiment">
         <label>
           experiment
           <select
