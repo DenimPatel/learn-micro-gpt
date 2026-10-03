@@ -663,6 +663,100 @@ class TestBenchmarkFiguresInProse(unittest.TestCase):
                     self.assertNotIn(phrase, body)
 
 
+class TestDocsQuoteTheCurrentCounts(unittest.TestCase):
+    """Counts written in governance docs match the tree they describe.
+
+    `README.md`, `.github/pull_request_template.md` and `docs/ARCHITECTURE.md`
+    all state counts -- how many tests run, how many port tracks exist, how many
+    concepts carry maths. Each is cheap to derive and was wrong: the docs said
+    107 Python tests when hundreds run, "all five tracks" when `implementations/`
+    holds four, and "three concepts have maths" when all 18 do. A reader cannot check a
+    count without doing the work, so the numbers drift silently; this pins the
+    ones a reader is most likely to act on.
+    """
+
+    def setUp(self) -> None:
+        self.readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        self.template = (REPO_ROOT / ".github" / "pull_request_template.md").read_text(
+            encoding="utf-8"
+        )
+        self.architecture = (REPO_ROOT / "docs" / "ARCHITECTURE.md").read_text(
+            encoding="utf-8"
+        )
+        self.concepts = sorted((REPO_ROOT / "content" / "concepts").glob("*.md"))
+
+    def _test_count(self) -> int:
+        # Ask the runner itself, so the number quoted and the number shipped come
+        # from the same place. Counting `def test_` by hand over-counts: the
+        # phrase also appears in docstrings and comments.
+        loader = unittest.TestLoader()
+        suite = loader.discover(
+            str(REPO_ROOT / "tools" / "tests"), top_level_dir=str(REPO_ROOT)
+        )
+        return suite.countTestCases()
+
+    def test_the_pr_template_test_count_matches_the_suite(self) -> None:
+        # The PR template does quote an exact count, and this is what keeps it
+        # honest: add a test without updating the line and this fails. The README
+        # deliberately does *not* quote a count -- an exact number in prose that
+        # every new test invalidates is a number that is wrong most of the time,
+        # so the README says "the Python suite" instead.
+        count = self._test_count()
+        self.assertIn(f"{count} Python tests", self.template)
+        self.assertNotRegex(self.readme, r"\d+ Python tests")
+
+    def test_the_track_count_matches_implementations(self) -> None:
+        # A "track" is a port under implementations/; there are four, not five.
+        # "Five tracks" is a defensible phrase only where the Python reference is
+        # being counted in with the ports (the site's source loaders do this), so
+        # what is forbidden here is claiming five in the parity-gate sense.
+        tracks = [d.name for d in (REPO_ROOT / "implementations").iterdir() if d.is_dir()]
+        self.assertEqual(len(tracks), 4, f"implementations/ holds {sorted(tracks)}")
+        self.assertNotIn("all five tracks", self.readme)
+        self.assertIn("four port tracks", self.readme)
+
+    def test_the_maths_count_matches_the_concepts(self) -> None:
+        # Every concept has a `math:` block, and ConceptPage renders each one as a
+        # display formula, so the count is all of them -- not the "three" the
+        # architecture doc used to claim.
+        with_maths = [
+            p
+            for p in self.concepts
+            if re.search(r"^math:", p.read_text(encoding="utf-8"), re.M)
+        ]
+        self.assertEqual(len(with_maths), len(self.concepts))
+        self.assertNotIn("three concepts that have any", self.architecture)
+        self.assertNotIn("Three concepts have", self.architecture)
+
+    def test_the_section_selector_concepts_are_named(self) -> None:
+        # `section:` exists for the concepts whose anchors span a whole region.
+        # The doc names them, so the list must stay current.
+        using = sorted(
+            p.stem
+            for p in self.concepts
+            if "section:" in p.read_text(encoding="utf-8")
+        )
+        self.assertNotIn("three concepts describe whole regions", self.architecture)
+        self.assertNotIn(
+            "three concepts describe a whole chapter-sized region",
+            (REPO_ROOT / "docs" / "ADDING-A-CONCEPT.md").read_text(encoding="utf-8"),
+        )
+        for name in using:
+            with self.subTest(concept=name):
+                self.assertIn(name, self.architecture)
+
+    def test_no_doc_claims_a_wrong_track_count(self) -> None:
+        # "Five tracks" is only right where the Python reference is counted in
+        # with the four ports (the site's own source loaders, the data README).
+        # Where the subject is the parity gate over the ports, it is four; the
+        # README and the PR template both said "five" in that sense.
+        for rel in ("README.md", ".github/pull_request_template.md"):
+            text = (REPO_ROOT / rel).read_text(encoding="utf-8")
+            with self.subTest(doc=rel):
+                self.assertNotIn("all five tracks", text)
+                self.assertNotIn("five port tracks", text)
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy

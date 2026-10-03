@@ -30,7 +30,7 @@ they will not catch the ones that moved slightly, and those are worth a look.
 | the traces regenerate identically | — |
 | every track builds, and is within the parity band | **whether a track's gradient is correct** — see below |
 | the site builds with no absolute fetches, and works from a subpath | — |
-| 107 Python tests, 18 unit, 18 e2e | — |
+| 295 Python tests, 116 unit, 38 e2e | — |
 
 **The parity gate cannot catch a mis-scaled gradient**, because Adam divides by
 an estimate of the gradient's own magnitude. The C port's gradient used to be
@@ -63,7 +63,7 @@ make check          # everything CI runs
 make validate       # selectors, schema, graph, fences, generated files
 make test           # the Python suite
 make c-test         # three C build configurations agree; gradient checks
-make parity         # all five tracks within the band
+make parity         # all four port tracks within the band
 make lint && make fmt
 ```
 

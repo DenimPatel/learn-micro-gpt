@@ -52,9 +52,10 @@ The grammar is four forms — `def:`, `assign:`, `comment:`, `section:` — plus
 relative `offset:[a, b]`. `offset` is relative on purpose: it lets a concept point
 at a region *inside* a function without either duplicating the function's span or
 hardcoding a number that drifts the moment the function above it grows a comment.
-`section:` exists because three concepts describe whole regions, and a numeric
-offset to reach the end of one is exactly the hardcoded line number this design
-exists to remove.
+`section:` exists because five concepts (`data-loading`, `tokenizer`,
+`params-init`, `training-loop`, `inference-sampling`) describe whole regions, and
+a numeric offset to reach the end of one is exactly the hardcoded line number this
+design exists to remove.
 
 **Verification:** running the resolver over `reference/microgpt.py` reproduces
 all 19 line ranges of the old `mapping.js` exactly. That file was spot-checked
@@ -222,7 +223,7 @@ Lisp for a site that shows five, plus a 622 kB oniguruma wasm chunk the JS engin
 does not need.
 
 **KaTeX is 77 kB gzipped of the initial 180.** Lazy-loading it would cut that,
-at the cost of a flash of unstyled formulas on the three concepts that have any.
+at the cost of a flash of unstyled formulas on the 18 concepts that have any.
 Not worth it; recorded here so the decision is not re-litigated every time the
 bundle size is looked at.
 
@@ -328,7 +329,7 @@ indistinguishable from one that quietly did.
 
 - **History routing**, if the repo ever moves to a host with rewrite support.
   The `404.html` fallback is already emitted.
-- **Lazy KaTeX**, if the bundle budget tightens. Three concepts have
+- **Lazy KaTeX**, if the bundle budget tightens. All 18 concepts have
   display maths.
 - **More trace widgets.** The format supports what a 199-line model produces; the
   selection settings are in `tools/trace.py` and documented in

@@ -178,7 +178,7 @@ start) is a hard error with the concept id and the offset in the message. The
 **one** silent case is an oversized *end* offset, which is clamped to the last
 line — that is the documented `clamp` contract, so use it deliberately.
 
-`section:` exists because three concepts describe a whole chapter-sized region,
+`section:` exists because five concepts describe a whole chapter-sized region,
 and a numeric offset to reach the end of one would be the hardcoded line number
 this design exists to remove.
 

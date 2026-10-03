@@ -45,8 +45,8 @@ prerequisites and tells you what to install if something is missing.
 The loss curve, the attention weights, the speed comparison, the per-parameter
 gradient checks — all from real runs, committed to the repository, regenerated
 by `make trace` and `make bench`, and re-checked by CI. Nothing here is a
-plausible-looking invention. Where a number is quoted in prose, a test asserts it
-against the recording.
+plausible-looking invention. Where a number is quoted in prose, a test pins it to
+the recording that produced it — see `tools/tests/test_content.py`.
 
 ```sh
 make trace        # re-record traces/ from the real reference
@@ -99,6 +99,10 @@ reference/     microgpt.py, byte-pinned. And an annotated fork for reading.
 implementations/
   c/           the parity track (micro config) and the scaled config, for speed
   go/ rust/ typescript/   the same algorithm, a small autograd tape each
+                          (a "track" below is one of these ports — C, Go, Rust or
+                          TypeScript — each measured against the reference; where
+                          the text says "five tracks" it is counting the Python
+                          reference in with them)
 content/       18 concepts + a schema + the curriculum spine. The source of truth.
 tools/         stdlib-only Python: anchors, validation, traces, parity, benchmarks.
 traces/        recorded runs, committed. Every number on the site comes from here.
@@ -131,9 +135,9 @@ Digests, upstream commits, and the full list are in
 ```sh
 make verify-provenance   # every vendored file still matches its sha256
 make validate            # every concept's selectors resolve; schema; graph; fences
-make test                # 107 Python tests, stdlib unittest, no dependencies
+make test                # the Python suite, stdlib unittest, no dependencies
 make c-test              # three C build configurations agree; gradient checks
-make parity              # all five tracks within the statistical band
+make parity              # all four port tracks within the statistical band
 make check               # everything CI runs
 ```
 
