@@ -17,7 +17,7 @@ import unittest
 from pathlib import Path
 
 from tools import concepts as content
-from tools import gen_anchors, selectors, trace, validate_concepts
+from tools import gen_anchors, selectors, tag_fences, trace, validate_concepts
 from tools.validate_concepts import Report, validate_against_schema
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -551,6 +551,98 @@ class TestAnchorsArtifact(unittest.TestCase):
                         self.assertGreaterEqual(span["start"], 1)
                         self.assertLessEqual(span["end"], info["lines"])
                         self.assertGreaterEqual(span["end"], span["start"])
+
+
+class TestTagFencesNormalise(unittest.TestCase):
+    """`normalise` must not confuse a `#` inside a literal with a comment.
+
+    The untagged-fence contract (see `TestCorpus`) is decided entirely by
+    `normalise`: a fence is treated as a verbatim excerpt when every line
+    normalises to a line in the anchor. Truncating at the first `#` anywhere --
+    `line.split("#")[0]` -- makes `print("a # b")` normalise to `print("a`, so a
+    correct excerpt stops matching (and an incorrect one can start to).
+    """
+
+    def test_hash_inside_a_string_literal_is_kept(self) -> None:
+        self.assertEqual(tag_fences.normalise('print("a # b")'), 'print("a # b")')
+
+    def test_trailing_comment_is_still_stripped(self) -> None:
+        self.assertEqual(tag_fences.normalise("a # comment"), "a")
+
+    def test_a_trailing_comment_after_a_literal_is_stripped(self) -> None:
+        self.assertEqual(
+            tag_fences.normalise('print("a # b")  # comment'), 'print("a # b")'
+        )
+
+    def test_single_and_triple_quotes_are_both_literal_delimiters(self) -> None:
+        self.assertEqual(tag_fences.normalise("x = 'a # b'"), "x = 'a # b'")
+        self.assertEqual(
+            tag_fences.normalise('doc = """a # b"""'), 'doc = """a # b"""'
+        )
+
+    def test_a_comment_only_line_normalises_to_empty(self) -> None:
+        self.assertEqual(tag_fences.normalise("# only a comment"), "")
+
+    def test_comment_inside_a_call_still_truncates(self) -> None:
+        # The `#` here is genuinely a comment, not inside a literal.
+        self.assertEqual(tag_fences.normalise("foo(  # inline"), "foo(")
+
+
+class TestTagFencesUnterminatedFence(unittest.TestCase):
+    """An unterminated fence must not be reported as success.
+
+    The closing-fence scan runs to EOF; copying the remainder verbatim would
+    treat the rest of the file as fence body and reclassify everything after the
+    typo while reporting success. `tag` now raises, naming the file and the
+    opening line, and `main` turns that into a non-zero exit.
+    """
+
+    #: A real anchor (`tag` resolves the selector against the repo's
+    #: `reference/microgpt.py`, which this test reads rather than fakes).
+    _FRONTMATTER = (
+        "---\nid: demo\ntitle: Demo\n"
+        'anchors:\n  python: { selector: "def:softmax" }\n'
+        "---\n"
+    )
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="tag-fences-test-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+
+    def _scratch_concept(self, body: str) -> Path:
+        path = self.tmp / "content" / "concepts" / "demo.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self._FRONTMATTER + body, encoding="utf-8")
+        return path
+
+    def test_an_unterminated_fence_names_the_file_and_opening_line(self) -> None:
+        path = self._scratch_concept("\nIntro\n\n```python\nprint(1)\n")
+        with self.assertRaises(content.ContentError) as caught:
+            tag_fences.tag(path)
+        message = str(caught.exception)
+        self.assertIn("demo.md", message)
+        self.assertIn("unterminated", message)
+        # frontmatter ends at file line 6; the opening ``` is body line 4.
+        self.assertIn("line 10", message)
+
+    def test_a_closed_fence_is_accepted(self) -> None:
+        path = self._scratch_concept("\nIntro\n\n```text\n1 + 1\n```\n")
+        self.assertEqual(tag_fences.tag(path), 0)
+
+    def test_the_error_reaches_a_non_zero_exit(self) -> None:
+        """`main` must translate the raise into a non-zero status."""
+        content_dir = self.tmp / "content" / "concepts"
+        content_dir.mkdir(parents=True, exist_ok=True)
+        (content_dir / "demo.md").write_text(
+            self._FRONTMATTER + "\nIntro\n\n```python\nprint(1)\n", encoding="utf-8"
+        )
+        original = tag_fences.REPO_ROOT
+        tag_fences.REPO_ROOT = self.tmp
+        shutil.copytree(REPO_ROOT / "reference", self.tmp / "reference")
+        try:
+            self.assertNotEqual(tag_fences.main(), 0)
+        finally:
+            tag_fences.REPO_ROOT = original
 
 
 if __name__ == "__main__":

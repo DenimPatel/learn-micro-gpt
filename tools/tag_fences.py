@@ -13,6 +13,7 @@ Idempotent: fences that already have a tag are left alone.
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +22,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from tools import concepts as content  # noqa: E402
 from tools import selectors  # noqa: E402
+from tools.concepts import ContentError  # noqa: E402
 
 SOURCE = (REPO_ROOT / "reference" / "microgpt.py").read_text(encoding="utf-8").split("\n")
 
@@ -34,8 +36,37 @@ _KEYWORDS = (
 )
 
 
+#: Python string literals, applied left to right. A `#` outside a literal starts
+#: a comment; a `#` inside one is data and must survive the strip.
+_QUOTES_RE = re.compile(r"'{3}|\"{3}|'|\"")
+
+
+def _strip_comment(line: str) -> str:
+    """Drop a trailing `#` comment but keep every `#` inside a string literal.
+
+    `line.split("#")[0]` truncates at the first `#` anywhere, so
+    `print("a # b")` normalises to `print("a` and gets classified on the wrong
+    text -- and, worse, an excerpt that *looks* like the anchor stops matching
+    it. Scanning literals left to right fixes both: only a `#` seen outside a
+    quoted run starts a comment.
+    """
+    index = 0
+    while True:
+        match = _QUOTES_RE.search(line, index)
+        if match is None:
+            break
+        quote = match.group(0)
+        end = line.find(quote, match.end())
+        if end < 0:
+            break  # unterminated literal: never reached in real source
+        index = end + len(quote)
+    tail = line[index:]
+    hash_at = tail.find("#")
+    return line[:index] + (tail[:hash_at] if hash_at >= 0 else tail)
+
+
 def normalise(line: str) -> str:
-    return line.split("#")[0].strip().rstrip(",").strip()
+    return _strip_comment(line).strip().rstrip(",").strip()
 
 
 def classify(lines: list[str], anchored: set[str]) -> str | None:
@@ -56,7 +87,12 @@ def classify(lines: list[str], anchored: set[str]) -> str | None:
 
 def tag(path: Path) -> int:
     concept = content.load_concept(path)
-    _, body = content.split_frontmatter(path.read_text(encoding="utf-8"), path)
+    text = path.read_text(encoding="utf-8")
+    head, _, _ = text.partition("\n---\n")
+    #: The closing `---` of the frontmatter: line 1 of the body sits on the line
+    #: right after it, so this is the offset that maps a body index to a file line.
+    frontmatter_end = head.count("\n") + 2
+    _, body = content.split_frontmatter(text, path)
     span = selectors.resolve("python", concept.frontmatter["anchors"]["python"]["selector"], REPO_ROOT)
     anchored = {normalise(line) for line in SOURCE[span.start - 1 : span.end]}
     anchored.discard("")
@@ -76,6 +112,14 @@ def tag(path: Path) -> int:
         close = index + 1
         while close < len(lines) and not lines[close].startswith("```"):
             close += 1
+        if close >= len(lines):
+            # The scan ran to EOF without a closer. Copying the remainder
+            # verbatim would report success and silently reclassify everything
+            # after the opening fence, so refuse instead of guessing.
+            raise ContentError(
+                f"{path.name}: unterminated code fence opened at line "
+                f"{frontmatter_end + index + 1} (no closing ``` before end of file)"
+            )
         if info:
             out.extend(lines[index : close + 1])
         else:
@@ -89,18 +133,21 @@ def tag(path: Path) -> int:
         index = close + 1
 
     if changed:
-        head, _, _ = path.read_text(encoding="utf-8").partition("\n---\n")
         path.write_text(f"{head}\n---\n" + "\n".join(out), encoding="utf-8")
     return changed
 
 
 def main() -> int:
     total = 0
-    for path in sorted((REPO_ROOT / "content" / "concepts").glob("*.md")):
-        count = tag(path)
-        total += count
-        if count:
-            print(f"  {path.name}: tagged {count} fence(s)")
+    try:
+        for path in sorted((REPO_ROOT / "content" / "concepts").glob("*.md")):
+            count = tag(path)
+            total += count
+            if count:
+                print(f"  {path.name}: tagged {count} fence(s)")
+    except ContentError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
     print(f"tagged {total} fence(s) in total")
     return 0
 
