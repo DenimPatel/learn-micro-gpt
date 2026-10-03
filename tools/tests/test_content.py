@@ -817,6 +817,60 @@ class TestAddingALanguageGuideIsAccurate(unittest.TestCase):
         )
 
 
+class TestAddingALanguageChecklistIsComplete(unittest.TestCase):
+    """The definition-of-done list names the gates a contributor will hit.
+
+    Two of them failed silently for a reader who followed the guide to the
+    letter: the frontmatter schema is closed, so a new language under `anchors`
+    is rejected until `content/schema.json` is extended; and CI runs
+    `prettier --check` (inside `npm run lint`), so unformatted visualizer work
+    fails there even though `make fmt` was never mentioned. Both are cheap to
+    assert against the artifacts that enforce them, so they cannot quietly drop
+    off the list again.
+    """
+
+    def setUp(self) -> None:
+        self.guide = (REPO_ROOT / "docs" / "ADDING-A-LANGUAGE.md").read_text(
+            encoding="utf-8"
+        )
+        self.schema = json.loads(
+            (REPO_ROOT / "content" / "schema.json").read_text(encoding="utf-8")
+        )
+
+    def test_the_checklist_names_make_fmt(self) -> None:
+        # `make fmt` is the fix command; CI enforces the same thing through
+        # `npm run lint` (`prettier --check`), so a reader who never runs it
+        # fails CI.
+        self.assertIn("`make fmt` run", self.guide)
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertRegex(makefile, r"(?m)^fmt:")
+
+    def test_the_checklist_names_the_frontmatter_key_restriction(self) -> None:
+        self.assertIn("keys the schema allows", self.guide)
+
+    def test_the_closed_anchors_contract_the_guide_describes_is_real(self) -> None:
+        # The guide says `anchors` enumerates its languages and the schema
+        # rejects anything else. That has to match the schema, or the advice is
+        # stale the moment a track is added.
+        self.assertIs(self.schema.get("additionalProperties"), False)
+        anchors = self.schema["properties"]["anchors"]
+        self.assertIs(anchors.get("additionalProperties"), False)
+        # Every language named in the guide's sentence is a real anchors key.
+        for language in ("python", "c", "go", "rust", "typescript"):
+            with self.subTest(language=language):
+                self.assertIn(language, anchors["properties"])
+
+    def test_ci_actually_enforces_prettier(self) -> None:
+        # The checklist item is only honest while CI's lint step checks format.
+        # If the lint script loses `prettier --check`, drop the item.
+        pkg = json.loads(
+            (REPO_ROOT / "visualizer" / "package.json").read_text(encoding="utf-8")
+        )
+        self.assertIn("prettier --check", pkg["scripts"]["lint"])
+        ci = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+        self.assertIn("npm run lint", ci)
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy

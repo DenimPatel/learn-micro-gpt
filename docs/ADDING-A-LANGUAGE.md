@@ -170,6 +170,16 @@ Then add `anchors.<name>` to at least one concept and check it resolves:
 make validate          # an unresolvable selector is a build failure
 ```
 
+A concept's frontmatter is a closed set. `content/schema.json` declares
+`additionalProperties: false` both at the top level and inside `anchors`, and
+`anchors` enumerates its languages explicitly (`python`, `c`, `go`, `rust`,
+`typescript`). So your new language is not an extra key the schema tolerates — it
+is one the schema rejects until you add it. Add `"<name>"` to `anchors.properties`
+(the same `$ref` as the others) before you write the first `anchors.<name>`, or
+`make validate` fails on a concept that looked fine. The same applies if your
+track needs frontmatter of its own: extend the schema rather than inventing a
+key and expecting the validator to skip it.
+
 Concepts without an anchor in your language are fine — they render without your
 tab. Concepts *with* one that does not resolve are a build failure, which is the
 point.
@@ -245,4 +255,6 @@ tests assert the measurements so the original version does not get reintroduced.
 - [ ] in the `tracks` CI job, with its toolchain installed there
 - [ ] in `make help`
 - [ ] provenance recorded, if anything is derived
+- [ ] any frontmatter you add uses only the keys the schema allows
+- [ ] `make fmt` run, if you touched anything under `visualizer/`
 - [ ] `make check` green
