@@ -113,6 +113,13 @@ class Concept:
 
 
 def split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
+    """Split a concept file into its frontmatter mapping and its body.
+
+    The body is the substring the parser is handed, and it starts *after* the
+    closing `---`. `parse_body` numbers lines in the file, not in the body, so
+    the caller needs to know how many lines came before it -- see
+    `frontmatter_line_count`.
+    """
     match = FRONTMATTER_RE.match(text)
     if not match:
         raise ContentError(f"{path.name}: no YAML frontmatter (expected a leading `---` block)")
@@ -121,6 +128,20 @@ def split_frontmatter(text: str, path: Path) -> tuple[dict[str, Any], str]:
     except yamlite.YamliteError as exc:
         raise ContentError(f"{path.name}: frontmatter: {exc}") from exc
     return front, match.group(2)
+
+
+def frontmatter_line_count(text: str) -> int:
+    """How many newlines precede `split_frontmatter(text, path)[1]`.
+
+    A concept file has a frontmatter block bounded by `---` lines; the body
+    begins on the line after the closing delimiter. Numbering the body from 1
+    therefore reports every line number too low by exactly this count, which is
+    per file, not a constant.
+    """
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return 0
+    return text[: text.index(match.group(2))].count("\n")
 
 
 def parse_args(raw: str, line_no: int) -> tuple[dict[str, str], str]:
@@ -159,28 +180,45 @@ def parse_args(raw: str, line_no: int) -> tuple[dict[str, str], str]:
     return args, quoted
 
 
-def parse_body(body: str) -> list[Block]:
+def parse_body(body: str, line_offset: int = 0) -> list[Block]:
     """Split a concept body into prose and directives.
 
     A block directive (`:::callout`) owns the lines up to the closing `:::`. An
     inline directive (`:::term bos`) is exactly one line. A bare `:::` closes the
     most recent block, or does nothing at all if none is open -- which is how
     `:::lang` ranges are terminated.
+
+    `line_offset` is how many lines of the concept file precede `body` -- the
+    frontmatter. `Block.line_no` is a line number *in the file*, so without it
+    every block is reported `line_offset` lines too high, and a consumer that
+    jumps to `line_no` lands in the middle of unrelated prose. The offset is per
+    file (frontmatter is not a fixed size), so it cannot be a module constant.
     """
     blocks: list[Block] = []
     lines = body.split("\n")
     open_block: Block | None = None
     buffer: list[str] = []
-    prose_start = 1
+    #: The first *non-blank* buffered line. Prose is emitted with its leading
+    #: blank lines stripped, so pointing `line_no` at a blank line would put the
+    #: number one or more lines above the text it names.
+    prose_start = 0
 
     def flush_prose(end_line: int) -> None:
+        nonlocal prose_start
         chunk = "\n".join(buffer).strip("\n")
         if chunk.strip():
             blocks.append(Block(kind="prose", text=chunk, line_no=prose_start))
         buffer.clear()
+        prose_start = 0
+
+    def push_prose_line(raw: str, line_no: int) -> None:
+        nonlocal prose_start
+        if prose_start == 0 and raw.strip():
+            prose_start = line_no
+        buffer.append(raw)
 
     for index, raw in enumerate(lines):
-        line_no = index + 2  # +1 for zero-based, +1 for the frontmatter block
+        line_no = index + 1 + line_offset
         stripped = raw.strip()
 
         if open_block is not None:
@@ -201,7 +239,7 @@ def parse_body(body: str) -> list[Block]:
                     f"directive. Expected `:::name` or `:::name key=value`. A near-miss "
                     f"here renders as a paragraph of colons rather than failing."
                 )
-            buffer.append(raw)
+            push_prose_line(raw, line_no)
             continue
 
         name = match.group("name")
@@ -225,7 +263,7 @@ def parse_body(body: str) -> list[Block]:
             buffer.clear()
         else:
             blocks.append(block)
-        prose_start = line_no + 1
+        prose_start = 0
 
     if open_block is not None:
         raise ContentError(
@@ -251,7 +289,7 @@ def load_concept(path: Path) -> Concept:
         path=path,
         frontmatter=front,
         body=body,
-        blocks=parse_body(body),
+        blocks=parse_body(body, frontmatter_line_count(text)),
     )
 
 

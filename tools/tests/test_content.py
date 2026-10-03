@@ -139,6 +139,80 @@ class TestCorpus(unittest.TestCase):
                     )
 
 
+class TestBlockLineNumbers(unittest.TestCase):
+    """`Block.line_no` is the 1-based line *in the concept file*.
+
+    The parser sees only the body, so the frontmatter it never looks at is the
+    easiest thing in the file to forget to count. Every consumer that maps a
+    block back to a line (error messages say "softmax line 57", `render_content`
+    stamps a `line` on each directive block) then lands some fixed number of
+    lines too high. That is invisible until someone clicks through to the wrong
+    place, which is the whole reason this is asserted against a real file.
+    """
+
+    #: A body with the frontmatter delimiter at a known line, so the expected
+    #: numbers below are arithmetic rather than a second opinion from the code
+    #: under test.
+    _FRONTMATTER = "---\nid: demo\ntitle: Demo\n---\n"
+
+    def _concept(self, body: str) -> content.Concept:
+        tmp = Path(tempfile.mkdtemp(prefix="line-no-test-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        path = tmp / "content" / "concepts" / "demo.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(self._FRONTMATTER + body, encoding="utf-8")
+        return content.load_concept(path)
+
+    def test_a_directive_reports_its_line_in_the_file(self) -> None:
+        # File layout (1-based):
+        #   1-4  frontmatter
+        #   5    blank
+        #   6    Intro
+        #   7    blank
+        #   8    :::term bos
+        #   9    blank
+        #   10   Outro
+        concept = self._concept("\nIntro\n\n:::term bos\n\nOutro\n")
+        lines = concept.path.read_text(encoding="utf-8").split("\n")
+        term = [b for b in concept.blocks if b.name == "term"][0]
+        self.assertEqual(term.line_no, 8)
+        self.assertEqual(lines[term.line_no - 1].strip(), ":::term bos")
+
+    def test_a_prose_block_reports_its_first_line(self) -> None:
+        concept = self._concept("\nIntro line one\nIntro line two\n\n:::term bos\n")
+        prose = [b for b in concept.blocks if b.kind == "prose"][0]
+        self.assertEqual(prose.line_no, 6)
+
+    def test_a_block_directive_reports_its_opening_line(self) -> None:
+        #   1-4  frontmatter
+        #   5    Intro
+        #   6    blank
+        #   7    :::callout "Title"
+        #   8    inside
+        #   9    :::
+        #   10   blank
+        #   11   :::term bos
+        #   12   blank
+        #   13   Outro
+        concept = self._concept(
+            "Intro\n\n:::callout \"Title\"\ninside\n:::\n\n:::term bos\n\nOutro\n"
+        )
+        by_name = {block.name: block for block in concept.directives()}
+        self.assertEqual(by_name["callout"].line_no, 7)
+        self.assertEqual(by_name["term"].line_no, 11)
+
+    def test_real_concepts_agree_with_the_file_on_disk(self) -> None:
+        for concept in content.load_all(REPO_ROOT):
+            lines = concept.path.read_text(encoding="utf-8").split("\n")
+            for block in concept.directives():
+                self.assertTrue(0 < block.line_no <= len(lines), concept.id)
+                self.assertTrue(
+                    lines[block.line_no - 1].strip().startswith(f":::{block.name}"),
+                    f"{concept.id} {block.name} claims line {block.line_no} "
+                    f"but that line is {lines[block.line_no - 1]!r}",
+                )
+
+
 class TestGateFiresOnBrokenContent(unittest.TestCase):
     """The point of a gate is that it fails. None of these are hypothetical."""
 

@@ -52,7 +52,7 @@
         },
         {
           "kind": "callout",
-          "line": 115,
+          "line": 134,
           "title": "What the C port adds",
           "markdown": "`adam_update` in the C tab is 58 lines against Python's 8. It replaces\n`v_hat ** 0.5` with a NEON reciprocal-square-root and Newton refinement, hoists\nthe `1/(1-beta^t)` corrections out of the parameter loop into two scalars, and\nthen updates 4,192 float32s in tight 128-byte-aligned loops. The mathematics is\nidentical, to the last bit of the formula. The C file's own comments note the\nfused form: `p -= lr * (m*inv_b1c) / (sqrt(v*inv_b2c + eps))`. It is\nreciprocal-multiply rather than divide, which is the same operation with one\nfewer rounding step."
         }
@@ -106,7 +106,7 @@
         },
         {
           "kind": "callout",
-          "line": 109,
+          "line": 128,
           "title": "The one-line experiment",
           "markdown": "Set `n_layer = 4` and rerun. It works — that is the payoff of naming the weights\n`layer{i}.*` with a format string. The loss gets a little better and the run\ngets a little slower. Then set `n_layer = 8` and watch it get *worse* again: at\n`n_embd = 16` there are not enough parameters per layer to justify the depth,\nand overfitting a 32,000-word vocabulary starts to bite. Depth is a trade, and\n199 lines does not tell you where the optimum is. Finding that is the exercise."
         }
@@ -153,7 +153,7 @@
         },
         {
           "kind": "callout",
-          "line": 68,
+          "line": 85,
           "title": "This is why the reference is slow",
           "markdown": "The graph is built and torn down 1,000 times, for one document at a time, with\npure-Python object allocation for every one of tens of thousands of nodes per\nstep. The C port gets its speed from the same arithmetic laid out in typed\narrays, and roughly 100x from batching positions instead of stepping through\nthem one at a time. The algorithm is identical; the bookkeeping is not."
         },
@@ -163,7 +163,7 @@
         },
         {
           "kind": "callout",
-          "line": 84,
+          "line": 101,
           "title": "The debugging habit this trains",
           "markdown": "`loss.backward()` mutates the entire graph. If you want to backward twice from\nthe same loss, you cannot: the gradients are already accumulated and there is no\nzeroing step. `build_topo` is also recursive, so a graph deeper than Python's\nrecursion limit (~1,000) would blow the stack. At `n_layer = 1` that is not\nclose, but it is the wall you hit first when you try to make this model deeper.\nThat is a real limitation, and it is why production engines are iterative."
         }
@@ -212,7 +212,7 @@
         },
         {
           "kind": "callout",
-          "line": 106,
+          "line": 124,
           "title": "This is not hypothetical",
           "markdown": "The C port in the tab above is exactly the shape this warning describes, and for\na while its `backward_all` really was wrong. It did not carry the key and value\ngradients of earlier positions back to their embeddings, and a second, larger bug\nmade the forward pass overwrite the vector that the last `rmsnorm` was supposed\nto differentiate. Projected on a random direction over all 4,192 parameters, its\ngradient came out at **-0.12x** the true directional derivative, where a correct\ngradient is 1.0x. It measures 1.03 now. Issue 1 in `docs/KNOWN-ISSUES.md` has\nboth bugs, the per-block measurement that showed the first diagnosis was wrong,\nand what the C track is and is not good for.\n\nThe instructive part is not the bug, it is the silence. **Its loss curve still\ntracked the reference to within 7%, and it still trained,** for as long as it was\nwrong. Adam's update divides by an estimate of the gradient's own magnitude, so a\ngradient that is wrong by a factor barely moves the step. A missing gradient path\nis therefore invisible to the loss, invisible to a statistical loss-band\ncomparison, and visible only to a finite difference.\n\nThe hazard did not go away with that fix, it only got smaller. The frozen Rust\ntrack still has an `rmsnorm` sitting outside its autograd tape, so its gradient\nis 6.32% high &mdash; a wrong gradient this repository keeps on purpose, because\nthe research loop needs something to measure against (issue 5). Six percent is\nenough to pass every check described on this page.\n\nTwo consequences worth internalising:\n\n- Autograd trades memory and speed for *correctness by construction*. That is a\n  good trade at 4,192 parameters and a much worse one at 175 million, which is\n  why the scaled C config hand-writes its backward pass too.\n- It also means the Python file is not \"the C file, but slower\". It is a\n  different program that computes the same function. The only thing they have in\n  common is the answer.\n\n## What this does *not* do\n\nThere is no operator for matrix multiply, no broadcasting, no batch dimension,\nand no GPU. There is also no `addcmul`, no `pow` with an exponent that is itself\na `Value`, and no second-order derivative. All of that is fine — the point of\nthis file is that the *idea* fits in a class this small, and every production\nautograd engine is this class plus bookkeeping.\n\n:::callout \"Try it\"\nChange `relu`'s local gradient to `1.0` and rerun. The loss still falls, because\nyou have only changed the gradient in the region where activations are positive\nfor the names in this dataset. That is a useful reminder that a gradient bug and\nan architecture bug look identical from the loss curve, and that the only defense\nis testing the derivative directly — which is exactly what this repository's\nfinite-difference tests do for the C port."
         }
@@ -265,7 +265,7 @@
         },
         {
           "kind": "trace",
-          "line": 74,
+          "line": 92,
           "args": {
             "kind": "loss-curve"
           }
@@ -276,7 +276,7 @@
         },
         {
           "kind": "callout",
-          "line": 81,
+          "line": 99,
           "title": "A gate that would have failed the reference",
           "markdown": "An early draft of this repository's parity specification required the loss to be\n*strictly decreasing*, and within ±10% of the reference at single steps 50 and\n200. The reference itself violates the first condition 500 times, and its\nper-step standard deviation is 16% of its mean — so a ±10% band on a raw\nsingle-step value is inside the noise. Both were wrong, and both were wrong in a\nway that would only have been discovered by running them. The gate now requires\na *downward trend* in windowed means, and a ±10% band on a **smoothed** loss,\nwhere the smoothing removes the document-to-document variance. The evidence and\nthe arithmetic are in `docs/BENCHMARKS.md`."
         },
@@ -324,7 +324,7 @@
         },
         {
           "kind": "callout",
-          "line": 24,
+          "line": 41,
           "title": "The shuffle is not optional",
           "markdown": "Without it you are training on an alphabet, not on a language. The loss curve\nlooks fine. The samples look terrible. This is the first place in 199 lines where\nsomething can be quietly, invisibly wrong."
         },
@@ -379,7 +379,7 @@
         },
         {
           "kind": "callout",
-          "line": 69,
+          "line": 87,
           "title": "The thing to try",
           "markdown": "Change `block_size` from 16 to 32 and add 16 rows to `wpe`. The model trains the\nsame way, on longer names. Now change it to 8 and watch the loss get *worse* —\nyou are truncating most names. `block_size` is a capacity decision disguised as\na hyperparameter, and this dataset makes that visible within a hundred steps."
         }
@@ -434,7 +434,7 @@
         },
         {
           "kind": "callout",
-          "line": 45,
+          "line": 63,
           "title": "The cost of this design, measured",
           "markdown": "The reference trains 1,000 steps in about 108 seconds on an M-series Mac, and the\nC port does the same work in about 0.04 seconds. None of that 2,700x is the\narithmetic. It is: not rebuilding a Python graph 1,000 times, and not walking the\ndocument one position at a time. See [linear](../concepts/linear.md) for the\nsplit and `docs/BENCHMARKS.md` for the methodology."
         },
@@ -491,7 +491,7 @@
         },
         {
           "kind": "trace",
-          "line": 61,
+          "line": 79,
           "args": {
             "kind": "samples"
           }
@@ -502,7 +502,7 @@
         },
         {
           "kind": "callout",
-          "line": 114,
+          "line": 132,
           "title": "Try it, in this order",
           "markdown": "1. `temperature = 0.2`, rerun. Names get more real. Nothing else changes.\n2. Replace `random.choices(...)` with `[max(range(vocab_size), key=lambda i: probs[i].data)]`. All 20 samples become identical. That is greedy decoding, and it is why sampling exists.\n3. `temperature = 0.0`. You get a division by zero. `T -> 0` is `argmax`, but you have to implement that as a branch, which is a nice illustration that \"0 is the low-temperature limit\" is a limit and not a value."
         }
@@ -648,7 +648,7 @@
         },
         {
           "kind": "callout",
-          "line": 83,
+          "line": 101,
           "title": "The one-line experiment",
           "markdown": "Replace `x = [xi.relu() for xi in x]` with `x = [xi * xi for xi in x]` (a ReLU\nreplacement, the poor man's squared activation) and rerun. The loss still falls.\nThen replace the whole MLP body with `x = x_residual` — a no-op — and watch it\nstall near `ln(27)`. The first says \"the model is robust to architectural detail\nat this scale\". The second says \"4,192 parameters are almost all in the\nembeddings, the head, and attention\". Both are worth seeing once."
         }
@@ -717,7 +717,7 @@
         },
         {
           "kind": "trace",
-          "line": 97,
+          "line": 119,
           "args": {
             "kind": "attention",
             "step": "0",
@@ -731,7 +731,7 @@
         },
         {
           "kind": "trace",
-          "line": 104,
+          "line": 126,
           "args": {
             "kind": "attention",
             "step": "200",
@@ -745,7 +745,7 @@
         },
         {
           "kind": "trace",
-          "line": 142,
+          "line": 164,
           "args": {
             "kind": "loss-curve"
           }
@@ -756,7 +756,7 @@
         },
         {
           "kind": "callout",
-          "line": 147,
+          "line": 169,
           "title": "Set n_head to 1 and watch",
           "markdown": "`n_head = 1` makes `head_dim = 16` and the loss curve gets noticeably worse. Set\nit to 16 and `head_dim = 1`, and attention collapses to \"pick the single\ndimension that matches best\". The sweet spot is not derivable from first\nprinciples — it is one of the few genuinely empirical numbers in the file, and it\nis worth finding yourself rather than taking from us."
         }
@@ -820,7 +820,7 @@
         },
         {
           "kind": "callout",
-          "line": 87,
+          "line": 108,
           "title": "Count them yourself",
           "markdown": "`27*16 + 16*16 + 27*16 + 4*(16*16*4) + 64*16 + 16*64` = `432 + 256 + 432 + 1024 + 1024 + 1024` =\n**4192**. If the number printed does not match your arithmetic, a shape is wrong\nand every downstream concept in this chapter is about to be confusing."
         }
@@ -917,7 +917,7 @@
         },
         {
           "kind": "callout",
-          "line": 57,
+          "line": 75,
           "title": "The invariant to check",
           "markdown": "`sum(softmax(x))` is 1.0, always, to floating-point precision. It is worth\nadding that assertion the first time you run this — the C port's\nfinite-difference tests do exactly that for its `softmax_fwd`, and it is the\ncheapest possible check that a normalisation function is normalising. If the sum\nis 1.0 and the output has a `NaN` in it, you have found a divide-by-zero that\n`max_val` was supposed to prevent.\n\nAnd here are the actual top-8 next characters the trained model prefers, from\nthe recorded run:\n\n:::trace kind=softmax step=200 pos=0"
         }
@@ -968,7 +968,7 @@
         },
         {
           "kind": "callout",
-          "line": 69,
+          "line": 87,
           "title": "Character-level is a real tradeoff, not a simplification",
           "markdown": "You get a tiny model, a tiny vocabulary, and no unknown-word problem. You pay for\nit with sequence length: a name is ~7 tokens here, so `block_size = 16` is\nalready cutting longer names in half. Bigger models, and this repo's `shakespeare.txt`,\nmove to word-level or BPE precisely because of that. The idea is identical; only\nthe size of the alphabet changes."
         },
@@ -1025,7 +1025,7 @@
         },
         {
           "kind": "trace",
-          "line": 86,
+          "line": 104,
           "args": {
             "kind": "loss-curve"
           }
@@ -1036,7 +1036,7 @@
         },
         {
           "kind": "callout",
-          "line": 94,
+          "line": 112,
           "title": "Change one number and rerun",
           "markdown": "`num_steps = 10000` needs no other edit. The samples stop being real names\n(`ann`, `kamon`) and start being name-*like* — plausible letter combinations\nthat are not in the dataset. That transition from memorisation to generation, in\na single integer, is the most direct demonstration of what \"overfitting\" means\nthat this repository contains. It also takes about 18 minutes."
         }
