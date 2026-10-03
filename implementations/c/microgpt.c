@@ -222,7 +222,14 @@ static inline void linear_bwd_x(const float *__restrict__ dout,
 static inline void rmsnorm_fwd(const float *__restrict__ x,
                                float *__restrict__ out, int n,
                                float *rms_scale) {
-  float ms = 0.0f;
+  /* The mean square is accumulated in double. In float32 a large activation
+   * (say x = 1e19) squares to ~1e38, and the sum overflows to +inf; `val`
+   * becomes inf, the inverse-sqrt seed collapses to a tiny positive number and
+   * the Newton step computes `-inf`, so every output is inf/NaN. Double cannot
+   * overflow for any finite float input, so the divide stays exact until the
+   * single cast back to float below. For small inputs this only moves the last
+   * ulp, which the 1e-5f tolerance in test_gradients.c absorbs. */
+  double ms = 0.0;
   /* NEON sum of squares for N_EMBD=16 */
   if (n == N_EMBD) {
     float32x4_t acc = vdupq_n_f32(0.0f);
@@ -230,15 +237,26 @@ static inline void rmsnorm_fwd(const float *__restrict__ x,
       float32x4_t xi = vld1q_f32(x + i);
       acc = vfmaq_f32(acc, xi, xi);
     }
-    ms = vaddvq_f32(acc);
-    ms /= n;
+    /* A lane can still overflow on its own: it accumulates n/4 squares, so
+     * x = 1e19 gives 4 * 1e38 = +inf before the horizontal add, and
+     * `vaddvq_f32` then sums +inf + finite = +inf. When that happens (and only
+     * then) redo the sum with a scalar double accumulation, which is what the
+     * else-branch below does too. This path is cold -- no realistic activation
+     * pushes a four-square lane past FLT_MAX -- so correctness beats the
+     * vectorisation here, and the hot path is unchanged. */
+    ms = (double)vaddvq_f32(acc) / (double)n;
+    if (!isfinite(ms)) {
+      ms = 0.0;
+      for (int i = 0; i < N_EMBD; i++) ms += (double)x[i] * (double)x[i];
+      ms /= (double)n;
+    }
   } else {
     for (int i = 0; i < n; i++)
-      ms += x[i] * x[i];
-    ms /= n;
+      ms += (double)x[i] * (double)x[i];
+    ms /= (double)n;
   }
   /* Fast inverse sqrt via NEON + Newton refinement */
-  float val = ms + 1e-5f;
+  float val = (float)(ms + 1e-5);
   float32x2_t v2 = vdup_n_f32(val);
   float32x2_t est = vrsqrte_f32(v2);
   est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
@@ -341,6 +359,12 @@ static inline void adam_update(float *__restrict__ param,
     float32x4_t vhat = vmulq_f32(vi, vib2);
     /* Add epsilon BEFORE sqrt to avoid 0/NaN */
     vhat = vaddq_f32(vhat, veps);
+    /* Same overflow class as rmsnorm_fwd: a saturating second moment makes
+     * `vhat` +inf, and `vrsqrteq_f32(inf)` seeds a tiny value whose Newton
+     * refinement then yields -inf/NaN. Clamp non-finite lanes to the largest
+     * finite float so the inverse sqrt stays finite. The clamp is a no-op for
+     * every finite input, so it cannot move the parity band within 1e38. */
+    vhat = vminq_f32(vhat, vdupq_n_f32(3.402823466e38f));
     /* Fast inverse sqrt via NEON with Newton refinement */
     float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
     rsqrt_est = vmulq_f32(rsqrt_est,

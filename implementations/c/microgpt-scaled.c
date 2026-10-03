@@ -228,23 +228,46 @@ static inline void linear_bwd_x(const float *__restrict__ dout,
 static inline void rmsnorm_fwd(const float *__restrict__ x,
                                float *__restrict__ out, int n,
                                float *rms_scale) {
-  float ms = 0.0f;
-  /* NEON sum of squares for N_EMBD=16 */
+  /* Same overflow class as microgpt.c's rmsnorm_fwd: in float32 a large
+   * activation (say x = 1e19) squares to ~3e38, the sum overflows to +inf,
+   * `val` becomes inf, the `vrsqrte` seed collapses to a tiny positive number
+   * and the Newton step computes -inf, so every output is inf/NaN. Here the
+   * mean square is accumulated in double, which cannot overflow for any finite
+   * float input.
+   *
+   * Unlike microgpt.c this file is also built with -ffast-math (the `make fast`
+   * path), where `isfinite()` may be folded to a constant, so the overflow
+   * branch is detected with a runtime comparison on the reduced value instead.
+   * `vaddvq_f32` is finite for every realistic activation; when it is not we
+   * cannot trust it as a bound (inf >= FLT_MAX is true), and the scalar double
+   * re-sum below is exact. */
+  double ms = 0.0;
+  /* NEON sum of squares for N_EMBD=256 */
   if (n == N_EMBD) {
     float32x4_t acc = vdupq_n_f32(0.0f);
     for (int i = 0; i < N_EMBD; i += 4) {
       float32x4_t xi = vld1q_f32(x + i);
       acc = vfmaq_f32(acc, xi, xi);
     }
-    ms = vaddvq_f32(acc);
-    ms /= n;
+    float sumsq = vaddvq_f32(acc);
+    /* Fast path: a finite, in-range float reduction can be widened as-is.
+     * Otherwise (a lane overflowed to +inf, or the horizontal add did) cold
+     * scalar re-sum in double. No realistic activation reaches this branch, so
+     * the vectorised hot path is unchanged. */
+    if (sumsq >= 3.4e38f) {
+      ms = 0.0;
+      for (int i = 0; i < N_EMBD; i++) ms += (double)x[i] * (double)x[i];
+      ms /= (double)n;
+    } else {
+      ms = (double)sumsq / (double)n;
+    }
   } else {
     for (int i = 0; i < n; i++)
-      ms += x[i] * x[i];
-    ms /= n;
+      ms += (double)x[i] * (double)x[i];
+    ms /= (double)n;
   }
   /* Fast inverse sqrt via NEON + Newton refinement */
-  float val = ms + 1e-5f;
+  float val = (float)(ms + 1e-5);
   float32x2_t v2 = vdup_n_f32(val);
   float32x2_t est = vrsqrte_f32(v2);
   est = vmul_f32(est, vrsqrts_f32(vmul_f32(v2, est), est));
@@ -347,6 +370,12 @@ static inline void adam_update(float *__restrict__ param,
     float32x4_t vhat = vmulq_f32(vi, vib2);
     /* Add epsilon BEFORE sqrt to avoid 0/NaN */
     vhat = vaddq_f32(vhat, veps);
+    /* Same overflow class as rmsnorm_fwd: a saturating second moment makes
+     * `vhat` +inf, and `vrsqrteq_f32(inf)` seeds a tiny value whose Newton
+     * refinement then yields -inf/NaN. Clamp to the largest finite float so the
+     * inverse sqrt stays finite. The clamp is a no-op for every finite input.
+     * (A value comparison, so -ffast-math cannot fold it away.) */
+    vhat = vminq_f32(vhat, vdupq_n_f32(3.402823466e38f));
     /* Fast inverse sqrt via NEON with Newton refinement */
     float32x4_t rsqrt_est = vrsqrteq_f32(vhat);
     rsqrt_est = vmulq_f32(rsqrt_est,

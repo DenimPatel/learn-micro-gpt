@@ -315,6 +315,22 @@ static inline float32x4_t vmaxq_f32(float32x4_t a, float32x4_t b) {
                   x3 > y3 ? x3 : y3);
 }
 
+/*
+ * `vminq_f32` exists in NEON; this mirrors it for the portable path. `adam_update`
+ * uses it to clamp `vhat` before the inverse sqrt: a saturating second moment
+ * makes `vhat` +inf, and `vrsqrte` of inf produces NaN. On the native path
+ * `vminq_f32` returns the non-NaN operand when one lane is NaN, which is another
+ * reason the clamp is written as a min rather than a per-lane compare.
+ */
+static inline float32x4_t vminq_f32(float32x4_t a, float32x4_t b) {
+  float x0 = mg_lane4(a, 0), y0 = mg_lane4(b, 0);
+  float x1 = mg_lane4(a, 1), y1 = mg_lane4(b, 1);
+  float x2 = mg_lane4(a, 2), y2 = mg_lane4(b, 2);
+  float x3 = mg_lane4(a, 3), y3 = mg_lane4(b, 3);
+  return mg_from4(x0 < y0 ? x0 : y0, x1 < y1 ? x1 : y1, x2 < y2 ? x2 : y2,
+                  x3 < y3 ? x3 : y3);
+}
+
 static inline float vaddvq_f32(float32x4_t a) {
   return mg_lane4(a, 0) + mg_lane4(a, 1) + mg_lane4(a, 2) + mg_lane4(a, 3);
 }

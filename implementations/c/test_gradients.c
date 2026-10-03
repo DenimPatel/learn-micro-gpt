@@ -593,6 +593,18 @@ static void test_adam(void) {
   int zeroed = 1;
   for (int i = 0; i < n; i++) if (g[i] != 0.0f) zeroed = 0;
   ok(zeroed, "adam_update zeroes each gradient it consumes");
+
+  /* The same overflow class as rmsnorm: a saturating second moment makes
+   * `vhat` +inf, and `vrsqrteq_f32(inf)` would feed -inf/NaN into the update.
+   * The fix clamps `vhat` to the largest finite float before the inverse sqrt,
+   * so a finite first moment keeps every parameter finite. `m` and `g` stay
+   * moderate here on purpose: the point is the v-overflow, not a saturated m. */
+  float op[4] = {0, 0, 0, 0}, og[4] = {1e30f, 1e30f, 1e30f, 1e30f};
+  float om[4] = {0, 0, 0, 0}, ov[4] = {3e38f, 3e38f, 3e38f, 3e38f};
+  adam_update(op, og, om, ov, 4, 1e-2f, 0.1f, 1e-3f);
+  int adam_finite = 1;
+  for (int i = 0; i < 4; i++) if (!isfinite(op[i])) adam_finite = 0;
+  ok(adam_finite, "a saturating second moment does not produce a NaN update");
 }
 
 /* ------------------------------------------------------------------------ */
@@ -625,6 +637,31 @@ static void test_rmsnorm(void) {
   int finite = isfinite(zero_scale) != 0;
   for (int i = 0; i < 16; i++) if (!isfinite(zero_out[i])) finite = 0;
   ok(finite, "an all-zero input produces zeros, not NaN");
+
+  /* Regression for the overflow that redded the `tracks` CI job: 1e19 squared is
+   * ~1e38, and sixteen of those sum to +inf in float32. The mean square must be
+   * accumulated in double so `val = ms + 1e-5` stays finite, the inverse-sqrt
+   * refinement does not produce -inf, and every output stays finite. */
+  float big[16], big_out[16], big_scale = 0.0f;
+  for (int i = 0; i < 16; i++) big[i] = 1e19f;
+
+  rmsnorm_fwd(big, big_out, 16, &big_scale);
+
+  /* The expected scale, computed in double, is 1/sqrt(1e38 * (1 + tiny)). The
+   * relative check is required here: the pre-existing absolute 1e-5f is far
+   * below the spacing of a ~1e-19 scale. */
+  double big_ms = 0.0;
+  for (int i = 0; i < 16; i++) big_ms += (double)big[i] * (double)big[i];
+  big_ms /= 16.0;
+  const double want_big_scale = 1.0 / sqrt(big_ms + 1e-5);
+  const double rel = fabs((double)big_scale - want_big_scale) / want_big_scale;
+  ok(isfinite(big_scale) && big_scale > 0.0f,
+     "a sum-of-squares overflow still yields a finite, positive scale");
+  ok(rel < 1e-4, "the overflowing-input scale matches 1/sqrt(ms) within 1e-4 relative");
+
+  int big_finite = 1;
+  for (int i = 0; i < 16; i++) if (!isfinite(big_out[i])) big_finite = 0;
+  ok(big_finite, "a sum-of-squares overflow produces every output element finite");
 }
 
 /* ------------------------------------------------------------------------ */
