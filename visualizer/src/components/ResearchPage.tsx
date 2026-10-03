@@ -375,8 +375,14 @@ function CrossTrackScatter() {
             refuse.
           */}
           {placed.map((group) => {
+            // A baseline row is excluded here for the same reason it is excluded
+            // from the marks below: it sits at exactly (1, 1) by construction, it
+            // is drawn once as the comparator ring, and a run cannot dominate its
+            // own comparator into a frontier it defines. `pareto` is computed by
+            // the harness and carries a baseline id when a re-measured comparator
+            // happens to be Pareto-optimal in the recorded set.
             const ordered = group.runs
-              .filter((run) => run.onFrontier)
+              .filter((run) => run.onFrontier && run.row.status !== 'baseline')
               .sort((a, b) => a.lossRatio - b.lossRatio)
             return ordered.map((run, index) => {
               const previous = index > 0 ? ordered[index - 1] : undefined
@@ -411,7 +417,16 @@ function CrossTrackScatter() {
               </circle>
             ))}
           {runs
-            .filter((run) => run.onFrontier)
+            // The baseline exclusion is the whole of this fix. `pareto[track]`
+            // can name a baseline row -- a re-measured comparator is a real point
+            // and can be Pareto-optimal among the rows recorded beside it -- and
+            // without this filter that row was drawn twice: once here as a
+            // frontier mark and once as the comparator ring. The count then came
+            // out one over the "run per mark, minus the comparators" figure the
+            // chart's own label states. Baseline rows are normalised to exactly
+            // (1, 1) and drawn as a single ring, so they are never a relative
+            // mark, frontier or not.
+            .filter((run) => run.onFrontier && run.row.status !== 'baseline')
             .map((run) => (
               <circle
                 key={`f${run.row.run_id}`}
@@ -1284,14 +1299,49 @@ function GainsChart({ track }: { track: ResearchTrack }) {
   )
 }
 
+/**
+ * The ledger: this session's comparator, then every experiment run against it.
+ *
+ * The comparator heads the table rather than sitting in the middle of it. A track
+ * can carry more than one `baseline` row, because the frozen build is re-measured
+ * whenever a session starts and each re-measurement is written down as a row of
+ * its own; `research.baselines[track]` is the most recent, and it is the one the
+ * charts divide by, so it is the one row here. The superseded re-measurements are
+ * the same frozen build measured again, which is why they are not separate ledger
+ * entries -- and why the caption names them, so that the collapse is a decision
+ * the reader can see rather than a row that quietly went missing. Counting them
+ * as well would leave the table one row longer than the figure the ledger
+ * statistics print above it, which is the disagreement this page exists to avoid.
+ */
 function Ledger({ track }: { track: ResearchTrack }) {
   const rows = trackRows(track)
+  const baseline = baselineRow(track)
+  const entries = [
+    ...(baseline ? [baseline] : []),
+    ...rows.filter((row) => row.status !== 'baseline'),
+  ]
+  // Named in the caption, so the collapse is legible. Empty for a track that has
+  // only ever been measured once.
+  const superseded = rows.filter(
+    (row) => row.status === 'baseline' && row.run_id !== baseline?.run_id,
+  )
   return (
     <div className="table-scroll">
       <table className="research__ledger">
         <caption>
-          The whole ledger, in order, with the failures in it. A search that only shows its hits is
-          not a search &mdash; the discarded rows are what make the kept ones mean something.
+          The whole ledger, in order, with the failures in it, headed by this session&rsquo;s
+          comparator. A search that only shows its hits is not a search &mdash; the discarded rows
+          are what make the kept ones mean something.
+          {superseded.length > 0 ? (
+            <>
+              {' '}
+              The frozen build is re-measured each session. Its superseded re-measurements
+              {superseded.length === 1 ? ' is ' : ' are '}
+              <code>{superseded.map((row) => row.run_id).join(', ')}</code>
+              {' — the same build measured again, so '}
+              {superseded.length === 1 ? 'it is' : 'they are'} not listed as rows of their own.
+            </>
+          ) : null}{' '}
           Sourced from <code>autoresearch/results.tsv</code> by{' '}
           <code>tools/autoresearch.py --render</code>.
         </caption>
@@ -1308,7 +1358,7 @@ function Ledger({ track }: { track: ResearchTrack }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {entries.map((row) => (
             <tr key={row.run_id} className={`research__row research__row--${row.status}`}>
               <th scope="row">
                 <code>{row.run_id}</code>

@@ -380,3 +380,52 @@ describe('a track with measurements', () => {
     expect(html).toContain('research__gains')
   })
 })
+
+/**
+ * The ledger's own row count, pinned against the figure printed above it.
+ *
+ * `e2e/research.spec.ts` is where this is checked against the real data, but the
+ * real ledger only reaches the browser in a build, and the case that broke it --
+ * a track carrying more than one `baseline` row, because the frozen build is
+ * re-measured each session -- is a shape no fixture had. That shape is the one
+ * the two figures disagreed in: `experiments` counts rows that are not the
+ * baseline, the table printed one row per `trackRows`, and once a track had been
+ * re-baselined twice the table was three rows longer than the number beside it.
+ * The e2e test caught the disagreement; this pins the shape that caused it.
+ */
+describe('the ledger lists each experiment, and one comparator', () => {
+  it('prints one row per experiment plus the comparator, and no more', () => {
+    // Two baseline rows for the same track, which is what re-baselining leaves
+    // behind, and three experiments.
+    useLedger([
+      baseline('rust', { run_id: '0000' }),
+      attempt('0001', 'discard'),
+      baseline('rust', { run_id: '0002' }),
+      attempt('0003', 'keep'),
+      attempt('0004', 'crash'),
+    ])
+    const { html, stat } = render()
+
+    // The figure above the table, and the table's row count, now agree.
+    expect(stat('experiments')).toBe('3')
+    const rows = [...html.matchAll(/<tr class="research__row[^"]*"/g)]
+    expect(rows.length, 'ledger rows: three experiments and one comparator').toBe(4)
+
+    // The comparator is the row that heads the table...
+    const firstRow = html.slice(html.indexOf('<tbody>'))
+    expect(firstRow).toContain('research__row--baseline')
+
+    // ...and the superseded re-measurement is named in the caption rather than
+    // dropped without a trace. A collapse the reader cannot see is a deleted row.
+    expect(html).toContain('not listed as rows of their own')
+    expect(html).toContain('<code>0002</code>')
+
+    // A single-baseline track says nothing about re-measurement, so the sentence
+    // is not boilerplate every track carries.
+    useLedger([baseline('rust', { run_id: '0000' }), attempt('0001', 'keep')])
+    const single = render()
+    expect(single.stat('experiments')).toBe('1')
+    expect([...single.html.matchAll(/<tr class="research__row[^"]*"/g)].length).toBe(2)
+    expect(single.html).not.toContain('not listed as rows of their own')
+  })
+})
