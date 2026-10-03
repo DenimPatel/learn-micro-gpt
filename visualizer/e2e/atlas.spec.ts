@@ -250,12 +250,42 @@ test.describe('trace widgets', () => {
     await expect(chart.locator('svg')).toHaveAttribute('aria-label', /1000 steps/)
   })
 
-  test('a trace widget for a step that was not recorded says so', async ({ page }) => {
-    // Not every (step, pos, head) combination is in the trace. A widget that
-    // renders empty for an unrecorded combination is a lie by omission, so the
-    // empty state names what *was* recorded.
-    await page.goto('#/explore')
-    await expect(page.locator('body')).toContainText('concept')
+  test('every trace widget on a concept page has the rows it claims to draw', async ({ page }) => {
+    /*
+     * This case used to be a tautology. It was named "a trace widget for a step
+     * that was not recorded says so" and asserted `expect(page.locator('body'))
+     * .toContainText('concept')` -- a substring every page of the site contains,
+     * so it passed whatever the widgets did. `SoftmaxBars` could `return null`
+     * and `SamplesList` could render an empty `<ul>` and this still went green.
+     *
+     * The empty state itself is now pinned where it can be produced
+     * deterministically: `tests/widgets.test.tsx` renders each widget with a
+     * deliberately unrecorded (step, pos, head) and asserts the empty-state
+     * class and the named args. Every committed `::trace` names a *recorded*
+     * combination, so no page in the built site can reach the empty branch --
+     * which is why an e2e case here could only ever be a weaker duplicate.
+     *
+     * What a browser *can* check is the property the tautology was standing in
+     * for: that each trace widget on a concept page drew real rows, and that the
+     * `widget--empty` figure appears only where the data really is absent (the
+     * step-1000 samples widget, which has its own page). A widget that silently
+     * rendered nothing would leave its figure without its drawn content, and the
+     * assertion below would fail.
+     */
+    await page.goto('#/learn/multi-head-attention')
+    const heatmaps = page.locator('.heatmap')
+    await expect(heatmaps).toHaveCount(2)
+    await expect(page.locator('figure.widget--empty')).toHaveCount(0)
+
+    await page.goto('#/learn/softmax')
+    await expect(page.locator('figure.widget .bars .bars__row')).toHaveCount(8)
+    await expect(page.locator('figure.widget--empty')).toHaveCount(0)
+
+    await page.goto('#/learn/inference-sampling')
+    // The samples widget is the one that names a step with rows: it must draw
+    // its `<ul class="samples">`, not a labelled empty state.
+    await expect(page.locator('figure.widget ul.samples li').first()).toBeVisible()
+    await expect(page.locator('figure.widget--empty')).toHaveCount(0)
   })
 })
 

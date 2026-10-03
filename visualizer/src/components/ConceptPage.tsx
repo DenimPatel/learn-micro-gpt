@@ -179,7 +179,11 @@ function BlockView({ block }: { block: Block }) {
         case 'tokens':
           return <TraceTokens step={num('step', 0)} />
         case 'samples':
-          return <SamplesList />
+          return args.step === undefined ? (
+            <SamplesList />
+          ) : (
+            <SamplesList step={num('step', 1000)} />
+          )
         default:
           return null
       }

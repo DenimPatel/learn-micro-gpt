@@ -43,6 +43,33 @@ const RAMP_INK = [
   'var(--heat-5-ink)',
 ]
 
+/**
+ * The (step, pos, head) combinations the committed trace actually contains.
+ *
+ * Derived from the rows rather than from `meta.selection`, because the two are
+ * not the same claim: `selection` says what the recorder was *asked* for, and a
+ * row list says what it *wrote*. Every empty state below quotes this list, so a
+ * reader who typed an unrecorded combination can see what to type instead --
+ * which is the whole point, and the reason the list is computed rather than
+ * written out.
+ */
+function recordedCombos(): string {
+  const seen = new Set<string>()
+  for (const row of trace.attn) seen.add(`${row.step}/${row.pos}/${row.head}`)
+  return [...seen].sort(compareCombos).join(', ')
+}
+
+/** Numeric sort over a `step/pos/head` key, so the list reads 0/0/0, 0/0/1, 0/1/0… */
+function compareCombos(a: string, b: string): number {
+  const left = a.split('/').map(Number)
+  const right = b.split('/').map(Number)
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
+}
+
 function rampIndex(value: number, max: number): number {
   if (max <= 0) return 0
   // sqrt, so a small-but-not-negligible weight is still visible. A linear ramp
@@ -76,7 +103,8 @@ export function AttentionHeatmap({
         <figcaption>
           No attention weights were recorded for step {stepIndex}, position {pos}, head {headIndex}.
           The trace records steps {steps.join(', ')} at positions{' '}
-          {trace.meta.selection.positions.join(', ')} and heads {heads.join(', ')}.
+          {trace.meta.selection.positions.join(', ')} and heads {heads.join(', ')} &mdash; the
+          recorded (step, pos, head) combinations are {recordedCombos()}.
         </figcaption>
       </figure>
     )
@@ -164,7 +192,24 @@ export function SoftmaxBars({ step = 0, pos = 0 }: { step?: number; pos?: number
     () => trace.probs.find((r) => r.step === stepIndex && r.pos === pos),
     [stepIndex, pos],
   )
-  if (!row) return null
+  if (!row) {
+    // The trace records a *subset* of (step, pos) pairs: probabilities are not
+    // kept at position 7 for every step, because the model has not seen that
+    // many characters yet. Returning `null` here would silently drop a third of
+    // a concept body, so the empty state names both the request and what exists.
+    const recorded = [...new Set(trace.probs.map((r) => `${r.step}/${r.pos}`))]
+      .sort(compareCombos)
+      .join(', ')
+    return (
+      <figure className="widget widget--empty">
+        <figcaption>
+          No next-character probabilities were recorded for step {stepIndex}, position {pos}. The
+          trace records (step, pos) pairs {recorded}, and the steps it selects are{' '}
+          {trace.meta.selection.steps.join(', ')}.
+        </figcaption>
+      </figure>
+    )
+  }
 
   const max = row.top[0]?.p ?? 1
   return (
@@ -476,27 +521,36 @@ export function ShapeTable({ shapes, names }: { shapes?: Shape[]; names?: string
  * `content/index.json`, and that is where a reader should see it.
  */
 
-export function SamplesList() {
-  const [step, setStep] = useState(trace.samples[0]?.step ?? 1000)
-  const rows = trace.samples.filter((s) => s.step === step)
+export function SamplesList({ step }: { step?: number }) {
+  const [stepIndex, setStepIndex] = useState(step ?? trace.samples[0]?.step ?? 1000)
+  const rows = trace.samples.filter((s) => s.step === stepIndex)
+  const recordedSteps = [...new Set(trace.samples.map((s) => s.step))].sort((a, b) => a - b)
   return (
     <figure className="widget">
       <figcaption className="widget__caption">
         Twenty samples from the trained model at temperature 0.5. Some are names in the dataset (
         <code>anna</code>, <code>kamon</code>); some are not.
       </figcaption>
-      <ul className="samples">
-        {rows.map((row, index) => (
-          <li key={index}>
-            <code>{row.text || <em>(empty &mdash; sampled BOS immediately)</em>}</code>
-          </li>
-        ))}
-      </ul>
+      {rows.length ? (
+        <ul className="samples">
+          {rows.map((row, index) => (
+            <li key={index}>
+              <code>{row.text || <em>(empty &mdash; sampled BOS immediately)</em>}</code>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="widget--empty">
+          {recordedSteps.length
+            ? `No samples were recorded for step ${stepIndex}. The trace records samples at steps ${recordedSteps.join(', ')}.`
+            : 'No samples were recorded in this trace at all.'}
+        </p>
+      )}
       <div className="widget__controls">
         <label>
           after step
-          <select value={step} onChange={(e) => setStep(Number(e.target.value))}>
-            {[...new Set(trace.samples.map((s) => s.step))].map((s) => (
+          <select value={stepIndex} onChange={(e) => setStepIndex(Number(e.target.value))}>
+            {recordedSteps.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
