@@ -372,7 +372,8 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
     hardcoded on purpose, because a reader following "lines 29-71" in
     `docs/HOW-TO-READ.md` needs a number. That makes them the one place a drift
     can hide, so the numbers are checked against the selectors that generate the
-    site's own highlights.
+    site's own highlights. The README's copy-paste selector snippet is checked
+    the same way: its printed `# -> lines N-M` note is resolved, not trusted.
     """
 
     #: A row of the "shape of it" table: `| start–end | what | concepts |`.
@@ -451,6 +452,48 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
             f"docs/HOW-TO-READ.md links {sorted(linked)} but the corpus has "
             f"{sorted(expected)}",
         )
+
+    #: A README exemplar row: a YAML `lang: { selector: "..." }` line with an
+    #: inline `# -> lines N-M` note. The README teaches the selector syntax with
+    #: this snippet, so a reader's first copy-paste runs it verbatim.
+    _README_EXAMPLE_RE = re.compile(
+        r'^\s*(?P<lang>[a-z-]+):\s*\{\s*selector:\s*"(?P<selector>[^"]+)"\s*\}'
+        r".*?#\s*->\s*lines?\s*(?P<start>\d+)\s*-\s*(?P<end>\d+)\s*$",
+        re.MULTILINE,
+    )
+
+    def test_the_readme_example_resolves_to_the_range_it_quotes(self) -> None:
+        """The README's selector snippet must resolve to the range it prints.
+
+        The README is where a newcomer copies a selector from, so its example is
+        the one place a stale selector teaches a wrong thing with total
+        confidence. It *was* stale -- the `c` row read
+        `comment:Multi-head attention  # -> lines 446-465`, and that comment
+        resolves to a single line (550), while the concept it stands for anchors
+        `def:forward_pos offset:[28, -39]` at 541-569. Deriving the range from
+        the quoted selector, rather than trusting the printed number, is what
+        makes the example self-checking.
+        """
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        rows = [
+            (m.group("lang"), m.group("selector"), int(m.group("start")), int(m.group("end")))
+            for m in self._README_EXAMPLE_RE.finditer(readme)
+        ]
+        # A parser guard: if the snippet is reflowed so this stops matching, the
+        # test must fail loudly rather than pass having checked nothing.
+        self.assertGreaterEqual(
+            len(rows),
+            2,
+            f"expected the README's selector snippet (python + c rows), parsed {rows!r}",
+        )
+        for lang, selector, start, end in rows:
+            span = selectors.resolve(lang, selector, REPO_ROOT)
+            self.assertEqual(
+                (start, end),
+                (span.start, span.end),
+                f"README.md quotes lines {start}-{end} for {lang} selector "
+                f"{selector!r}, but it resolves to {span.start}-{span.end}",
+            )
 
 
 class TestDocsLinksResolve(unittest.TestCase):

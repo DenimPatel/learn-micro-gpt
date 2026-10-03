@@ -66,8 +66,8 @@ per language at build time:
 
 ```yaml
 anchors:
-  python: { selector: "def:gpt offset:[15, -12]" }     # -> lines 122-131
-  c:     { selector: "comment:Multi-head attention" }  # -> lines 446-465
+  python: { selector: "def:gpt offset:[15, -12]" }          # -> lines 122-131
+  c:     { selector: "def:forward_pos offset:[28, -39]" }  # -> lines 541-569
 ```
 
 A selector that resolves to nothing is a build failure naming the concept and
