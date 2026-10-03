@@ -1,7 +1,9 @@
 # Pull requests
 
 Thanks for looking at this. A note on what a good one looks like here, so the
-template is not busywork.
+template is not busywork. **New here? [`CONTRIBUTING.md`](../CONTRIBUTING.md) has
+the green loop (`make check`), which paths are read-only, and how to regenerate a
+number instead of guessing it.**
 
 ## The three things that need a sentence each
 
