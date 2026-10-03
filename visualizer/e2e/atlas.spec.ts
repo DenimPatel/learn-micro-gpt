@@ -47,6 +47,41 @@ test.describe('served from a subpath', () => {
     expect(escaped, `requests outside the mount point:\n${escaped.join('\n')}`).toEqual([])
   })
 
+  test('the reading pages talk to no host but their own', async ({ page }) => {
+    // Stronger than "every asset request is relative" above: that one only
+    // inspects requests to the site's own host. This one fails if *any* request
+    // leaves the origin, so an analytics tag, a font CDN or a tag manager added
+    // to the shell or a component is caught here. The site's stated value is that
+    // its numbers are reproducible, and an unnoted third-party request at boot
+    // breaks that promise in a way nothing else in the suite would notice.
+    //
+    // The Pyodide CDN is the one deliberately allowed third-party dependency,
+    // but it is lazy -- it loads only when a reader runs the playground, and
+    // neither of the two routes below does that. So on these routes the allowed
+    // third-party set is empty.
+    const foreign: string[] = []
+    page.on('request', (request) => {
+      const url = new URL(request.url())
+      // Data/blob URLs are not a host at all; the SVG favicon and inline
+      // workers arrive this way and never leave the machine.
+      if (url.protocol !== 'http:' && url.protocol !== 'https:') return
+      if (url.hostname !== '127.0.0.1') foreign.push(`${request.method()} ${url.href}`)
+    })
+
+    for (const route of ['#/', '#/learn/softmax']) {
+      await page.goto(route)
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    }
+    // Let the lazy chunks (graph layout, first code panel) request before we
+    // read the list.
+    await page.waitForTimeout(1200)
+
+    expect(
+      foreign,
+      `the reading pages must not contact a third-party host:\n${foreign.join('\n')}`,
+    ).toEqual([])
+  })
+
   test('the reference source is in the bundle, not fetched', async ({ page }) => {
     const fetched: string[] = []
     page.on('request', (request) => {

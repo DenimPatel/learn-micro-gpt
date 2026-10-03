@@ -90,6 +90,16 @@ same regex was checked against a planted sample to confirm it still matches.
 **Cost:** the source files must exist at build time, so a partial checkout cannot
 build the site. That is fine — `make validate` reports it.
 
+**Nothing fetched from a third party, either.** The one deliberate external
+dependency is Pyodide, in a Web Worker, from a pinned jsDelivr CDN — and it is
+lazy, loaded only when a reader runs the playground. Every other request the
+reading pages make is same-origin. That is an e2e assertion, not a convention: a
+test loads `#/` and `#/learn/softmax` and fails if any request leaves
+`127.0.0.1`, so an analytics tag, a font CDN or a tag manager added to the shell
+or a component is caught. It is deliberately stronger than the "every asset
+request is relative" case, which only inspects requests to the site's own host
+and would stay green while a third party was being contacted.
+
 ### 3. Hash routing, and a 404 fallback anyway
 
 A static host with no rewrite config 404s every history-routing deep link, and a
