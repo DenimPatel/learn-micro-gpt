@@ -13,8 +13,10 @@ Python-only checkout.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -30,7 +32,7 @@ failures: list[str] = []
 STEP_TIMEOUT_SECONDS = 1800
 
 
-def step(name: str, argv: list[str], cwd: Path = REPO_ROOT) -> None:
+def step(name: str, argv: list[str], cwd: Path = REPO_ROOT, env: dict | None = None) -> None:
     print(f"  {name} ...", flush=True)
     try:
         result = subprocess.run(
@@ -39,6 +41,7 @@ def step(name: str, argv: list[str], cwd: Path = REPO_ROOT) -> None:
             capture_output=True,
             text=True,
             timeout=STEP_TIMEOUT_SECONDS,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         failures.append(name)
@@ -91,7 +94,17 @@ def main() -> int:
 
     # Byte-compiling every tool is a real check, not a formality: it catches a
     # syntax error in a script that is only run on one platform.
-    step("python syntax", [sys.executable, "-m", "compileall", "-q", "tools", "reference"])
+    #
+    # `reference/` is sha256-pinned, so the check must not drop a
+    # `reference/__pycache__/` beside it. `PYTHONDONTWRITEBYTECODE` does not help
+    # here -- `compileall` writes bytecode on purpose and ignores it -- so the
+    # caches are redirected out of the tree with `PYTHONPYCACHEPREFIX` instead.
+    with tempfile.TemporaryDirectory(prefix="learn-micro-gpt-pycache-") as pycache:
+        step(
+            "python syntax",
+            [sys.executable, "-m", "compileall", "-q", "tools", "reference"],
+            env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONPYCACHEPREFIX": pycache},
+        )
 
     if (VIS / "node_modules").is_dir():
         step("eslint", ["npx", "eslint", ".", "--max-warnings", "0"], cwd=VIS)

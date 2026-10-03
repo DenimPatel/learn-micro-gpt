@@ -50,6 +50,11 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: '1'
+  # `tools/` byte-compiles `reference/` as a syntax check, and `reference/` is
+  # sha256-pinned. Without this, every run drops a `reference/__pycache__/` next
+  # to the pinned sources -- noise in a directory whose whole point is that its
+  # bytes never move.
+  PYTHONDONTWRITEBYTECODE: '1'
 
 jobs:
   # --------------------------------------------------------------------------
