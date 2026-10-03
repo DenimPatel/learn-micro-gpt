@@ -63,7 +63,10 @@ build_and_run() {
     return 1
   fi
   ( cd "$WORK" && ./mg ) > "$WORK/out.txt" 2>/dev/null
-  if grep -qi 'nan' "$WORK/out.txt"; then
+  # A NaN *value*, not the letters: the sample text legitimately contains
+  # tokens like "kanan", so match `nan`/`-nan` only when it is not glued to a
+  # word character (case-insensitive).
+  if grep -qEi '(^|[^[:alnum:]_])-?nan([^[:alnum:]_]|$)' "$WORK/out.txt"; then
     echo "RUN PRODUCED NaN"
     return 1
   fi
