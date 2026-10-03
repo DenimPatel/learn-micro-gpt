@@ -231,6 +231,17 @@ test.describe('trace widgets', () => {
     await expect(cells.last()).not.toHaveClass(/is-argmax/)
   })
 
+  test('the softmax trace panel renders, outside the callout above it', async ({ page }) => {
+    // `softmax.md`'s callout used to be missing its closer, so the `:::trace`
+    // below it was swallowed into the callout body and rendered as a line of
+    // literal colons instead of a widget. A rendered `.bars` figure is the
+    // observable difference between the two.
+    await page.goto('#/learn/softmax')
+    const bars = page.locator('figure.widget .bars')
+    await expect(bars).toHaveCount(1)
+    await expect(bars.locator('.bars__row')).toHaveCount(8)
+  })
+
   test('the loss chart is labelled with the measured noise', async ({ page }) => {
     await page.goto('./')
     const chart = page.locator('figure.widget').filter({ hasText: 'Loss over' }).first()

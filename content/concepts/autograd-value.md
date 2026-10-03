@@ -153,6 +153,7 @@ Two consequences worth internalising:
 - It also means the Python file is not "the C file, but slower". It is a
   different program that computes the same function. The only thing they have in
   common is the answer.
+:::
 
 ## What this does *not* do
 

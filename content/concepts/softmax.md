@@ -82,6 +82,6 @@ is 1.0 and the output has a `NaN` in it, you have found a divide-by-zero that
 
 And here are the actual top-8 next characters the trained model prefers, from
 the recorded run:
+:::
 
 :::trace kind=softmax step=200 pos=0
-:::

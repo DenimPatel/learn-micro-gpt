@@ -286,6 +286,50 @@ class TestGateFiresOnBrokenContent(unittest.TestCase):
             content.load_concept(path)
         self.assertIn("never closed", str(caught.exception))
 
+    def test_block_crossing_a_heading_is_caught(self) -> None:
+        """A missing `:::` used to be silently absorbed by the *next* bare `:::`
+        anywhere below, so a `##` heading between them disappeared into the
+        callout and the rendered page lost a section boundary."""
+        path = self.concept("softmax")
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n:::callout\nsome text\n\n## A new section\n\nmore text\n:::\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(content.ContentError) as caught:
+            content.load_concept(path)
+        message = str(caught.exception)
+        self.assertIn("heading", message)
+        self.assertIn("A new section", message)
+
+    def test_inline_directive_inside_a_block_is_caught(self) -> None:
+        """A `:::trace` line is structure, not callout prose. When the closer is
+        missing this is how the widget was swallowed and never rendered."""
+        path = self.concept("softmax")
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n:::callout\nsome text\n\n:::trace kind=softmax step=200 pos=0\n:::\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(content.ContentError) as caught:
+            content.load_concept(path)
+        message = str(caught.exception)
+        self.assertIn(":::trace", message)
+        self.assertIn("is closed", message)
+
+    def test_a_closed_block_does_not_cross_a_heading(self) -> None:
+        """The rule is about the missing closer, not about headings per se: a
+        properly closed callout immediately before a heading is fine."""
+        path = self.concept("softmax")
+        body = path.read_text(encoding="utf-8")
+        front, rest = content.split_frontmatter(body, path)
+        body_text = "\nIntro prose\n\n:::callout \"T\"\ninside\n:::\n\n## Heading\n\nmore\n"
+        path.write_text(body.replace(rest, body_text), encoding="utf-8")
+        concept = content.load_concept(path)
+        names = [b.name for b in concept.directives()]
+        self.assertIn("callout", names)
+        self.assertTrue(any(b.kind == "prose" and "## Heading" in b.text for b in concept.blocks))
+
     def test_unknown_directive_argument_is_caught(self) -> None:
         path = self.concept("softmax")
         path.write_text(

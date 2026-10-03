@@ -36,6 +36,14 @@ DIRECTIVE_RE = re.compile(
 #: build failure. A near-miss on a directive is a typo, and typos should be loud.
 _MALFORMED_DIRECTIVE_RE = re.compile(r"^:{2,}\S*\S")
 
+#: An ATX heading (`## What this does *not* do`). A block directive's body is
+#: prose; a heading signals a new section and therefore that the block should
+#: have been closed already. Without this rule the parser's "any later bare
+#: `:::` closes the open block" behaviour let one missing closer absorb the
+#: heading *and* everything after it, up to some unrelated `:::`. That is how
+#: `autograd-value.md` and `softmax.md` each silently lost a section boundary.
+_HEADING_RE = re.compile(r"^#{1,6}\s+\S")
+
 #: Known directives, and the argument names each one accepts.
 #:
 #: `block` means "owns the lines below it until a closing `:::`" -- i.e. the
@@ -180,7 +188,7 @@ def parse_args(raw: str, line_no: int) -> tuple[dict[str, str], str]:
     return args, quoted
 
 
-def parse_body(body: str, line_offset: int = 0) -> list[Block]:
+def parse_body(body: str, line_offset: int = 0, source: str = "") -> list[Block]:
     """Split a concept body into prose and directives.
 
     A block directive (`:::callout`) owns the lines up to the closing `:::`. An
@@ -188,13 +196,22 @@ def parse_body(body: str, line_offset: int = 0) -> list[Block]:
     most recent block, or does nothing at all if none is open -- which is how
     `:::lang` ranges are terminated.
 
+    A block must be closed before the next `##` heading, before any inline
+    directive, and before EOF. The old rule -- "any later bare `:::` closes the
+    open block" -- accepted a *distant* `:::` as the closer, so a missing one
+    silently moved a heading, or a whole `:::trace` widget, inside the block.
+
     `line_offset` is how many lines of the concept file precede `body` -- the
     frontmatter. `Block.line_no` is a line number *in the file*, so without it
     every block is reported `line_offset` lines too high, and a consumer that
     jumps to `line_no` lands in the middle of unrelated prose. The offset is per
     file (frontmatter is not a fixed size), so it cannot be a module constant.
+
+    `source` (usually the concept's filename) is prefixed to every error, so CI
+    can name the file that needs the missing `:::` rather than just a line number.
     """
     blocks: list[Block] = []
+    where = f"{source}:" if source else ""
     lines = body.split("\n")
     open_block: Block | None = None
     buffer: list[str] = []
@@ -227,6 +244,32 @@ def parse_body(body: str, line_offset: int = 0) -> list[Block]:
                 blocks.append(open_block)
                 open_block = None
                 buffer.clear()
+            elif _HEADING_RE.match(stripped):
+                # A heading ends the section, so an open block must not cross it.
+                # The old rule ("any later bare `:::` closes it") let a missing
+                # closer swallow this heading and keep going to the *next* `:::`,
+                # silently deleting a section boundary.
+                raise ContentError(
+                    f"{where}line {line_no}: heading {stripped!r} appears before the "
+                    f"`:::{open_block.name}` block opened at line {open_block.line_no} "
+                    f"is closed. Add the missing `:::`."
+                )
+            elif (match := DIRECTIVE_RE.match(stripped)) and not DIRECTIVE_SPEC.get(
+                match.group("name"), {}
+            ).get("block"):
+                # An *inline* directive (`:::term`, `:::shape`, `:::trace`) is
+                # structure, not prose: it can never be the body of a callout.
+                # Seeing one here means the block is missing its closer -- which
+                # is how `softmax.md`'s `:::trace` widget was swallowed into the
+                # callout above it and never rendered. A *block* directive
+                # (`:::lang`) is left alone: `lang` ranges are explicitly closed
+                # by the next `:::lang` rather than by a bare `:::`.
+                raise ContentError(
+                    f"{where}line {line_no}: directive {stripped!r} appears before the "
+                    f"`:::{open_block.name}` block opened at line {open_block.line_no} "
+                    f"is closed. A directive cannot be the body of a block; add the "
+                    f"missing `:::`."
+                )
             else:
                 buffer.append(raw)
             continue
@@ -267,7 +310,7 @@ def parse_body(body: str, line_offset: int = 0) -> list[Block]:
 
     if open_block is not None:
         raise ContentError(
-            f"line {open_block.line_no}: `:::{open_block.name}` block is never closed with `:::`"
+            f"{where}line {open_block.line_no}: `:::{open_block.name}` block is never closed with `:::`"
         )
     flush_prose(len(lines) + 1)
     return blocks
@@ -289,7 +332,7 @@ def load_concept(path: Path) -> Concept:
         path=path,
         frontmatter=front,
         body=body,
-        blocks=parse_body(body, frontmatter_line_count(text)),
+        blocks=parse_body(body, frontmatter_line_count(text), source=path.name),
     )
 
 
