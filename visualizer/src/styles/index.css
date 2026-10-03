@@ -2618,6 +2618,10 @@ select:hover {
   margin-block: 0.7em;
 }
 
+.term-wrap {
+  display: inline;
+}
+
 .term {
   padding: 0 0.15em;
   border-bottom: 1px dashed color-mix(in oklab, var(--accent) 55%, transparent);

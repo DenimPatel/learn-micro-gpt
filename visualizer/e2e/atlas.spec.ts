@@ -871,3 +871,54 @@ test.describe('reading progress: the empty, full and reset states', () => {
     await expect(page.locator('.app__sidebar-count')).toHaveText('1 of 18')
   })
 })
+
+test.describe('glossary terms: open, dismiss, return focus', () => {
+  test('Escape closes the open definition and returns focus to the trigger', async ({ page }) => {
+    await page.goto('#/learn/tokenizer')
+
+    const bos = page.getByRole('button', { name: 'BOS', exact: true })
+    await bos.click()
+    await expect(bos).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('note')).toBeVisible()
+
+    await page.keyboard.press('Escape')
+
+    await expect(bos).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.getByRole('note')).toHaveCount(0)
+    // Focus must come back to the term, not to the top of the document.
+    await expect(bos).toBeFocused()
+  })
+
+  test('a click outside the term closes it, so the paragraph is readable again', async ({
+    page,
+  }) => {
+    await page.goto('#/learn/tokenizer')
+
+    const bos = page.getByRole('button', { name: 'BOS', exact: true })
+    await bos.click()
+    await expect(page.getByRole('note')).toBeVisible()
+
+    // Any press that starts elsewhere on the page is a dismissal.
+    await page.getByRole('heading', { level: 1 }).click()
+
+    await expect(page.getByRole('note')).toHaveCount(0)
+    await expect(bos).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  test('two open terms are independent: closing one leaves the other alone', async ({ page }) => {
+    await page.goto('#/learn/tokenizer')
+
+    const bos = page.getByRole('button', { name: 'BOS', exact: true })
+    const tokenizer = page.getByRole('button', { name: 'tokenizer', exact: true })
+    await bos.click()
+    await tokenizer.click()
+    await expect(page.getByRole('note')).toHaveCount(2)
+
+    await page.keyboard.press('Escape')
+
+    // Escape closes the term it was pressed on; the other stays open.
+    await expect(tokenizer).toHaveAttribute('aria-expanded', 'false')
+    await expect(bos).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('note')).toHaveCount(1)
+  })
+})
