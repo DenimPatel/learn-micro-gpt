@@ -189,6 +189,18 @@ jobs:
         working-directory: implementations/go
         run: go vet ./... && go build -o /dev/null .
 
+      - name: The Go track's gradient tests
+        # `go vet` plus a build is not a gradient check: a hand-written backward
+        # pass can be off by -8x (`docs/KNOWN-ISSUES.md` issue 1) and still
+        # compile and still train. These finite-difference checks are what would
+        # catch it, per operator and through a shared subgraph. The file is
+        # `parity_test.go` rather than `probe_test.go` on purpose -- the latter is
+        # the path `tools/autoresearch.py` reserves for the candidate's probe, and
+        # a frozen track must not gain it (pinned by
+        # `test_every_probe_lives_in_the_candidate_and_not_the_baseline`).
+        working-directory: implementations/go
+        run: go test ./...
+
       - name: Build the Rust track (frozen)
         working-directory: implementations/rust
         run: cargo build --release && cargo clippy -- -D warnings
@@ -268,9 +280,14 @@ jobs:
           python3 -m tools.autoresearch render
           git diff --exit-code -- autoresearch/results.json
 
-      - name: Typecheck the TypeScript track
+      - name: Typecheck and test the TypeScript track
+        # The test step is the reason the `*.test.ts` glob in `package.json` is
+        # not a lie: before it, the script matched zero files and exited 0, so
+        # the track's only checkbox was a typecheck. Run after the typecheck so a
+        # type error is named as a type error rather than surfacing as a wall of
+        # test-runner output.
         working-directory: implementations/typescript
-        run: npm install --no-audit --no-fund && npx tsc --noEmit
+        run: npm install --no-audit --no-fund && npx tsc --noEmit && npm test
 
       - name: Every track is within the parity band
         # 200 steps, not 1000: the gate compares smoothed losses at checkpoints

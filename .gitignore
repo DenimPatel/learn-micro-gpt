@@ -7,6 +7,10 @@ visualizer/dist-ssr/
 visualizer/coverage/
 visualizer/playwright-report/
 visualizer/test-results/
+# The test harness writes this at the repo root on every run: just
+# {"status": ..., "failedTests": [...]}, rewritten each time. Scratch state, not
+# a deliverable, and it would otherwise show up as untracked noise forever.
+/test-results/
 .vite/
 *.local
 npm-debug.log*
@@ -46,6 +50,9 @@ autoresearch/candidate/target/
 # whose directory is `go` writes a file called `go`. Both have shown up.
 autoresearch/candidate-go/microgpt-go
 autoresearch/candidate-go/go
+# The frozen Go track has the same hazard: its directory is also named `go`, so
+# a bare `go build ./...` there writes a file called `go` next to `main.go`.
+implementations/go/go
 # Go coverage / test binaries
 *.test
 # C

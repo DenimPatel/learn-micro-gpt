@@ -27,6 +27,9 @@ CARGO  ?= cargo
 
 VIS        := visualizer
 C_DIR      := implementations/c
+RUST_DIR   := implementations/rust
+TS_DIR     := implementations/typescript
+GO_DIR     := implementations/go
 TRACES     := traces
 BENCHMARKS := benchmarks
 
@@ -305,13 +308,33 @@ c-test:
 	cd $(C_DIR) && ./test_equivalence.sh
 	cd $(C_DIR) && $(MAKE) check
 
+# The Rust track's finite-difference checks (`tests/parity.rs`). Its own command
+# rather than a shell one-liner because `cargo test` is the thing a reader will
+# type, and because a distinct target is what lets `check` gate on it.
+test-rust:
+	cd $(RUST_DIR) && $(CARGO) test
+
+# The TypeScript track's tests. Before `src/parity.test.ts` existed the
+# `tsx --test src/*.test.ts` script matched zero files and exited 0, so this
+# target would have "passed" without running anything.
+test-ts:
+	cd $(TS_DIR) && $(NPM) test
+
+# The Go track's tests (`parity_test.go`). Same shape as `test-rust` and
+# `test-ts`: a distinct target so `check` can gate on it. Finite-difference
+# checks on each operator plus the shared-subgraph accumulation case, and a pin
+# on the `rmsnorm`-off-the-tape finding the tuned `autoresearch/candidate-go`
+# fixes -- see the file header for why that is asserted and not "corrected".
+test-go:
+	cd $(GO_DIR) && $(GO) test ./...
+
 lint:
 	$(PYTHON) -m tools.lint
 
 fmt:
 	$(PYTHON) -m tools.fmt
 
-check: lint test validate test-web c-test parity build
+check: lint test validate test-web c-test test-rust test-ts test-go parity build
 	$(PYTHON) -m tools.autoresearch verify
 
 ## ------------------------------------------------------ housekeeping ------
@@ -334,5 +357,6 @@ distclean: clean
 .PHONY: setup setup-python setup-web run run-python run-c run-scaled \
         run-go run-rust run-ts validate test test-web install-web \
         verify-provenance provenance trace trace-check parity bench c-test \
+        test-rust test-ts test-go \
         autoresearch-rust autoresearch-c autoresearch-verify autoresearch-render \
         dev build preview lint fmt check clean distclean
