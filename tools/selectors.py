@@ -124,6 +124,14 @@ class Span:
                 f"offset [{offset[0]}, {offset[1]}] pushed the start to line {start}, "
                 f"before the beginning of the file"
             )
+        if end < start:
+            # An inverted span renders as an empty panel: `len()` reports 0 and
+            # `clamp()` has nothing to reject. Failing loudly beats a selector
+            # that silently resolves to nothing.
+            raise SelectorUnresolvedError(
+                f"offset [{offset[0]}, {offset[1]}] inverted the span: "
+                f"start {self.start} -> {start}, end {self.end} -> {end} (end < start)"
+            )
         return Span(start, end)
 
     def as_dict(self) -> dict[str, int]:

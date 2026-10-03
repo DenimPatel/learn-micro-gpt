@@ -283,6 +283,25 @@ class TestSpan(unittest.TestCase):
         span = selectors.Span(10, 20).apply_offset((5, -5))
         self.assertEqual((span.start, span.end), (15, 15))
 
+    def test_offset_that_inverts_the_span_is_an_error(self) -> None:
+        # `offset:[0, -5000]` on a one-line span used to produce
+        # `Span(start=29, end=-4929)`: `len()` said 0 and `clamp()` accepted it,
+        # so the selector rendered nothing and no build step complained.
+        with self.assertRaises(selectors.SelectorUnresolvedError) as ctx:
+            selectors.Span(29, 29).apply_offset((0, -5000))
+        message = str(ctx.exception)
+        self.assertIn("29", message)
+        self.assertIn("-4971", message)
+        self.assertIn("0", message)
+        self.assertIn("-5000", message)
+
+    def test_offset_that_empties_the_span_is_an_error(self) -> None:
+        # `Span(28, 29)` names one line; shifting the end back past the start is
+        # an inverted span even though it is only one line deep.
+        with self.assertRaises(selectors.SelectorUnresolvedError):
+            selectors.Span(28, 29).apply_offset((0, -2))
+        self.assertEqual((selectors.Span(28, 29).apply_offset((0, -1))).end, 28)
+
 
 if __name__ == "__main__":
     unittest.main()
