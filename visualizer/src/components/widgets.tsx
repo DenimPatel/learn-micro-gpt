@@ -260,6 +260,100 @@ export function SoftmaxBars({ step = 0, pos = 0 }: { step?: number; pos?: number
  * converged. The caption says so, and the burned-in region is genuinely dropped
  * rather than drawn misleadingly.
  */
+/**
+ * The same chart, drawn from points that arrived a moment ago.
+ *
+ * `LossChart` above draws a committed trace and takes no props: its numbers are
+ * fixed at build time, which is exactly right for a page that must not compute
+ * its own model output. This one is the opposite case. The playground's whole
+ * promise -- repeated in `docs/HOW-TO-READ.md` -- is "a loss curve you watched
+ * fall is worth more than any amount of prose about one", but until now the run
+ * streamed a text log and a reader saw numbers arrive, not a curve. So this draws
+ * the `losses` the worker has already sent, on the same axes and with the same
+ * `role="img"` + `aria-label` contract as `LossChart`, so a screen reader gets the
+ * trend and the current value rather than an unlabelled path.
+ *
+ * It deliberately computes nothing about the model: the numbers are the ones the
+ * reference printed. Smoothing them is presentation, not a second implementation.
+ */
+export function LiveLossChart({ points }: { points: { step: number; loss: number }[] }) {
+  const raw = useMemo(() => points.map((point) => point.loss), [points])
+  const series = useMemo(() => ema(raw), [raw])
+
+  const { min, max } = useMemo(() => {
+    if (!raw.length) return { min: 0, max: 1 }
+    // A little headroom so the newest point is not pinned to the top edge, and a
+    // floor on the span so a flat run does not divide by ~0.
+    const lo = Math.min(...series, ...raw)
+    const hi = Math.max(...series, ...raw)
+    const pad = (hi - lo || 1) * 0.1
+    return { min: lo - pad, max: hi + pad }
+  }, [series, raw])
+
+  const yOf = useCallback(
+    (value: number) => 100 - ((value - min) / (max - min || 1)) * 100,
+    [min, max],
+  )
+
+  const pathOf = useCallback(
+    (values: number[], skipFirst: number) => {
+      const total = Math.max(1, values.length - 1)
+      const shown = values
+        .map((value, index) => ({ index, value }))
+        .filter((p) => p.index >= skipFirst)
+      if (!shown.length) return ''
+      return shown
+        .map((p, i) => {
+          const x = (p.index / total) * 100
+          return `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${yOf(p.value).toFixed(2)}`
+        })
+        .join(' ')
+    },
+    [yOf],
+  )
+
+  // The EMA is seeded with its first value, so it is not a summary of anything
+  // before ~1/alpha steps. Unlike the recorded chart there is nothing to hide yet
+  // when the run is short -- a reader wants to watch it climb down from the first
+  // point -- so nothing is dropped; the label says how far along it is instead.
+  const rawPath = pathOf(raw, 0)
+  const smoothedPath = pathOf(series, 0)
+  const last = points[points.length - 1]
+  const first = points[0]
+
+  return (
+    <figure className="widget widget--live">
+      <figcaption className="widget__caption">
+        Loss as the run happens, drawn from the numbers it has already printed.
+        {first && last ? (
+          <>
+            {' '}
+            {points.length} step{points.length === 1 ? '' : 's'} so far, now at loss{' '}
+            {last.loss.toFixed(4)}. The faint line is raw per-step loss; the solid line is the same
+            20-step exponential moving average the recorded chart below uses.
+          </>
+        ) : (
+          ' Waiting for the first step…'
+        )}
+      </figcaption>
+      <svg
+        viewBox="0 0 100 100"
+        className="chart"
+        role="img"
+        aria-label={
+          first && last
+            ? `Loss over ${last.step} steps so far, from ${first.loss.toFixed(3)} to ${last.loss.toFixed(3)}; currently ${last.loss.toFixed(3)}.`
+            : 'Loss over the run so far: no steps recorded yet.'
+        }
+        preserveAspectRatio="none"
+      >
+        <path d={rawPath} className="chart__raw" fill="none" />
+        <path d={smoothedPath} className="chart__line" fill="none" />
+      </svg>
+    </figure>
+  )
+}
+
 export function LossChart() {
   const [showSmoothed, setShowSmoothed] = useState(true)
   const raw = useMemo(() => trace.steps.map((row) => row.loss), [])

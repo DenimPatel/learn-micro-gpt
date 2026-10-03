@@ -456,6 +456,53 @@ test.describe('the playground degrades', () => {
     await expect(notice).toBeVisible({ timeout: 60_000 })
     await expect(notice).toContainText('make run')
   })
+
+  test('a run in progress draws the loss falling, step by step', async ({ page }) => {
+    // The real worker needs a 12 MB CDN download and a minute of CPU, so the
+    // suite stubs `Worker` itself rather than the network: the test is about the
+    // main thread's rendering, and the protocol between the two is the only thing
+    // that matters here. This is the one place the test reaches past the page's
+    // own API, and it is deliberate -- without it the live chart is untested,
+    // because no test environment can run the real thing quickly or offline.
+    await page.addInitScript(() => {
+      class StubWorker {
+        onmessage: ((event: MessageEvent) => void) | null = null
+        postMessage(request: { type: string }) {
+          if (request.type !== 'run') return
+          const emit = (data: unknown) => this.onmessage?.({ data } as MessageEvent)
+          emit({ type: 'status', stage: 'running', detail: 'stub run' })
+          // Paced, not synchronous: the page only draws the live chart while the
+          // run is in flight, so a stub that finished instantly would leave an
+          // empty chart and assert nothing. 100 steps at 10 ms is one second of a
+          // run that never ends -- `done` is deliberately never sent, so the chart
+          // stays on screen for the assertions below.
+          let step = 0
+          const timer = setInterval(() => {
+            step += 1
+            emit({ type: 'step', step, total: 200, loss: 3.2 - step * 0.01 })
+            if (step >= 100) clearInterval(timer)
+          }, 10)
+        }
+        terminate() {}
+      }
+      Object.defineProperty(window, 'Worker', { value: StubWorker, configurable: true })
+    })
+    await page.goto('#/run')
+    await page.getByRole('button', { name: /run in the browser/i }).click()
+
+    // Scoped to the live figure: the recorded chart below carries an aria-label
+    // starting "Loss over" too, and would otherwise satisfy this.
+    const chart = page.locator('.widget--live svg[aria-label*="Loss over"]')
+    await expect(chart).toBeVisible()
+    // The run is held open mid-flight, so the label says "so far" and counts the
+    // steps that have arrived -- 100, where the stub stops.
+    await expect(chart).toHaveAttribute('aria-label', /Loss over 100 steps so far/)
+    // Two curves: the raw per-step loss and the smoothed one.
+    await expect(chart.locator('path')).toHaveCount(2)
+    // The whole point of the item: the caption reads as a live update, not a
+    // final summary.
+    await expect(page.getByText(/100 steps so far, now at loss 2\.2000/)).toBeVisible()
+  })
 })
 
 test.describe('scroll on navigation', () => {

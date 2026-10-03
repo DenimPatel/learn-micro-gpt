@@ -19,7 +19,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadSource, loadedSource } from '../data/sources'
 import { CodePanel } from './CodePanel'
-import { LossChart } from './widgets'
+import { LossChart, LiveLossChart } from './widgets'
 import { PYODIDE_PINNED_VERSION, createWorker, type WorkerResponse } from '../worker/protocol'
 
 /**
@@ -227,9 +227,10 @@ export function RunPlayground() {
             {run.step !== undefined && run.total ? ` — step ${run.step} of ${run.total}` : ''}
           </p>
           {run.losses.length ? (
-            <p className="notice__last">
-              latest loss {run.losses[run.losses.length - 1]!.loss.toFixed(4)}
-            </p>
+            // The page's promise is a loss curve you watch fall, not a column of
+            // numbers. Draw what has already arrived, so the run has visible
+            // feedback from the first step rather than only at the end.
+            <LiveLossChart points={run.losses} />
           ) : null}
         </div>
       ) : null}

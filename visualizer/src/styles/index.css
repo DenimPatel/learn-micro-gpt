@@ -1085,9 +1085,21 @@ pre.code-block code {
   color: var(--moss-ink);
 }
 
-.notice__last {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
+/*
+ * The live chart sits inside the running `.notice`, so its own card chrome is
+ * redundant -- the notice already provides the frame. Keep the caption and the
+ * plot, drop the border/shadow and the 1.8em margins that would push the notice
+ * open around it.
+ */
+.widget--live {
+  margin: 0.75em 0 0;
+  background: none;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.widget--live .widget__caption {
+  padding: 0 0 0.5em;
 }
 
 /* --- math ----------------------------------------------------------------- */

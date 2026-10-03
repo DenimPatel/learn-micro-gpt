@@ -2,7 +2,12 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { trace } from '../src/data/sources'
-import { AttentionHeatmap, SamplesList, SoftmaxBars } from '../src/components/widgets'
+import {
+  AttentionHeatmap,
+  SamplesList,
+  SoftmaxBars,
+  LiveLossChart,
+} from '../src/components/widgets'
 
 /**
  * The trace widgets' empty state.
@@ -117,6 +122,60 @@ describe('SoftmaxBars empty state', () => {
     const html = renderToStaticMarkup(createElement(SoftmaxBars, { step: row.step, pos: row.pos }))
     expect(html).toContain('class="bars"')
     expect(html).not.toContain('widget--empty')
+  })
+})
+
+describe('LiveLossChart', () => {
+  /*
+   * The live chart exists to satisfy the page's own promise -- a loss curve you
+   * watch fall -- and its contract with the e2e suite is the `aria-label` on the
+   * `role="img"` svg. A unit test pins that contract without a browser: it fails
+   * if the label is renamed, if the svg stops being an image to a screen reader,
+   * or if the two curves lose the paint-order classes the CSS targets.
+   */
+  const points = [
+    { step: 1, loss: 3.2 },
+    { step: 2, loss: 3.0 },
+    { step: 3, loss: 2.8 },
+  ]
+
+  it('draws a labelled image with both curves once points arrive', () => {
+    const html = renderToStaticMarkup(createElement(LiveLossChart, { points }))
+    expect(html).toContain('role="img"')
+    expect(html).toContain('Loss over')
+    // The exact prefix the e2e suite locates the node by: `svg[aria-label*="Loss
+    // over"]`. Asserting the full opening clause keeps a rename from passing.
+    expect(html).toContain('Loss over 3 steps so far')
+    expect(html).toContain('class="chart__raw"')
+    expect(html).toContain('class="chart__line"')
+    // The first and last losses appear in the label, so the trend is read aloud.
+    expect(html).toContain('from 3.200')
+    expect(html).toContain('to 2.800')
+    // Live chart, not the recorded one: no widget--empty, no trace caption.
+    expect(html).not.toContain('widget--empty')
+  })
+
+  it('says there is nothing yet, rather than drawing an unlabelled blank', () => {
+    // The state between "run pressed" and "first step printed": the chart may
+    // render, but it must not be an empty `role="img"` with no text alternative.
+    const html = renderToStaticMarkup(createElement(LiveLossChart, { points: [] }))
+    expect(html).toContain('role="img"')
+    expect(html).toContain('Loss over the run so far')
+    expect(html).toContain('no steps recorded yet')
+    expect(html).toContain('Waiting for the first step')
+  })
+
+  it('does not divide by zero when every loss is identical', () => {
+    // A flat series makes `max - min` zero; the y-mapping guards it with `|| 1`.
+    // If it did not, every coordinate would be `NaN` and the path would vanish.
+    const flat = [
+      { step: 1, loss: 2.5 },
+      { step: 2, loss: 2.5 },
+      { step: 3, loss: 2.5 },
+    ]
+    const html = renderToStaticMarkup(createElement(LiveLossChart, { points: flat }))
+    expect(html).not.toContain('NaN')
+    expect(html).toContain('class="chart__line"')
   })
 })
 
