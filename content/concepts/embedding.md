@@ -29,6 +29,10 @@ def gpt(token_id, pos_id, keys, values):
 Four lines, and this is where the token becomes a vector the rest of the model
 can work with.
 
+:::term embedding
+
+:::term "residual connection"
+
 ## Addition, not concatenation
 
 The obvious alternative is `[tok_emb, pos_emb]` — a 32-wide vector, or a

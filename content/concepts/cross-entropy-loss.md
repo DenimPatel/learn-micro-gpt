@@ -33,6 +33,10 @@ loss = (1 / n) * sum(losses)
 `-probs[target_id].log()` is `-log p`, the negative log-likelihood. Read it as
 *how surprised were you that the next character was this one*.
 
+:::term loss
+
+:::term logit
+
 | the model's probability | loss |
 | --- | --- |
 | 1.0 (certain) | 0.0 |

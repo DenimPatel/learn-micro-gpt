@@ -31,6 +31,10 @@ class Value:
 
 Four fields. Read them twice, because this is the hinge of the whole file:
 
+:::term autograd
+
+:::term "backward pass"
+
 - `data` — the number. This is the only thing the forward pass cares about.
 - `grad` — the derivative of the final loss with respect to `data`. Zero until
   `backward()` runs.

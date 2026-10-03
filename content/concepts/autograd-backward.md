@@ -36,6 +36,11 @@ def backward(self):
 
 That is the entire backward pass. Two phases.
 
+:::term "backward pass"
+
+Two phases is the whole trick: get the graph in an order where every node's
+gradient is final before you touch it, then walk that order backwards.
+
 ## Phase 1: sort the graph
 
 `build_topo` is a depth-first walk that appends each node *after* its children,

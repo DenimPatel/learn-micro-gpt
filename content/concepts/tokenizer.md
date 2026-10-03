@@ -35,6 +35,10 @@ letters, so `vocab_size` is 27.
 this file uses it for two things: it pads the start of a name, and it terminates
 it. `"mary"` becomes:
 
+:::term BOS
+
+:::term tokenizer
+
 ```text
 [BOS] m a r y [BOS]
 ```

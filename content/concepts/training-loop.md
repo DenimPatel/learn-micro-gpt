@@ -58,6 +58,10 @@ for step in range(num_steps):
    [walking the graph backwards](../concepts/autograd-backward.md).
 5. **Update.** Adam, with the linear decay, then reset `p.grad`.
 
+:::term loss
+
+:::term autograd
+
 ## The graph is rebuilt from scratch, every step
 
 Nothing is cached between iterations. `keys` and `values` are re-created, `gpt`

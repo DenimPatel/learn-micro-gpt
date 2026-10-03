@@ -25,6 +25,13 @@ prereqs: [linear, embedding]
 This is the concept the whole file exists to demonstrate. Twelve lines of Python,
 and it is the reason the model can compose at all.
 
+:::term head_dim
+
+The word "head" is doing a lot of work in this file, and it is worth pinning down
+before the code. Everything below is one head repeated `n_head` times.
+
+:::term embedding
+
 ## The loop, unrolled
 
 ```python

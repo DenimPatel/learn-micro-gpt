@@ -28,6 +28,11 @@ def rmsnorm(x):
 Mean square, then inverse square root, then multiply. The name says it all:
 root-mean-square normalisation.
 
+:::term rmsnorm
+
+If the name is all you need, the glossary restates it in one line; this page is
+the argument for why the operation shows up before every block.
+
 ## RMSNorm vs LayerNorm
 
 LayerNorm subtracts the mean and divides by the standard deviation. RMSNorm only

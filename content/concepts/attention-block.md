@@ -62,6 +62,10 @@ does. Post-norm architectures — the original 2017 Transformer, and this file's
 own ancestor — put the norm on the output and force gradients through the
 transform itself, which is why they were hard to train past a few layers.
 
+:::term "residual connection"
+
+:::term "kv cache"
+
 The consequence is a specific, testable claim: **each block is at most a
 correction to the residual stream.** Set `attn_wo` and `mlp_fc2` to zero and the
 layer becomes the identity. The model still trains. It is just `n_layer` times

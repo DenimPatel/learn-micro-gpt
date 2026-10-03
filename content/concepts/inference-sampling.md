@@ -41,6 +41,10 @@ The training loop calls `gpt` once per position, with the *real* next character.
 This loop calls it once per position, with the *model's own* previous output.
 Everything else — `gpt`, the KV cache, `softmax` — is identical.
 
+:::term "kv cache"
+
+:::term logit
+
 That is autoregressive generation, and the reason it terminates is a two-line
 detail:
 
@@ -128,6 +132,8 @@ click: the same mechanism, same code, but here it is load-bearing.
   survives across steps and batches. This is the single biggest difference
   between this file and a real serving stack, and it is *entirely* the same
   algorithm.
+
+:::term "top-k"
 
 :::callout "Try it, in this order"
 1. `temperature = 0.2`, rerun. Names get more real. Nothing else changes.
