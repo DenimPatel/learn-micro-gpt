@@ -43,10 +43,17 @@ loss = (1 / n) * sum(losses)
 
 The units are **nats**, and the `log` is natural. This is what makes the scale
 interpretable: a loss of 3.30 literally means "as surprised as a uniform guess
-over 27 characters", and a loss of 2.0 means "about 7x more likely than
+over 27 characters", and a loss of 2.0 means "about 3.65x more likely than
 uniform on the character you got". Because the log is natural, the differences
 are the log-ratios, so the loss is a sum of surprisal — which is why it can be
 averaged over positions at all.
+
+That 3.65x is the log-ratio made concrete: a uniform guess costs `-log(1/27) =
+3.30` nats, so a loss of 2.0 is `3.30 − 2.0 = 1.30` nats lower, and `e^1.30 =
+3.65` is exactly how much more likely the model's pick is than a coin flip over
+27 characters. (It is tempting to read 2.0 nats as "`e^2 = 7.4` times more
+likely"; that factor belongs to the uniform *baseline*, not to the ratio the
+model beats it by.)
 
 ## Why `-log p` and not something else
 

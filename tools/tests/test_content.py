@@ -553,6 +553,63 @@ class TestConceptProseCountsTheCallSites(unittest.TestCase):
         self.assertNotIn("## Two uses", body)
 
 
+class TestConceptProseDerivesTheLossRatio(unittest.TestCase):
+    """`cross-entropy-loss.md` quotes a loss-x ratio; the vocab size decides it.
+
+    The page used to say a loss of 2.0 was "about 7x more likely than uniform".
+    That is the `e^2 = 7.4` factor, which is how much more likely the model's
+    pick is than an *event of probability 1* -- not than a uniform guess over the
+    vocabulary. The real ratio is `e^(uniform - loss)`, and it moves with the
+    vocab size: get the vocab wrong and the quoted ratio is wrong too.
+
+    So this test derives the vocab size from the dataset with the reference's own
+    formula, computes the ratio from it, and insists the prose carries *that*
+    number. Hard-coding 3.65x here would just move the rot.
+    """
+
+    def _vocab_size(self) -> int:
+        # Exactly the reference's derivation (`reference/microgpt.py`): unique
+        # characters across the documents, plus one for BOS.
+        text = (REPO_ROOT / "data" / "input.txt").read_text(encoding="utf-8")
+        docs = [line.strip() for line in text.strip().split("\n") if line.strip()]
+        uchars = sorted(set("".join(docs)))
+        return len(uchars) + 1
+
+    def test_the_quoted_ratio_matches_the_vocab_size(self) -> None:
+        import math
+
+        vocab = self._vocab_size()
+        # A uniform guess over `vocab` characters costs this many nats.
+        uniform = -math.log(1 / vocab)
+        # A loss of 2.0 sits `uniform - 2.0` nats below it; that gap is a log-ratio.
+        ratio = math.exp(uniform - 2.0)
+
+        # 1/27 ~= 0.037, uniform ~= 3.30, ratio ~= 3.65 -- all read from `vocab`,
+        # not typed in.
+        self.assertAlmostEqual(uniform, 3.30, places=2)
+        self.assertAlmostEqual(ratio, 3.65, places=2)
+
+        body = (REPO_ROOT / "content" / "concepts" / "cross-entropy-loss.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(f"1/{vocab}", body)
+        self.assertIn(f"over {vocab} characters", body)
+        self.assertIn(f"{ratio:.2f}x more likely", body)
+
+    def test_the_e_squared_factor_is_not_sold_as_the_ratio(self) -> None:
+        # `e^2 = 7.4` is the baseline-to-one-event factor, not the model's edge
+        # over uniform. If it reappears as the quoted ratio, this fails.
+        body = (REPO_ROOT / "content" / "concepts" / "cross-entropy-loss.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("7x more likely", body)
+        self.assertNotIn("7.4x more likely", body)
+        # The trap is allowed to be *named* -- but only while it is being called
+        # out as the tempting mistake, which is how the page frames it now.
+        if "7.4" in body:
+            self.assertIn("belongs to the uniform *baseline*", body)
+
+
 class TestBenchmarksDoc(unittest.TestCase):
     """`docs/BENCHMARKS.md` is generated from `benchmarks/results.json`.
 
