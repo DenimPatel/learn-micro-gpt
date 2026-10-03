@@ -51,9 +51,9 @@ This is not an optimisation anyone would add later. It is a correctness fix, and
 it is the sort of thing that separates a working softmax from one that works on
 Tuesday.
 
-## Two uses, and they are different
+## Three uses, and they are different
 
-`softmax` is called in exactly two places, and the distinction matters:
+`softmax` is called in exactly three places, and the distinctions matter:
 
 - **In training**, on the raw logits from `lm_head`, to get the predicted
   distribution. Then `-probs[target_id].log()` is the loss. See
@@ -61,9 +61,13 @@ Tuesday.
 - **In attention**, on the attention logits over `t` positions, to get the
   attention *weights*. Then those weights are used to average the values. See
   [multi-head attention](../concepts/multi-head-attention.md).
+- **At inference**, on the temperature-scaled logits from `lm_head`, to get the
+  sampling distribution the next character is drawn from. See
+  [inference](../concepts/inference-sampling.md).
 
-Same function, completely different job: in one case a distribution over the
-vocabulary, in the other a distribution over positions.
+The first two are a distribution over the vocabulary and a distribution over
+positions; the third is a distribution over the vocabulary again, but built to
+be *sampled from* rather than scored. Same function, three different jobs.
 
 ## What it does not do
 

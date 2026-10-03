@@ -517,6 +517,42 @@ class TestQuotedStatistics(unittest.TestCase):
         return min(rows, key=lambda row: row["loss"])["step"] + 1
 
 
+class TestConceptProseCountsTheCallSites(unittest.TestCase):
+    """`softmax.md` states how many places call `softmax`; the reference decides.
+
+    The concept said "exactly two places" and named training and attention, but
+    the reference calls `softmax` three times -- the third is the inference
+    sampler, which `inference-sampling.md` already describes. A prose count like
+    this is cheap to write and easy to leave behind: adding a call site is a
+    one-line change, and nothing about the page looks wrong when the sentence
+    goes stale. This is the check that ties the sentence to the file.
+    """
+
+    def _softmax_call_sites(self) -> list[int]:
+        # The definition line is `def softmax(`, not a call. Everything else
+        # matching `softmax(` is a call site -- counted, not hard-coded, so a
+        # fourth call makes this fail rather than silently staying green.
+        lines = (REPO_ROOT / "reference" / "microgpt.py").read_text(encoding="utf-8").splitlines()
+        return [
+            n
+            for n, line in enumerate(lines, start=1)
+            if "softmax(" in line and not line.lstrip().startswith("def ")
+        ]
+
+    def test_softmax_prose_count_matches_the_reference(self) -> None:
+        call_sites = self._softmax_call_sites()
+        self.assertEqual(
+            len(call_sites),
+            3,
+            f"softmax.md says 'three places'; the reference calls it at lines {call_sites}",
+        )
+        body = (REPO_ROOT / "content" / "concepts" / "softmax.md").read_text(encoding="utf-8")
+        self.assertIn("called in exactly three places", body)
+        # And it must not still carry the old count in the heading, which said
+        # "Two uses" and read as a second, contradicting statement.
+        self.assertNotIn("## Two uses", body)
+
+
 class TestBenchmarksDoc(unittest.TestCase):
     """`docs/BENCHMARKS.md` is generated from `benchmarks/results.json`.
 
