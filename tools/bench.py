@@ -74,6 +74,11 @@ sys.path.insert(0, str(REPO_ROOT))
 RESULTS = REPO_ROOT / "benchmarks" / "results.json"
 STEPS = 1000
 
+#: Wall-clock ceiling for one build step (a `make`, `cargo build`, `npm` or
+#: `cc` invocation). A hung compiler must not silently block the whole loop.
+#: Matches the ceiling `measure()` puts on the run itself.
+BUILD_TIMEOUT_SECONDS = 1800
+
 
 @dataclass
 class Measurement:
@@ -223,7 +228,9 @@ def compile_if_needed(measurement: Measurement) -> bool:
     command = measurement.build_command
     if not command:
         return True
-    built = subprocess.run([str(c) for c in command], capture_output=True, text=True)
+    built = subprocess.run(
+        [str(c) for c in command], capture_output=True, text=True, timeout=BUILD_TIMEOUT_SECONDS
+    )
     if built.returncode != 0:
         print(f"{measurement.lang}: build failed\n{built.stderr[-1500:]}", file=sys.stderr)
         return False

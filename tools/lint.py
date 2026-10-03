@@ -23,10 +23,31 @@ CANDIDATE = REPO_ROOT / "autoresearch" / "candidate"
 
 failures: list[str] = []
 
+#: No linter or compiler is allowed to block the improvement loop forever. This
+#: module is the first step of the fast loop, so a hung `npx`/`cargo` here hangs
+#: the whole loop with no output and no way to tell what it is waiting on.
+#: Generous enough for a cold clippy or a first `npm run lint`; finite on purpose.
+STEP_TIMEOUT_SECONDS = 1800
+
 
 def step(name: str, argv: list[str], cwd: Path = REPO_ROOT) -> None:
     print(f"  {name} ...", flush=True)
-    result = subprocess.run([str(a) for a in argv], cwd=str(cwd), capture_output=True, text=True)
+    try:
+        result = subprocess.run(
+            [str(a) for a in argv],
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=STEP_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        failures.append(name)
+        print(
+            f"  ! {name} timed out after {STEP_TIMEOUT_SECONDS}s "
+            f"({argv[0]}); killed",
+            file=sys.stderr,
+        )
+        return
     if result.returncode != 0:
         failures.append(name)
         sys.stdout.write(result.stdout[-4000:])
@@ -34,7 +55,9 @@ def step(name: str, argv: list[str], cwd: Path = REPO_ROOT) -> None:
 
 
 def _have(tool: str) -> bool:
-    return subprocess.run(["which", tool], capture_output=True).returncode == 0
+    return subprocess.run(
+        ["which", tool], capture_output=True, timeout=STEP_TIMEOUT_SECONDS
+    ).returncode == 0
 
 
 def _locate(tool: str) -> str | None:
@@ -55,7 +78,10 @@ def _locate(tool: str) -> str | None:
 def _clippy_available(cargo: str) -> bool:
     """`cargo clippy` exists, and the toolchain actually has the component."""
     probe = subprocess.run(
-        [cargo, "clippy", "--version"], capture_output=True, text=True
+        [cargo, "clippy", "--version"],
+        capture_output=True,
+        text=True,
+        timeout=STEP_TIMEOUT_SECONDS,
     )
     return probe.returncode == 0 and "not installed" not in probe.stderr
 

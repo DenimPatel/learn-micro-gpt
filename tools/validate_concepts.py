@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 from typing import Any, Iterable
@@ -49,6 +50,19 @@ from tools.concepts import (  # noqa: E402
 #: trace is kilobytes; anything approaching this means something started
 #: recording activations instead of summaries.
 TRACE_BUDGET_BYTES = 2 * 1024 * 1024
+
+
+class NonFiniteNumber(Exception):
+    """A `number` field held `NaN`/`inf`. Carries the value.
+
+    A private signal, not part of the project's error hierarchy: `_type_ok` is a
+    pure predicate with no field path to name, so it raises this and the caller
+    -- which knows the path -- re-raises the public `ContentError`.
+    """
+
+    def __init__(self, value: float) -> None:
+        super().__init__(f"number {value!r} is not finite")
+        self.value = value
 
 
 class Report:
@@ -94,7 +108,16 @@ def _type_ok(value: Any, expected: str) -> bool:
     if expected == "integer":
         return isinstance(value, int) and not isinstance(value, bool)
     if expected == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
+        if isinstance(value, bool):
+            return False
+        if isinstance(value, float) and not math.isfinite(value):
+            # `NaN`/`inf` satisfy `isinstance(x, float)` and compare False against
+            # every bound, so they slip through `minimum`/`maximum` untouched.
+            # A trace with a corrupted value used to render as "NaN" forever.
+            # Rejected here too, so a field with no bounds is still checked; the
+            # caller upgrades this to a path-naming message before it escapes.
+            raise NonFiniteNumber(value)
+        return isinstance(value, (int, float))
     if expected == "boolean":
         return isinstance(value, bool)
     if expected == "null":
@@ -107,6 +130,11 @@ def _resolve_ref(ref: str, schema: dict[str, Any]) -> dict[str, Any]:
         raise ContentError(f"schema $ref {ref!r} is not a local pointer")
     node: Any = schema
     for part in ref[2:].split("/"):
+        if not isinstance(node, dict) or part not in node:
+            raise ContentError(
+                f"schema $ref {ref!r} does not resolve: no {part!r} in "
+                f"{type(node).__name__}; the reference is dangling"
+            )
         node = node[part]
     return node
 
@@ -138,11 +166,23 @@ def validate_against_schema(
         return
 
     expected = schema.get("type")
-    if expected and not _type_ok(value, expected):
-        report.error(
-            f"{path}: expected {expected}, got {type(value).__name__}"
-        )
-        return
+    if expected:
+        try:
+            if not _type_ok(value, expected):
+                report.error(
+                    f"{path}: expected {expected}, got {type(value).__name__}"
+                )
+                return
+        except NonFiniteNumber as exc:
+            # `minimum`/`maximum` cannot reject inf or NaN -- every comparison
+            # against NaN is False -- so the type check is the only place to
+            # catch it. Named with the field, because "a number somewhere was
+            # NaN" is not something anyone can act on.
+            raise ContentError(
+                f"{path}: number {exc.value!r} is not finite; NaN and +/-inf "
+                f"bypass minimum/maximum and can carry a corrupted value into "
+                f"the visualizer"
+            ) from exc
 
     if "enum" in schema and value not in schema["enum"]:
         report.error(f"{path}: {value!r} is not one of {schema['enum']}")
@@ -159,6 +199,13 @@ def validate_against_schema(
                 report.error(f"{path}: {value!r} does not match /{schema['pattern']}/")
 
     if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if isinstance(value, float) and not math.isfinite(value):
+            # `minimum`/`maximum` cannot reject inf or NaN (every comparison
+            # against NaN is False), so the only place to catch this is here.
+            raise ContentError(
+                f"{path}: number {value!r} is not finite; NaN and +/-inf bypass "
+                f"minimum/maximum and can carry a corrupted value into the visualizer"
+            )
         if "minimum" in schema and value < schema["minimum"]:
             report.error(f"{path}: {value} < minimum {schema['minimum']}")
         if "maximum" in schema and value > schema["maximum"]:
@@ -217,10 +264,35 @@ def check_graph(
                 report.error(f"duplicate concept id {concept.id!r}")
             seen.add(concept.id)
 
+    if not isinstance(index, dict):
+        raise ContentError(
+            f"content/index.json: the document must be an object, got "
+            f"{type(index).__name__}. Every `chapters`/`glossary`/`reference` "
+            f"lookup here assumes a mapping."
+        )
+
     chapters = index.get("chapters", [])
     if not chapters:
         report.error("index.json declares no chapters")
         return
+
+    if not isinstance(chapters, list):
+        raise ContentError(
+            f"content/index.json: 'chapters' must be a list, got "
+            f"{type(chapters).__name__}"
+        )
+    for position, chapter in enumerate(chapters):
+        if not isinstance(chapter, dict):
+            raise ContentError(
+                f"content/index.json: chapters[{position}] must be an object, got "
+                f"{type(chapter).__name__}"
+            )
+        if not isinstance(chapter.get("concepts", []), list):
+            raise ContentError(
+                f"content/index.json: 'concepts' in chapter "
+                f"{chapter.get('id', position)!r} must be a list, got "
+                f"{type(chapter['concepts']).__name__}"
+            )
 
     chapter_ids = [c.get("id") for c in chapters]
     if len(chapter_ids) != len(set(chapter_ids)):
@@ -513,13 +585,17 @@ def main() -> int:
         return 1
 
     print(f"validating {len(concepts)} concepts against content/schema.json")
-    check_schema(concepts, schema, report)
-    check_graph(concepts, index, report)
-    check_anchors(concepts, report, REPO_ROOT)
-    check_bodies(concepts, index, report)
-    check_reference_pin(index, report, REPO_ROOT)
-    check_anchors_current(concepts, report, REPO_ROOT)
-    check_traces(report, REPO_ROOT)
+    try:
+        check_schema(concepts, schema, report)
+        check_graph(concepts, index, report)
+        check_anchors(concepts, report, REPO_ROOT)
+        check_bodies(concepts, index, report)
+        check_reference_pin(index, report, REPO_ROOT)
+        check_anchors_current(concepts, report, REPO_ROOT)
+        check_traces(report, REPO_ROOT)
+    except ContentError as exc:
+        print(f"content error: {exc}", file=sys.stderr)
+        return 1
 
     for note in report.notes:
         print(f"  - {note}")

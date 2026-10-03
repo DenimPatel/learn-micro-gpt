@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tools import concepts as content
 from tools import gen_anchors, selectors, tag_fences, trace, validate_concepts
@@ -643,6 +644,173 @@ class TestTagFencesUnterminatedFence(unittest.TestCase):
             self.assertNotEqual(tag_fences.main(), 0)
         finally:
             tag_fences.REPO_ROOT = original
+
+
+class TestMalformedIndexJson(unittest.TestCase):
+    """`content/index.json` with the wrong *shape* is a ContentError, not a
+    traceback from deep inside the validator.
+
+    `load_index` only catches `json.JSONDecodeError`, so a file that parses but
+    is structurally wrong used to reach `index.get("chapters")` (a list has no
+    `.get`) or the chapter loop's `chapter.get(...)` and raise a bare
+    `AttributeError`/`TypeError`. A person who hand-edited the index saw a
+    traceback instead of the line they broke.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="index-test-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        (self.tmp / "content").mkdir()
+        self.path = self.tmp / "content" / "index.json"
+
+    def write_index(self, document: object) -> None:
+        self.path.write_text(json.dumps(document), encoding="utf-8")
+
+    def test_a_list_where_a_mapping_is_expected_names_the_path(self) -> None:
+        self.write_index(["data", "machinery"])
+        index = content.load_index(self.tmp)
+        with self.assertRaises(content.ContentError) as caught:
+            validate_concepts.check_graph([], index, Report())
+        message = str(caught.exception)
+        self.assertIn("content/index.json", message)
+        self.assertIn("list", message)
+
+    def test_a_non_object_chapter_names_the_offending_key(self) -> None:
+        self.write_index({"chapters": [{"id": "data", "concepts": "not-a-list"}]})
+        index = content.load_index(self.tmp)
+        with self.assertRaises(content.ContentError) as caught:
+            validate_concepts.check_graph([], index, Report())
+        message = str(caught.exception)
+        self.assertIn("content/index.json", message)
+        self.assertIn("concepts", message)
+        self.assertIn("data", message)
+
+    def test_a_string_in_the_chapter_list_names_its_position(self) -> None:
+        self.write_index({"chapters": [{"id": "data", "concepts": []}, 7]})
+        index = content.load_index(self.tmp)
+        with self.assertRaises(content.ContentError) as caught:
+            validate_concepts.check_graph([], index, Report())
+        message = str(caught.exception)
+        self.assertIn("chapters[1]", message)
+        self.assertIn("int", message)
+
+    def test_main_reports_it_as_a_content_error_not_a_traceback(self) -> None:
+        """The entry point has to survive the malformed index too. A `main()`
+        that lets the raise escape prints a traceback and exits 1 for the wrong
+        reason -- and `make validate` calls this function, not `check_graph`."""
+        tmp = Path(tempfile.mkdtemp(prefix="index-main-test-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        for name in ("content", "reference", "visualizer", "traces"):
+            source = REPO_ROOT / name
+            if source.is_dir():
+                shutil.copytree(source, tmp / name)
+        (tmp / "content" / "index.json").write_text('["data"]', encoding="utf-8")
+        original = validate_concepts.REPO_ROOT
+        validate_concepts.REPO_ROOT = tmp
+        try:
+            with mock.patch("sys.stdout"):
+                code = validate_concepts.main()
+        finally:
+            validate_concepts.REPO_ROOT = original
+        self.assertEqual(code, 1)
+
+
+class TestDanglingSchemaRef(unittest.TestCase):
+    """A `$ref` that does not resolve is a ContentError naming the ref.
+
+    The schema is the one input the validator cannot check against itself, so a
+    typo there (`#/definitions/anchorr`) used to be a `KeyError` from a dict
+    lookup, and a `$ref` through a list (`#/properties/0/items`) a `TypeError`.
+    The message has to say which ref and which file, or the only way to find it
+    is to bisect the schema.
+    """
+
+    def test_a_missing_definition_is_caught(self) -> None:
+        schema = {"$ref": "#/definitions/nope"}
+        with self.assertRaises(content.ContentError) as caught:
+            validate_against_schema({}, schema, Report(), "demo")
+        message = str(caught.exception)
+        self.assertIn("#/definitions/nope", message)
+        self.assertIn("dangling", message)
+
+    def test_a_ref_through_a_non_object_is_caught(self) -> None:
+        schema = {"definitions": {"anchor": {"type": "object"}}, "$ref": "#/definitions/anchor/items"}
+        with self.assertRaises(content.ContentError) as caught:
+            validate_against_schema({}, schema, Report(), "demo")
+        self.assertIn("#/definitions/anchor/items", str(caught.exception))
+
+    def test_the_real_schema_still_resolves(self) -> None:
+        concept = content.load_concept(REPO_ROOT / "content" / "concepts" / "softmax.md")
+        report = Report()
+        validate_against_schema(
+            concept.frontmatter, content.load_schema(REPO_ROOT), report,
+            concept.path.name, content.load_schema(REPO_ROOT),
+        )
+        self.assertEqual(report.errors, [])
+
+    def test_a_remote_ref_is_still_rejected(self) -> None:
+        with self.assertRaises(content.ContentError) as caught:
+            validate_against_schema({}, {"$ref": "https://example.com/s.json"}, Report(), "demo")
+        self.assertIn("local pointer", str(caught.exception))
+
+
+class TestNonFiniteNumbers(unittest.TestCase):
+    """`NaN` and `+/-inf` are not numbers a bounded field may hold.
+
+    `isinstance(nan, float)` is True and every comparison against NaN is False,
+    so a NaN satisfies `{"type": "number", "minimum": 0, "maximum": 30}`
+    outright -- and `inf` passes `minimum`. The trace schema is where this
+    matters: a corrupted trace used to validate, then render as "NaN" in the
+    visualizer, with no gate firing anywhere along the way.
+    """
+
+    BOUNDED = {"type": "number", "minimum": 1, "maximum": 30}
+
+    def test_a_nan_is_rejected_and_the_field_is_named(self) -> None:
+        with self.assertRaises(content.ContentError) as caught:
+            validate_against_schema(
+                {"top": float("nan")},
+                {"type": "object", "properties": {"top": self.BOUNDED}},
+                Report(), "concept",
+            )
+        message = str(caught.exception)
+        self.assertIn("concept.top", message)
+        self.assertIn("finite", message)
+
+    def test_an_infinity_is_rejected(self) -> None:
+        with self.assertRaises(content.ContentError) as caught:
+            validate_against_schema(
+                {"top": float("inf")},
+                {"type": "object", "properties": {"top": self.BOUNDED}},
+                Report(), "concept",
+            )
+        self.assertIn("concept.top", str(caught.exception))
+
+    def test_a_negative_infinity_is_rejected(self) -> None:
+        with self.assertRaises(content.ContentError):
+            validate_against_schema(
+                {"top": float("-inf")},
+                {"type": "object", "properties": {"top": self.BOUNDED}},
+                Report(), "concept",
+            )
+
+    def test_the_same_value_in_a_field_with_no_bounds_is_still_rejected(self) -> None:
+        with self.assertRaises(content.ContentError):
+            validate_against_schema(float("nan"), {"type": "number"}, Report(), "value")
+
+    def test_a_bound_is_still_checked_for_finite_values(self) -> None:
+        report = Report()
+        validate_against_schema({"top": 31}, {"type": "object", "properties": {"top": self.BOUNDED}}, report, "concept")
+        self.assertTrue(any("maximum" in e for e in report.errors), report.errors)
+
+    def test_an_integer_is_unaffected(self) -> None:
+        report = Report()
+        schema = {
+            "type": "object",
+            "properties": {"step": {"type": "integer", "minimum": 0}},
+        }
+        validate_against_schema({"step": 3}, schema, report, "concept")
+        self.assertEqual(report.errors, [])
 
 
 if __name__ == "__main__":
