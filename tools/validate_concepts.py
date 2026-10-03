@@ -17,6 +17,7 @@ here corresponds to a way a teaching repository rots in a way that *looks* fine:
 | `:::` directives are known and closed | a body that silently loses half its content |
 | `:::term` is in the glossary | a link to a definition that is not there |
 | `:::trace` args are in range | a widget that renders "undefined" forever |
+| `:::trace` asks for a recorded row | a widget stuck on its empty state |
 | reference sha256 pinned | every recorded number silently becoming a lie |
 | trace size budget | a repo that is 400 MB because traces grew |
 
@@ -36,6 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 from tools import selectors  # noqa: E402
+from tools import trace  # noqa: E402
 from tools.concepts import (  # noqa: E402
     CONCEPTS_DIR,
     DIRECTIVE_SPEC,
@@ -417,6 +419,125 @@ def check_anchors(concepts: list[Concept], report: Report, root: Path = REPO_ROO
                 report.error(f"{concept.id} [{language}]: unknown selector kind {parsed.kind!r}")
 
 
+#: The argument defaults the app itself applies before looking a row up, read
+#: off the switch in `BlockView` (`visualizer/src/components/ConceptPage.tsx`)
+#: and the components' own default parameters
+#: (`visualizer/src/components/widgets.tsx`):
+#:
+#:   attention  -> <AttentionHeatmap step={num('step', 0)} pos={num('pos', 3)} head={num('head', 0)} />
+#:   softmax    -> <SoftmaxBars step={num('step', 0)} pos={num('pos', 0)} />
+#:   samples    -> <SamplesList /> with `step = args.step ?? trace.samples[0].step`
+#:
+#: A directive that writes none of these still asks for a specific row, so the
+#: check has to run against the *effective* request -- otherwise
+#: `:::trace kind=samples` would slip through even though it resolves to a real
+#: step. Keeping this table equal to the app's defaults is what makes the check
+#: describe the rendered page.
+#:
+#: `samples` has no literal default: the widget uses the first recorded sample's
+#: step, so the validator reads it from the trace rather than hardcoding 1000.
+#: That keeps the two in step if the trace is ever recorded with another step.
+TRACE_DEFAULTS: dict[str, dict[str, int]] = {
+    "attention": {"step": 0, "pos": 3, "head": 0},
+    "softmax": {"step": 0, "pos": 0},
+}
+
+
+def _trace_defaults(kind: str, index: trace.TraceIndex) -> dict[str, int]:
+    """The app's defaults for one kind, with `samples` read from the trace."""
+    if kind == "samples":
+        steps = index.recorded("samples", "step")
+        return {"step": steps[0] if steps else 1000}
+    return TRACE_DEFAULTS.get(kind, {})
+
+
+def _trace_index() -> trace.TraceIndex:
+    """The committed trace's index, loaded once per process.
+
+    Cached because `check_bodies` calls this for every directive and the index
+    is a full read of ~1100 JSONL rows; seven directives should not mean seven
+    passes over the same files.
+    """
+    global _TRACE_INDEX
+    if _TRACE_INDEX is None:
+        _TRACE_INDEX = trace.load_trace_index()
+    return _TRACE_INDEX
+
+
+_TRACE_INDEX: trace.TraceIndex | None = None
+
+
+def check_trace_directive(
+    block: Any, concept_id: str, values: dict[str, int], report: Report
+) -> None:
+    """Fail when a `:::trace` asks for data the committed trace does not hold.
+
+    `kind` being known and the integers parsing is not enough: the app looks the
+    request up in a JSONL file, and a miss makes the widget render "No attention
+    weights were recorded for step 500, position 15, head 0" inside a concept
+    that promised a picture. Nothing else in the pipeline notices, so this is
+    where it has to be noticed.
+    """
+    kind = block.args.get("kind")
+    fields = trace.KIND_TRACE_FILES.get(str(kind), (None, ()))[1]
+    if not fields:
+        return  # not data-backed: `tokens` reads no file, `shapes` renders nothing
+
+    try:
+        index = _trace_index()
+    except (OSError, ValueError) as exc:
+        # A missing or malformed trace is a real problem, but not one this
+        # check should disguise as a content error. Say what happened.
+        report.error(
+            f"{concept_id} line {block.line_no}: `:::trace kind={kind}` cannot be "
+            f"checked against {trace.TRACES_DIR.name}/python/micro because the trace "
+            f"could not be read ({exc}). Regenerate it with `make trace`."
+        )
+        return
+
+    missing = index.missing_files().get(str(kind))
+    if missing is not None and not index.entries.get(str(kind)):
+        # The file this kind is backed by was never read, so "no such row" would
+        # be a lie -- the rows are unknown, not absent.
+        report.error(
+            f"{concept_id} line {block.line_no}: `:::trace kind={kind}` cannot be "
+            f"checked because {missing}. Regenerate the trace with `make trace`."
+        )
+        return
+
+    request = {
+        field: values.get(field, _trace_defaults(str(kind), index).get(field, 0))
+        for field in fields
+    }
+
+    if index.has(str(kind), request):
+        return
+
+    asked = ", ".join(f"{field}={request[field]}" for field in fields)
+    defaults = _trace_defaults(str(kind), index)
+    alternatives = []
+    for field in fields:
+        recorded = index.recorded(str(kind), field)
+        if field in defaults and request[field] == defaults[field]:
+            continue  # the app's default; naming it as "what exists" is noise
+        if recorded:
+            alternatives.append(f"{field} {_summarise(recorded)}")
+    detail = "; ".join(alternatives) if alternatives else "the trace contains no rows at all"
+    report.error(
+        f"{concept_id} line {block.line_no}: `:::trace kind={kind}` asks for "
+        f"{asked}, which {index.files[str(kind)]} does not contain. The widget "
+        f"would render its empty state instead of a picture. Recorded: {detail}."
+    )
+
+
+def _summarise(values: list[int], limit: int = 12) -> str:
+    """A readable `0, 1, 3, 7, 15` -- truncated rather than dumped."""
+    if len(values) <= limit:
+        return ", ".join(str(value) for value in values)
+    # The loss curve is every step; write the endpoints rather than 1000 numbers.
+    return ", ".join(str(value) for value in values[:limit]) + ", ..."
+
+
 def check_bodies(concepts: list[Concept], index: dict[str, Any], report: Report) -> None:
     glossary = set((index.get("glossary", {}) or {}).get("terms", {}) or {})
     for concept in concepts:
@@ -454,6 +575,7 @@ def check_bodies(concepts: list[Concept], index: dict[str, Any], report: Report)
                         f"{kind!r}. Known: {', '.join(sorted(TRACE_KINDS))}. A kind "
                         f"outside this set renders nothing at all."
                     )
+                values: dict[str, int] = {}
                 for key in ("step", "pos", "head", "top"):
                     raw = block.args.get(key)
                     if raw is None:
@@ -471,6 +593,15 @@ def check_bodies(concepts: list[Concept], index: dict[str, Any], report: Report)
                             f"{concept.id} line {block.line_no}: `:::trace {key}={raw}` "
                             f"is negative"
                         )
+                        continue
+                    values[key] = value
+                # A directive whose kind and integers are all fine can still ask
+                # for a data point the committed trace never recorded -- at which
+                # point the widget renders its empty state and the reader is told
+                # nothing. That is the one failure of this gate that used to be
+                # completely silent, so the request is resolved through the app's
+                # own defaults and looked up in the rows.
+                check_trace_directive(block, concept.id, values, report)
             if block.name == "callout" and not block.text.strip():
                 report.warn(
                     f"{concept.id} line {block.line_no}: empty `:::callout` block"

@@ -164,7 +164,7 @@ PROVENANCE: tuple[ProvenanceEntry, ...] = (
     ),
     ProvenanceEntry(
         path="implementations/c/microgpt.c",
-        sha256="f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
+        sha256="86e6eee66644fce2b8adf07ba0319c2872ad765594fbb11a938aac1d19464cb1",
         origin="C port in the microgpt-c lineage (micro config, parity track)",
         url="https://github.com/vixhal-baraiya/microgpt-c",
         license="MIT",
@@ -181,7 +181,7 @@ PROVENANCE: tuple[ProvenanceEntry, ...] = (
     ),
     ProvenanceEntry(
         path="implementations/c/microgpt-scaled.c",
-        sha256="6a0260ec072ce31b5f7cebbb369c167c13d5191a24ab4f71e01b90f6488cd744",
+        sha256="f5733eda77c5428c44811625859007b47fdf704592374f0ae5bf0b0cefe5331c",
         origin="C port in the microgpt-c lineage (scaled config, benchmark track)",
         url="https://github.com/vixhal-baraiya/microgpt-c",
         license="MIT",

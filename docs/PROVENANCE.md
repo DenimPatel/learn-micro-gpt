@@ -101,7 +101,7 @@ A FORK, not the reference. It is a reading aid and is deliberately excluded from
 ### `implementations/c/microgpt.c`
 
 - **Status:** derived (adapted by us)
-- **sha256:** `f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f`
+- **sha256:** `86e6eee66644fce2b8adf07ba0319c2872ad765594fbb11a938aac1d19464cb1`
 - **Origin:** C port in the microgpt-c lineage (micro config, parity track)
 - **Author / copyright:** Vishal (TheVixhal), adapted by this repository
 - **License:** MIT
@@ -113,7 +113,7 @@ MIT, Copyright (c) 2026 Vishal (TheVixhal). Our local revision does not match an
 ### `implementations/c/microgpt-scaled.c`
 
 - **Status:** derived (adapted by us)
-- **sha256:** `6a0260ec072ce31b5f7cebbb369c167c13d5191a24ab4f71e01b90f6488cd744`
+- **sha256:** `f5733eda77c5428c44811625859007b47fdf704592374f0ae5bf0b0cefe5331c`
 - **Origin:** C port in the microgpt-c lineage (scaled config, benchmark track)
 - **Author / copyright:** Vishal (TheVixhal), adapted by this repository
 - **License:** MIT

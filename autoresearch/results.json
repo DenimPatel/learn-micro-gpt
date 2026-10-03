@@ -59,7 +59,7 @@
     },
     "c": {
       "baseline_source": "implementations/c/microgpt.c",
-      "baseline_sha256": "f6d8685314561482cd881284c2d5b66086f267f903a826df5e8c6880840b663f",
+      "baseline_sha256": "86e6eee66644fce2b8adf07ba0319c2872ad765594fbb11a938aac1d19464cb1",
       "candidate_source": "autoresearch/candidate-c/microgpt.c",
       "candidate_sha256": "e9c51e6bf9403daae31397feb9e9406cc3e7e5d75c9bfda4045622735915386d",
       "gradient_probe": "autoresearch/candidate-c/probe.c",

@@ -17,8 +17,10 @@ this file is about constructing bad runs and watching them get caught.
 from __future__ import annotations
 
 import json
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tools import parity, trace
 
@@ -306,6 +308,156 @@ class TestParityGateRejectsBadRuns(unittest.TestCase):
         losses = load_losses()
         spread = (max(losses) - min(losses)) / statistics.mean(losses)
         self.assertGreater(spread, parity.BAND, "a 10% band on a raw step is inside the noise")
+
+
+class TestTraceDirectivesPointAtRealRows(unittest.TestCase):
+    """`make validate` must reject a `:::trace` the trace cannot answer.
+
+    A known kind and in-range integers are not enough. The app looks the
+    request up in a JSONL file, and a miss silently renders the widget's empty
+    state inside a concept that promised a picture -- a failure nothing else
+    in the pipeline notices.
+    """
+
+    def setUp(self) -> None:
+        from tools import concepts
+
+        self.concepts = concepts.load_all(REPO_ROOT)
+        self.index = json.loads(
+            (REPO_ROOT / "content" / "index.json").read_text(encoding="utf-8")
+        )
+
+    def test_current_directives_all_resolve_to_recorded_rows(self) -> None:
+        from tools import validate_concepts
+
+        report = validate_concepts.Report()
+        validate_concepts.check_bodies(self.concepts, self.index, report)
+        self.assertEqual(report.errors, [], "\n".join(report.errors))
+
+    def test_an_unrecorded_position_is_rejected(self) -> None:
+        """`block_size` is 16 and position 15 is never traced; asking for it is
+        exactly the kind of request that used to pass silently."""
+        from tools import concepts, validate_concepts
+
+        report = validate_concepts.Report()
+        block = concepts.Block(
+            kind="directive",
+            name="trace",
+            args={"kind": "attention", "step": "500", "pos": "15", "head": "0"},
+            line_no=1,
+        )
+        defaults = {"step": 500, "pos": 15, "head": 0}
+        validate_concepts.check_trace_directive(
+            block, "multi-head-attention", defaults, report
+        )
+        self.assertEqual(len(report.errors), 1, report.errors)
+        message = report.errors[0]
+        self.assertIn("multi-head-attention", message)
+        self.assertIn("attn.jsonl", message)
+        self.assertIn("pos=15", message)
+
+    def test_a_recorded_kind_at_an_unrecorded_step_is_rejected(self) -> None:
+        """`softmax` has no heads; asking for `head=0` on it can never match."""
+        from tools import concepts, validate_concepts
+
+        report = validate_concepts.Report()
+        block = concepts.Block(
+            kind="directive",
+            name="trace",
+            args={"kind": "samples", "step": "200"},
+            line_no=1,
+        )
+        validate_concepts.check_trace_directive(block, "inference-sampling", {"step": 200}, report)
+        self.assertEqual(len(report.errors), 1, report.errors)
+        self.assertIn("samples.jsonl", report.errors[0])
+        self.assertIn("step=200", report.errors[0])
+
+    def test_defaults_are_applied_before_the_lookup(self) -> None:
+        """A directive with no args still asks for a row: the app's defaults."""
+        from tools import concepts, validate_concepts
+
+        index = validate_concepts._trace_index()
+        defaults = validate_concepts.TRACE_DEFAULTS["attention"]
+        self.assertTrue(index.has("attention", dict(defaults)))
+        self.assertFalse(index.has("attention", {"step": 0, "pos": 15, "head": 0}))
+
+    def test_kinds_without_recorded_data_are_not_checked(self) -> None:
+        """`tokens` reads no file and `shapes` renders nothing; neither can fail."""
+        from tools import concepts, validate_concepts
+
+        report = validate_concepts.Report()
+        for kind in ("tokens", "shapes"):
+            block = concepts.Block(
+                kind="directive", name="trace", args={"kind": kind}, line_no=1
+            )
+            validate_concepts.check_trace_directive(block, "tokenization", {}, report)
+        self.assertEqual(report.errors, [])
+
+    def test_a_loss_curve_ignores_step_and_cannot_be_wrong(self) -> None:
+        """`LossChart` takes no props: it draws every row, so a stray `step=` on a
+        loss curve is ignored rather than rendering an empty state. Failing it
+        would be a false positive on a directive the app renders perfectly."""
+        from tools import concepts, validate_concepts
+
+        report = validate_concepts.Report()
+        block = concepts.Block(
+            kind="directive",
+            name="trace",
+            args={"kind": "loss-curve", "step": "2000"},
+            line_no=1,
+        )
+        validate_concepts.check_trace_directive(block, "cross-entropy-loss", {"step": 2000}, report)
+        self.assertEqual(report.errors, [], report.errors)
+
+    def test_the_wiring_is_exercised_through_check_bodies(self) -> None:
+        """The check is only real if `check_bodies` actually calls it.
+
+        Written against a concept *object* rather than by calling
+        `check_trace_directive` directly, because a test that calls the helper
+        itself still passes when the call site is deleted -- which is exactly
+        the regression this guards against.
+        """
+        from tools import concepts, validate_concepts
+
+        block = concepts.Block(
+            kind="directive",
+            name="trace",
+            args={"kind": "attention", "step": "0", "pos": "15", "head": "0"},
+            line_no=1,
+        )
+        concept = concepts.Concept(
+            id="multi-head-attention",
+            path=Path("content/concepts/multi-head-attention.md"),
+            frontmatter={"title": "Multi-head attention"},
+            body=":::trace kind=attention step=0 pos=15 head=0",
+            blocks=[block],
+        )
+        report = validate_concepts.Report()
+        validate_concepts.check_bodies([concept], self.index, report)
+        self.assertEqual(len(report.errors), 1, report.errors)
+        self.assertIn("pos=15", report.errors[0])
+
+    def test_a_missing_trace_file_is_reported_as_missing_not_as_bad_content(self) -> None:
+        """A trace that was never recorded must not be misreported as a directive
+        that asks for a row which does not exist -- those need different fixes."""
+        from tools import concepts, trace, validate_concepts
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "traces" / "python" / "micro").mkdir(parents=True)
+            index = trace.load_trace_index(root=root)
+        self.assertTrue(index.missing_files(), "an empty traces dir reports every file missing")
+        self.assertIn("missing", index.missing_files()["attention"])
+
+        report = validate_concepts.Report()
+        block = concepts.Block(
+            kind="directive", name="trace", args={"kind": "attention"}, line_no=1
+        )
+        with mock.patch.object(validate_concepts, "_TRACE_INDEX", index):
+            validate_concepts.check_trace_directive(block, "multi-head-attention", {}, report)
+        self.assertEqual(len(report.errors), 1, report.errors)
+        self.assertIn("missing", report.errors[0])
+        self.assertNotIn("does not contain", report.errors[0])
 
 
 if __name__ == "__main__":

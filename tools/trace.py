@@ -49,6 +49,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -413,6 +414,125 @@ def window_mean(values: list[float], lo: int, hi: int) -> float:
     if not window:
         return float("nan")
     return sum(window) / len(window)
+
+
+# ----------------------------------------------------------------------------
+# what a trace actually contains
+# ----------------------------------------------------------------------------
+
+#: Which JSONL file backs each `:::trace` directive kind, and which fields of a
+#: row form its identity. This mirrors the switch in `BlockView`
+#: (`visualizer/src/components/ConceptPage.tsx`) and the lookups in
+#: `widgets.tsx`:
+#:
+#:   `attention` <AttentionHeatmap step pos head /> finds a row of `attn.jsonl`
+#:     by (step, pos, head), and renders its empty state when there is none.
+#:   `softmax` <SoftmaxBars step pos /> finds a row of `probs.jsonl` by
+#:     (step, pos), same.
+#:   `samples` <SamplesList step /> filters `samples.jsonl` by step, same.
+#:   `loss-curve` is <LossChart />, which takes *no* props at all: it draws every
+#:     row of `steps.jsonl` and cannot render an empty state. It is listed so
+#:     `load_trace_index` still indexes it, but `fields=()` means no combination
+#:     can be requested of it, so a stray `step=` on a loss curve is never
+#:     reported as missing data -- the directive genuinely ignores it.
+#:   `tokens` is deliberately absent: its widget reads no JSONL file at all (the
+#:     token sequence was never recorded), and `shapes` is absent because it is
+#:     not data-backed either.
+KIND_TRACE_FILES: dict[str, tuple[str, tuple[str, ...]]] = {
+    "attention": ("attn.jsonl", ("step", "pos", "head")),
+    "softmax": ("probs.jsonl", ("step", "pos")),
+    "samples": ("samples.jsonl", ("step",)),
+    "loss-curve": ("steps.jsonl", ()),
+}
+
+
+@dataclass(frozen=True)
+class TraceIndex:
+    """Every `(step, pos, head)` a committed trace actually recorded, per kind.
+
+    `meta.json`'s `selection` says what the recorder was *asked* for; this says
+    what it *wrote*. The two are not the same claim -- `selection` lists position
+    15 for the attention pass, but at `block_size=16` position 15 is only reached
+    once the model has seen sixteen characters, so it never appears in
+    `attn.jsonl`. A validator reading `selection` would wave through a directive
+    that renders an empty panel. So the rows are the source of truth here, for
+    the same reason `recordedCombos()` in `widgets.tsx` is computed from rows.
+    """
+
+    #: kind -> the set of key tuples present in that kind's file
+    entries: dict[str, set[tuple[int, ...]]]
+    #: kind -> the field order of the tuples in `entries`
+    fields: dict[str, tuple[str, ...]]
+    #: kind -> the JSONL file name backing it
+    files: dict[str, str]
+    #: the kinds whose JSONL file could not be read, and why
+    unreadable: dict[str, str]
+
+    def missing_files(self) -> dict[str, str]:
+        """The data-backed kinds whose file is absent or unreadable.
+
+        A directive can only be checked against a file that was actually read;
+        saying "the trace contains no rows" about a file that is not there
+        would misreport a missing trace as a bad directive.
+        """
+        return {
+            kind: why
+            for kind, why in self.unreadable.items()
+            if self.fields.get(kind)
+        }
+
+    def has(self, kind: str, args: dict[str, int]) -> bool:
+        """Is this request a row the committed trace can produce?
+
+        A kind with no identifying fields -- `loss-curve`, whose widget takes no
+        props -- cannot be asked for a row that might be absent, so it passes.
+        """
+        fields = self.fields.get(kind)
+        if not fields:
+            return True  # not data-backed, or draws every row; nothing to check
+        return tuple(args[field] for field in fields) in self.entries.get(kind, set())
+
+    def recorded(self, kind: str, field: str) -> list[int]:
+        """Every distinct value of one field, for a "what exists instead" message."""
+        fields = self.fields.get(kind, ())
+        if field not in fields:
+            return []
+        column = fields.index(field)
+        return sorted({key[column] for key in self.entries.get(kind, set())})
+
+
+def load_trace_index(root: Path = REPO_ROOT, lang: str = "python", config: str = "micro") -> TraceIndex:
+    """Read one committed trace and index the rows a directive can ask for.
+
+    One pass over ~1100 rows, shared by every directive: `directives_missing_data`
+    calls this once, not once per `:::trace`.
+    """
+    directory = root / "traces" / lang / config
+    entries: dict[str, set[tuple[int, ...]]] = {}
+    unreadable: dict[str, str] = {}
+    for kind, (name, fields) in KIND_TRACE_FILES.items():
+        path = directory / name
+        keys: set[tuple[int, ...]] = set()
+        if not path.is_file():
+            unreadable[kind] = f"{name} is missing"
+            entries[kind] = keys
+            continue
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                row = json.loads(line)
+                if all(field in row for field in fields):
+                    keys.add(tuple(int(row[field]) for field in fields))
+        except (OSError, ValueError) as exc:
+            unreadable[kind] = f"{name} could not be read ({exc})"
+        entries[kind] = keys
+    return TraceIndex(
+        entries=entries,
+        fields={kind: fields for kind, (_name, fields) in KIND_TRACE_FILES.items()},
+        files={kind: name for kind, (name, _fields) in KIND_TRACE_FILES.items()},
+        unreadable=unreadable,
+    )
 
 
 def loss_statistics(losses: list[float]) -> dict[str, float]:
