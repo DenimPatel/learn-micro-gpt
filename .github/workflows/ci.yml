@@ -390,6 +390,18 @@ jobs:
         working-directory: visualizer
         run: npx playwright test
 
+      - name: The playground's real run (pinned Pyodide from a CDN)
+        # The default suite aborts the Pyodide CDN request, so it can only ever
+        # test the CDN-*failure* notice -- which is how the playground shipped
+        # broken (the driver `open`ed a file the worker never wrote, so every
+        # live run raised `FileNotFoundError`). This step runs the real driver in
+        # real Pyodide: opt-in via the env var because it fetches ~12 MB and
+        # burns CPU, so it is split out rather than slowing every local run.
+        working-directory: visualizer
+        env:
+          PLAYGROUND_LIVE: '1'
+        run: npx playwright test -g 'a real run'
+
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

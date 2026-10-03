@@ -471,6 +471,57 @@ test.describe('the playground degrades', () => {
     await expect(page).toHaveURL(/#\/run$/)
   })
 
+  /*
+   * The real run.
+   *
+   * Every other test in this block either aborts the Pyodide CDN request or
+   * stubs `Worker` outright -- which is exactly how the playground shipped
+   * broken: the old driver did `open('/microgpt.py')`, a file the worker never
+   * wrote, so the *live* run raised `FileNotFoundError` while every test passed.
+   * A run that reaches `done` with a loss curve and a sample is the only thing
+   * that catches that class of bug, and it is opt-in only because it fetches
+   * ~12 MB from a CDN and burns tens of seconds of CPU: it would make the fast
+   * default suite slow and network-dependent. CI runs it as its own step with
+   * `PLAYGROUND_LIVE=1` set, so it is exercised on every push, not never.
+   *
+   * Run it locally with:
+   *     cd visualizer && PLAYGROUND_LIVE=1 npx playwright test -g 'a real run'
+   */
+  test('a real run reaches done, with a loss curve and a sample', async ({ page }) => {
+    test.skip(
+      !process.env.PLAYGROUND_LIVE,
+      'opt-in: fetches ~12 MB of Pyodide from a CDN and runs ~200 steps of CPU; set PLAYGROUND_LIVE=1',
+    )
+    test.setTimeout(180_000)
+
+    // Deliberately NO `page.route('**/pyodide*/**', abort)` and NO `Worker` stub.
+    // This is the only case that runs the real driver in real Pyodide.
+    await page.goto('#/run')
+    await page.getByRole('button', { name: /run in the browser/i }).click()
+
+    // The done state is `.notice--ok`; the failure state is `.notice--warn`.
+    // Waiting on either one and then asserting which arrived means a failure
+    // reports the actual error text (`FileNotFoundError` on the old code) rather
+    // than a bare "element not found" timeout.
+    const ok = page.locator('.notice--ok')
+    const warn = page.locator('.notice--warn')
+    await expect(ok.or(warn).first()).toBeVisible({ timeout: 150_000 })
+
+    if (await warn.isVisible()) {
+      throw new Error(`the real run failed: ${await warn.innerText()}`)
+    }
+
+    await expect(ok).toContainText(/Finished .* in the browser/)
+    await expect(ok).toContainText(/Your samples:/)
+    // At least one sample line printed by the real training loop -- the whole
+    // point of the feature, and the thing an aborted CDN can never produce.
+    const samples = ok.locator('ul.samples li')
+    await expect(samples.first()).toBeVisible()
+    await expect(samples.first()).not.toBeEmpty()
+    // A real sample is a name-like string, not the empty-state placeholder.
+    expect(await samples.first().innerText()).not.toMatch(/\(empty\)/)
+  })
+
   test('a worker that never starts fails visibly instead of spinning forever', async ({ page }) => {
     // The failure mode that is hardest to reproduce: the worker script fails to
     // load or throws before it can post anything, so no `error` message ever

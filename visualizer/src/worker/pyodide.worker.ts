@@ -13,6 +13,7 @@
  */
 
 import type { WorkerRequest, WorkerResponse } from './protocol'
+import { buildDriver, DATASET_PATH } from './driver'
 
 const PYODIDE_VERSION = '0.26.4'
 const PYODIDE_URL = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
@@ -73,66 +74,43 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
       stage: 'writing',
       detail: 'writing data/input.txt into the virtual filesystem',
     })
-    py.FS.writeFile('/input.txt', request.dataset)
+    py.FS.writeFile(DATASET_PATH, request.dataset)
 
     if (cancelled) return
 
     post({ type: 'status', stage: 'compiling', detail: `compiling reference/microgpt.py` })
-    const instrumented = request.source
 
     /*
-     * Run with a reduced step count.
-     *
-     * The reference is not edited. `num_steps` is 1000 in the file; in a browser
-     * that is a minute of frozen-tab, so the string is replaced *in the source
-     * text we hand to Python*, which is visible to the reader in the "what
-     * actually ran" box below. This is a playground, not a second reference.
+     * Run with a reduced step count. The reference is not edited; the single
+     * substitution happens inside `buildDriver`, on the source text we hand to
+     * Python (which the reader can see in the editor).
      */
     const steps = Math.max(1, Math.min(request.steps, 2000))
-    const driver = `
-import sys, io, time, json, contextlib
-
-ns = {"__name__": "__main__"}
-source = open(${JSON.stringify('/microgpt.py')}, encoding="utf-8").read()
-patched = source.replace("num_steps = 1000", "num_steps = %d")
-if patched == source:
-    print("__ATLAS_NOTE__num_steps was not 1000; nothing patched")
-open("/microgpt.py", "w", encoding="utf-8").write(patched)
-code = compile(patched, "/microgpt.py", "exec")
-
-# Stream progress: the training loop prints one line per step, and stdout in
-# Pyodide is a Python file object we can wrap.
-class _Tee(io.StringIO):
-    def __init__(self, real):
-        super().__init__()
-        self.real = real
-        self.last = 0.0
-    def write(self, s):
-        self.real.write(s)
-        if s.startswith("step ") and "|" in s:
-            try:
-                step = int(s.split()[1])
-                loss = float(s.split("loss")[1])
-                print("__ATLAS_STEP__" + json.dumps({"step": step, "loss": loss}))
-            except Exception:
-                pass
-        return len(s)
-
-sys.stdout = _Tee(sys.stdout)
-exec(code, ns)
-sys.stdout = sys.stdout.real
-`
+    const driver = buildDriver(request.source, steps, DATASET_PATH)
     post({ type: 'status', stage: 'running', detail: `training for ${steps} steps` })
-    const output = (await py.runPythonAsync(driver)) as string
-    void instrumented
+    const raw = await py.runPythonAsync(driver)
 
     if (cancelled) {
       post({ type: 'error', message: 'Cancelled', recoverable: true })
       return
     }
 
-    // Samples come back through stdout, so they are read out of the captured text.
-    const samples = [...output.matchAll(/^sample\s+\d+:\s*(.*)$/gm)].map((m) => m[1] ?? '')
+    /*
+     * Samples come back through stdout: the driver's last expression is the text
+     * it captured. If that is not a string, the driver and this reader have
+     * drifted apart -- which is the exact class of bug that hid here for so long
+     * (a `TypeError: ... matchAll of undefined` reads as a mysterious crash).
+     * Say so plainly instead of throwing.
+     */
+    if (typeof raw !== 'string') {
+      post({
+        type: 'error',
+        message: `the run produced no captured output (got ${typeof raw}); this is a bug in the playground driver`,
+        recoverable: false,
+      })
+      return
+    }
+    const samples = [...raw.matchAll(/^sample\s+\d+:\s*(.*)$/gm)].map((m) => m[1] ?? '')
 
     post({
       type: 'done',
