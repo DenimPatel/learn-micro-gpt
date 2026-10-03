@@ -109,7 +109,13 @@ class Span:
 
     def clamp(self, total: int) -> "Span":
         if self.start > total:
-            raise ValueError(f"span starts at {self.start} but file has {total} lines")
+            # Raised as a SelectorError (not a bare ValueError) so the documented
+            # catch contract holds: callers catch SelectorError and report the
+            # concept and selector, instead of dying with a traceback.
+            raise SelectorUnresolvedError(
+                f"span starts at line {self.start} but the file has only {total} lines; "
+                f"the selector resolved past the end of the source"
+            )
         return Span(self.start, min(self.end, total))
 
     def apply_offset(self, offset: tuple[int, int] | None) -> "Span":

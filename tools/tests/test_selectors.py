@@ -272,8 +272,17 @@ class TestSpan(unittest.TestCase):
         self.assertEqual(selectors.Span(1, 5000).clamp(199).end, 199)
 
     def test_starting_past_the_end_is_an_error(self) -> None:
-        with self.assertRaises(ValueError):
+        # A SelectorError, not a bare ValueError: `tools/validate_concepts.py` and
+        # `tools/gen_anchors.py` catch SelectorError to turn this into a clean
+        # diagnostic, so a ValueError here escapes as a traceback instead.
+        with self.assertRaises(selectors.SelectorUnresolvedError) as ctx:
             selectors.Span(500, 600).clamp(199)
+        # Still a ValueError-compatible failure? No -- the module's contract is
+        # SelectorError; assert the hierarchy rather than the old type.
+        self.assertIsInstance(ctx.exception, selectors.SelectorError)
+        message = str(ctx.exception)
+        self.assertIn("500", message)
+        self.assertIn("199", message)
 
     def test_length(self) -> None:
         self.assertEqual(len(selectors.Span(10, 19)), 10)
