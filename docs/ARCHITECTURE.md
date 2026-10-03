@@ -100,6 +100,20 @@ or a component is caught. It is deliberately stronger than the "every asset
 request is relative" case, which only inspects requests to the site's own host
 and would stay green while a third party was being contacted.
 
+**A failed run is one state, reached three ways.** The playground's copy promises
+that a failure is a *useful* state — a clear statement, the exact local command
+(`make run`), and a working link to the recorded run — rather than a red banner.
+Three things can go wrong and they must all land there: the worker posts an
+`error` message (a CDN fetch failure, a bad edit to the reference); the worker
+script fails to load and fires `onerror` without ever posting; or `postMessage`
+throws on a structured-clone failure. The last two used to leave the "starting"
+state on screen forever — a spinner that never resolves, which is the failure
+readers report and maintainers cannot reproduce. They are now routed through a
+single `failRun` transition, and both are covered by e2e cases: one blocks the
+CDN and asserts the command and the recorded-run link (and that following the
+link does not change the route), the other stubs a worker that never posts and
+asserts the notice appears instead of a spinner.
+
 ### 3. Hash routing, and a 404 fallback anyway
 
 A static host with no rewrite config 404s every history-routing deep link, and a

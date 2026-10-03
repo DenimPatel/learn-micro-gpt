@@ -454,6 +454,50 @@ test.describe('the playground degrades', () => {
 
     const notice = page.locator('.notice--warn')
     await expect(notice).toBeVisible({ timeout: 60_000 })
+    // The state is *useful*, not merely announced: the exact local command and a
+    // working link to the recorded run, both of which work offline. Asserting the
+    // link's target resolves to the section on this page, not just that some
+    // anchor is present -- an anchor to a missing id is a dead end that still
+    // reads as fine in the markup.
+    await expect(notice).toContainText('make run')
+    const link = notice.getByRole('link', { name: /recorded run of all 1,000 steps/i })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', '#recorded-run')
+    await expect(page.locator('#recorded-run')).toBeVisible()
+    // Following the link must not change the route: this is hash routing, and a
+    // bare `#recorded-run` would parse as the home route and throw the reader
+    // back. Assert the hash is still `#/run` after the click.
+    await link.click()
+    await expect(page).toHaveURL(/#\/run$/)
+  })
+
+  test('a worker that never starts fails visibly instead of spinning forever', async ({ page }) => {
+    // The failure mode that is hardest to reproduce: the worker script fails to
+    // load or throws before it can post anything, so no `error` message ever
+    // arrives. A stub that does exactly that -- never posts, then fires `onerror`
+    // -- is the only way to exercise the fix, and it is the difference between a
+    // spinner that resolves and one that does not.
+    await page.addInitScript(() => {
+      class BrokenWorker {
+        onmessage: ((event: MessageEvent) => void) | null = null
+        onerror: ((event: ErrorEvent) => void) | null = null
+        postMessage() {
+          setTimeout(() => {
+            this.onerror?.({ message: 'worker script failed to load' } as ErrorEvent)
+          }, 0)
+        }
+        terminate() {}
+      }
+      Object.defineProperty(window, 'Worker', { value: BrokenWorker, configurable: true })
+    })
+    await page.goto('#/run')
+    await page.getByRole('button', { name: /run in the browser/i }).click()
+
+    const notice = page.locator('.notice--warn')
+    // Short timeout on purpose: the bug was a notice that *never* appeared, so a
+    // generous timeout would hide a regression that takes a while to show.
+    await expect(notice).toBeVisible({ timeout: 5_000 })
+    await expect(notice).toContainText('worker script failed to load')
     await expect(notice).toContainText('make run')
   })
 

@@ -120,30 +120,58 @@ export function RunPlayground() {
     })
   }, [])
 
+  /*
+   * Every failure path lands here, and they all render the same notice.
+   *
+   * The worker's own `error` message is one path; `onerror` (the worker script
+   * failed to load or threw before it could post) and a throwing `postMessage`
+   * (a structured-clone failure) are the other two. Without this, those two leave
+   * the "starting" state on screen forever -- a spinner that never resolves, which
+   * is the failure readers report and maintainers cannot reproduce. One typed
+   * state, three entry points.
+   */
+  const failRun = useCallback((message: string, recoverable: boolean) => {
+    setRun({ ...IDLE, status: 'error', error: message, recoverable })
+  }, [])
+
   const start = useCallback(() => {
     if (typeof Worker === 'undefined') {
-      setRun({
-        ...IDLE,
-        status: 'error',
-        error: 'This browser has no Web Worker support, so the in-page runner is unavailable.',
-        recoverable: false,
-      })
+      failRun(
+        'This browser has no Web Worker support, so the in-page runner is unavailable.',
+        false,
+      )
       return
     }
     workerRef.current?.terminate()
     const worker = createWorker()
     worker.onmessage = onMessage
+    // A worker script that fails to load (CSP, a stale hash, a stray syntax
+    // error) fires `error` and never posts anything. Without this the page looks
+    // like it is loading, forever.
+    worker.onerror = (event) => {
+      failRun(event.message || 'The in-page runner failed to start.', true)
+    }
     workerRef.current = worker
 
     setRun({ ...IDLE, status: 'starting' })
-    worker.postMessage({
-      type: 'run',
-      steps: 200,
-      temperature: 0.5,
-      source: edited ?? reference ?? '',
-      dataset: DATASET_PLACEHOLDER,
-    })
-  }, [edited, onMessage, reference])
+    try {
+      worker.postMessage({
+        type: 'run',
+        steps: 200,
+        temperature: 0.5,
+        source: edited ?? reference ?? '',
+        dataset: DATASET_PLACEHOLDER,
+      })
+    } catch (error) {
+      // `postMessage` throws synchronously if the message cannot be cloned. The
+      // reference source is a plain string, so this should be unreachable, but a
+      // throw here would otherwise escape and leave the run stuck on "starting".
+      failRun(
+        error instanceof Error ? error.message : 'The in-page runner could not be given the run.',
+        false,
+      )
+    }
+  }, [edited, failRun, onMessage, reference])
 
   const cancel = useCallback(() => {
     workerRef.current?.postMessage({ type: 'cancel' })
@@ -212,8 +240,31 @@ export function RunPlayground() {
             <code>make run</code>
           </pre>
           <p>
-            or read the recorded run of all 1,000 steps below — the same code, the same dataset,
-            already done.
+            or read{' '}
+            <a
+              href="#recorded-run"
+              onClick={(event) => {
+                // The same in-page-anchor pattern `ConceptPage`'s table of
+                // contents and the skip link use: the href is real (so no-JS and
+                // assistive tech get a working link), but the default is
+                // prevented because this site routes on the hash -- following
+                // `#recorded-run` verbatim would replace the `#/run` route and
+                // throw the reader back to the home page.
+                event.preventDefault()
+                const target = document.getElementById('recorded-run')
+                if (!target) return
+                target.scrollIntoView({
+                  behavior: matchMedia('(prefers-reduced-motion: reduce)').matches
+                    ? 'auto'
+                    : 'smooth',
+                  block: 'start',
+                })
+                target.focus()
+              }}
+            >
+              the recorded run of all 1,000 steps
+            </a>{' '}
+            on this page — the same code, the same dataset, already done.
           </p>
         </div>
       ) : null}
@@ -282,7 +333,7 @@ export function RunPlayground() {
         <CodePanel language="python" />
       )}
 
-      <section aria-labelledby="recorded-heading">
+      <section aria-labelledby="recorded-heading" id="recorded-run" tabIndex={-1}>
         <h2 id="recorded-heading">The recorded run</h2>
         <p>
           All 1,000 steps, recorded from a real run of the pinned reference with{' '}
