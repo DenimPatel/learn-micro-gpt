@@ -138,15 +138,26 @@ def build_index_payload(concepts: list[Concept], index: dict[str, Any]) -> dict[
     }
 
 
-def main() -> int:
-    concepts = load_all(REPO_ROOT)
-    index = load_index(REPO_ROOT)
+def render_all(concepts: list[Concept], index: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Both rendered payloads -- `(content_payload, index_payload)` -- from parsed data.
 
-    payload = {
+    Pure: no `OUT_DIR`, no `mkdir`, no `write_text`, no `print`. The bytes and the
+    ordering are entirely determined by the arguments, so the transformation is
+    testable without touching disk and `main()` is left holding only the IO.
+    """
+    content_payload = {
         "$comment": GENERATED_HEADER,
         "concepts": [render_concept(c) for c in sorted(concepts, key=lambda c: c.id)],
     }
     index_payload = build_index_payload(concepts, index)
+    return content_payload, index_payload
+
+
+def main() -> int:
+    concepts = load_all(REPO_ROOT)
+    index = load_index(REPO_ROOT)
+
+    payload, index_payload = render_all(concepts, index)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     written = []
