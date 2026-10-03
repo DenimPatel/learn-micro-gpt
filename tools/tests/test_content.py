@@ -871,6 +871,76 @@ class TestAddingALanguageChecklistIsComplete(unittest.TestCase):
         self.assertIn("npm run lint", ci)
 
 
+class TestCiCachePathsExist(unittest.TestCase):
+    """Every `cache-dependency-path` in CI must name a file that exists.
+
+    `actions/setup-go` (and setup-node/rust-cache) silently fall back when the
+    cache path is missing: the run stays green, the cache stays cold, and every
+    job re-downloads. The Go track cached `implementations/go/go.sum`, which
+    cannot exist — `implementations/go/go.mod` has no `require` lines, so
+    `go build` never writes one. Nothing failed, so nothing caught it. A path
+    that does not resolve is the whole defect, and that is cheap to assert.
+    """
+
+    def _workflow_files(self) -> list[Path]:
+        return sorted((REPO_ROOT / ".github" / "workflows").glob("*.yml"))
+
+    def test_every_cache_dependency_path_exists(self) -> None:
+        workflows = self._workflow_files()
+        self.assertTrue(workflows, "no workflow files found")
+        checked = 0
+        for workflow in workflows:
+            for path in self._cache_dependency_paths(workflow):
+                self._assert_exists(workflow, path)
+                checked += 1
+        self.assertGreater(checked, 0, "no cache-dependency-path found to check")
+
+    def _cache_dependency_paths(self, workflow: Path) -> list[str]:
+        """The path(s) a workflow hands to a caching action.
+
+        `cache-dependency-path` is either a scalar or a `|` block scalar whose
+        paths are indented under the key; the block ends at the next line that
+        is not more indented than the key. Reading it line-by-line avoids a
+        regex that would swallow sibling keys.
+        """
+        paths: list[str] = []
+        key = "cache-dependency-path:"
+        lines = workflow.read_text(encoding="utf-8").splitlines()
+        for index, line in enumerate(lines):
+            stripped = line.strip()
+            if not stripped.startswith(key):
+                continue
+            value = stripped[len(key) :].strip()
+            if value != "|":
+                paths.append(value)
+                continue
+            key_indent = len(line) - len(line.lstrip())
+            for continuation in lines[index + 1 :]:
+                if not continuation.strip():
+                    break
+                if len(continuation) - len(continuation.lstrip()) <= key_indent:
+                    break
+                paths.append(continuation.strip())
+        return paths
+
+    def _assert_exists(self, workflow: Path, path: str) -> None:
+        with self.subTest(workflow=workflow.name, path=path):
+            self.assertTrue(
+                (REPO_ROOT / path).exists(),
+                f"{workflow.name} caches {path!r}, which does not exist",
+            )
+
+    def test_the_go_module_has_no_go_sum(self) -> None:
+        # The invariant behind the regression: with zero `require` lines there
+        # is nothing to sum, so any future `cache-dependency-path` naming a
+        # go.sum for this module is wrong by construction.
+        gomod = (REPO_ROOT / "implementations" / "go" / "go.mod").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("require", gomod)
+        self.assertFalse((REPO_ROOT / "implementations" / "go" / "go.sum").exists())
+
+
 class TestAnchorsArtifact(unittest.TestCase):
     def test_committed_anchors_are_current(self) -> None:
         # The site renders code panels straight from this file, so a stale copy
