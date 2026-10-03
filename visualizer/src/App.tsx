@@ -31,6 +31,7 @@ import { TRACK_ORDER, conceptsById, index } from './data/sources'
 import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
+import { PageErrorBoundary } from './components/ErrorBoundary'
 import { Icon } from './components/Icon'
 import { RunPlayground } from './components/RunPlayground'
 import { ResearchPage } from './components/ResearchPage'
@@ -252,7 +253,19 @@ export function App() {
         </aside>
 
         <main id="main" ref={mainRef} tabIndex={-1} className="app__main">
-          <Router route={route} navigate={navigate} markSeen={markSeen} seen={seen} total={total} />
+          {/* Keyed on the route so a page that threw is forgotten the moment the
+              reader navigates somewhere else -- including through the fallback's
+              own "back to all concepts" link. Without the key, the boundary would
+              hold the error for the rest of the session. */}
+          <PageErrorBoundary key={hrefFor(route)} route={route}>
+            <Router
+              route={route}
+              navigate={navigate}
+              markSeen={markSeen}
+              seen={seen}
+              total={total}
+            />
+          </PageErrorBoundary>
         </main>
       </div>
 

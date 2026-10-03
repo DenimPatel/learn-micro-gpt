@@ -1693,6 +1693,51 @@ td {
   color: var(--ink);
 }
 
+/* --- page error ----------------------------------------------------------- */
+
+/* The boundary's fallback, inside `main` where a page would have been. It is
+   deliberately plain: a reader who has just seen a blank screen needs to be
+   told which page failed and how to leave, not sold anything. */
+
+.page-error {
+  max-width: 62ch;
+}
+
+.page-error__detail {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--edge);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-x: auto;
+}
+
+.page-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 1.6em;
+}
+
+/* A `<button>` and an `<a>` sit side by side here, so the button is stripped
+   back to look like the link rather than carrying the `.button` pill. */
+.page-error__action {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-ink);
+  font: inherit;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.page-error__action:hover {
+  text-decoration: underline;
+}
+
 /* --- right rail: in-page contents ----------------------------------------- */
 
 .toc {
