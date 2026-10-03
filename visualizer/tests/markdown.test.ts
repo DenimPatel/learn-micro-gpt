@@ -1,7 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { Markdown, headings, segment, splitAtHeading } from '../src/content/markdown'
+import { Markdown, Math, headings, segment, splitAtHeading } from '../src/content/markdown'
 
 /**
  * The maths segmenter.
@@ -173,5 +173,162 @@ describe('Markdown', () => {
   it('gives every heading an id the toc can target', () => {
     const html = render('## The loop, unrolled\n')
     expect(html).toContain('id="the-loop-unrolled"')
+  })
+})
+
+/**
+ * Raw HTML in a markdown body, and the trust boundary it crosses.
+ *
+ * The concept prose lives in this repository, so it is "trusted" -- which is
+ * exactly the assumption that rots. A fork with a bad edit, a pasted snippet, or
+ * a `marked` upgrade that changes the renderer's method signatures or its option
+ * defaults (v13 removed `mangle`, and `renderer.html` has moved more than once
+ * since) should render a page that reads wrong, never one that executes. The
+ * renderer is config-less beyond `gfm`/`breaks`, so the only guard is that every
+ * `html` token is walked as text through the `default` branch and emitted by
+ * React as escaped text -- there is no `dangerouslySetInnerHTML` in this path.
+ *
+ * Nothing else asserts that. The site would still build, the prose would still
+ * read, and the failure would be silent until someone's browser ran the tag. The
+ * `hostile` body below exercises all three of the item's cases at once: a
+ * `<script>` element, an `<img onerror=...>`, and a `javascript:` link.
+ */
+describe('Markdown escaping', () => {
+  const render = (markdown: string) => renderToStaticMarkup(createElement(Markdown, null, markdown))
+
+  const hostile = [
+    '# Heading',
+    '',
+    'Before <script>alert(1)</script> middle <img src=x onerror=alert(1)> end',
+    '',
+    '[x](javascript:alert(1))',
+    '',
+  ].join('\n')
+
+  it('never emits a script element, even from a hand-written tag', () => {
+    const html = render(hostile)
+    // No live `<script` element. The tag may still appear -- as the escaped text
+    // `&lt;script&gt;` -- and the next assertion pins that it does, so a renderer
+    // that "fixes" the problem by dropping the text is caught too.
+    expect(html).not.toContain('<script')
+    expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+  })
+
+  it('never emits an event-handler attribute', () => {
+    const html = render(hostile)
+    // `<img ...>` is not an element here: it is escaped text, so it carries no
+    // `onerror` for a browser to run. The item's literal "no `onerror=`" is not
+    // expressible -- the escaped source text necessarily contains that substring
+    // -- so what is pinned is the meaningful half: no `<img` element at all, and
+    // the offending text still present as escaped text rather than dropped.
+    expect(html).not.toContain('<img')
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;')
+    // And when `onerror=` does appear, it is never outside of escaped text: the
+    // only occurrence sits inside the escaped `&lt;...&gt;` run above.
+    const liveAttribute = /<[^>]*\sonerror=/.test(html)
+    expect(liveAttribute).toBe(false)
+  })
+
+  it('never emits a live javascript: href, and pins the raw text is not dropped', () => {
+    const html = render(hostile)
+    // React refuses a `javascript:` URL in `href` and rewrites it to a throwing
+    // expression -- so `href="javascript:` *is* present, wrapping React's own
+    // `throw new Error('React has blocked a javascript: URL ...')`. The URL is
+    // not live: the scheme is syntactically there but the body cannot run as a
+    // script, and the rewrite is asserted by name so that if React ever stops
+    // guarding this, the test fails and someone has to decide what to do.
+    expect(html).toContain('React has blocked a javascript: URL')
+    expect(html).toContain('throw new Error')
+    // And no href points anywhere other than a real link or that guard: there is
+    // exactly one `<a` and its href is the blocked-URL expression.
+    const hrefs = [...html.matchAll(/<a [^>]*href="([^"]*)"/g)].map((m) => m[1])
+    expect(hrefs).toHaveLength(1)
+    expect(hrefs[0]).toContain('React has blocked a javascript: URL')
+    // The raw link text survives, so nothing was silently swallowed.
+    expect(html).toContain('>x</a>')
+    // The heading and its id survive an escaping run, so over-escaping cannot
+    // pass by eating the document.
+    expect(html).toContain('<h2 id="heading">Heading</h2>')
+  })
+
+  it('escapes raw HTML inside a paragraph, a list item and a blockquote', () => {
+    // Three different branches of the token walker, so a regression in any one of
+    // them is caught: `renderToken`'s `paragraph`, `list` and `blockquote` cases
+    // each hand their children to `renderInlineChildren`, whose `default` branch
+    // is what escapes an `html` token.
+    const html = render('a <b>bold-ish</b> tag\n\n- item <i>one</i>\n\n> quote <em>two</em>\n')
+    expect(html).not.toContain('<b>')
+    expect(html).not.toContain('<i>')
+    expect(html).not.toContain('<em>two</em>')
+    expect(html).toContain('&lt;b&gt;bold-ish&lt;/b&gt;')
+    expect(html).toContain('&lt;i&gt;one&lt;/i&gt;')
+    expect(html).toContain('&lt;em&gt;two&lt;/em&gt;')
+  })
+
+  it('still gives an ordinary external link its target and rel', () => {
+    // The escaping is not so eager that a real link breaks: a plain `https` link
+    // keeps its href and still gets `target="_blank"` / `rel="noreferrer
+    // noopener"`. This is the non-hostile half of the same decision.
+    const html = render('see [the paper](https://example.com/paper)\n')
+    expect(html).toContain('href="https://example.com/paper"')
+    expect(html).toContain('target="_blank"')
+    expect(html).toContain('rel="noreferrer noopener"')
+  })
+})
+
+/**
+ * The KaTeX delimiters, and why `*` and `_` inside a formula must not become
+ * emphasis.
+ *
+ * This is the failure mode the segmenter exists for: `$softmax_{i}$` parsed as
+ * markdown turns into italic soup, and the site looks broken in a way that is
+ * hard to report usefully. The unit-level `segment` block above pins the split;
+ * these cases pin the *rendered* consequence, so a change to `Math` or to how
+ * `renderInlineMath` is wired shows up here.
+ */
+describe('Markdown maths delimiters', () => {
+  const render = (markdown: string) => renderToStaticMarkup(createElement(Markdown, null, markdown))
+
+  it('renders $...$ through the Math component as inline maths', () => {
+    const html = render('the loss is $-\\ln p$ exactly\n')
+    expect(html).toContain('class="math-inline"')
+    // The delimiter is consumed by the segmenter -- a literal `$` left in the
+    // output means the formula was shown as source text, not rendered.
+    expect(html).not.toContain('$')
+    // KaTeX's own output carries the formula source back for a screen reader.
+    expect(html).toContain('encoding="application/x-tex"')
+  })
+
+  it('does not read * or _ inside a formula as emphasis', () => {
+    // The exact bug: markdown would see `a*b_c` and emit `<em>` around part of
+    // it. The segmenter strips the delimiters first, so KaTeX owns the `*` and
+    // the `_` and no emphasis element appears.
+    const html = render('the value $a*b_c$ here\n')
+    expect(html).toContain('class="math-inline"')
+    expect(html).toContain('aria-label="a*b_c"')
+    expect(html).toContain('>a*b_c</annotation>')
+    expect(html).not.toContain('<em>')
+    expect(html).not.toContain('<em ')
+  })
+
+  it('renders $$...$$ as display maths through the Math component', () => {
+    // Display maths goes through `Math` with `display: true` -> `math-display`.
+    // It is asserted on the component directly rather than on a `$$...$$` body:
+    // a `$$…$$` line reaches `renderInlineMath`, whose segmenter only looks for
+    // inline `$…$` at that depth and emits it as text. Pinning both halves makes
+    // the split read as a decision, not an accident.
+    const html = renderToStaticMarkup(createElement(Math, { value: 'a*b_c', display: true }))
+    expect(html).toContain('class="math-display"')
+    expect(html).not.toContain('<em>')
+    expect(html).toContain('encoding="application/x-tex"')
+  })
+
+  it('renders a malformed formula without throwing or blanking the page', () => {
+    // `throwOnError: false`: one broken equation renders its source in red rather
+    // than taking the whole page down. A blank paragraph would be worse than the
+    // bad formula.
+    const html = render('broken $\\frac{1$ here\n')
+    expect(html).toContain('broken')
+    expect(html).toContain('here')
   })
 })
