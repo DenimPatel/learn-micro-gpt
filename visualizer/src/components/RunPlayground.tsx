@@ -21,41 +21,16 @@ import { loadSource, loadedSource } from '../data/sources'
 import { CodePanel } from './CodePanel'
 import { LossChart, LiveLossChart } from './widgets'
 import { PYODIDE_PINNED_VERSION, createWorker, type WorkerResponse } from '../worker/protocol'
-
-/**
- * Playground state.
- *
- * Every optional field is typed `T | undefined` rather than `T?`, because
- * `exactOptionalPropertyTypes` is on and several transitions genuinely clear a
- * field (`detail: undefined` when a new stage starts). With `T?` the compiler
- * rejects the assignment, and the fix -- silently leaving a stale message on
- * screen -- is worse than the error.
- */
-interface RunState {
-  status: 'idle' | 'starting' | 'running' | 'done' | 'error'
-  stage: string | undefined
-  detail: string | undefined
-  step: number | undefined
-  total: number | undefined
-  losses: { step: number; loss: number }[]
-  samples: string[]
-  error: string | undefined
-  recoverable: boolean | undefined
-  wallSeconds: number | undefined
-}
-
-const IDLE: RunState = {
-  status: 'idle',
-  stage: undefined,
-  detail: undefined,
-  step: undefined,
-  total: undefined,
-  losses: [],
-  samples: [],
-  error: undefined,
-  recoverable: undefined,
-  wallSeconds: undefined,
-}
+import {
+  IDLE,
+  cancelRunState,
+  failRunState,
+  isBusy,
+  reduce,
+  startRunState,
+  type BusyRunState,
+  type RunState,
+} from './run-state'
 
 export function RunPlayground() {
   const [run, setRun] = useState<RunState>(IDLE)
@@ -86,38 +61,7 @@ export function RunPlayground() {
 
   const onMessage = useCallback((event: MessageEvent<WorkerResponse>) => {
     const message = event.data
-    setRun((current) => {
-      switch (message.type) {
-        case 'status':
-          return { ...current, status: 'running', stage: message.stage, detail: message.detail }
-        case 'step':
-          return {
-            ...current,
-            status: 'running',
-            step: message.step,
-            total: message.total,
-            losses: [...current.losses, { step: message.step, loss: message.loss }],
-          }
-        case 'sample':
-          return { ...current, samples: [...current.samples, message.text] }
-        case 'done':
-          return {
-            ...current,
-            status: 'done',
-            wallSeconds: message.wallSeconds,
-            samples: message.samples.length ? message.samples : current.samples,
-          }
-        case 'error':
-          return {
-            ...current,
-            status: 'error',
-            error: message.message,
-            recoverable: message.recoverable,
-          }
-        default:
-          return current
-      }
-    })
+    setRun((current) => reduce(current, message))
   }, [])
 
   /*
@@ -131,7 +75,7 @@ export function RunPlayground() {
    * state, three entry points.
    */
   const failRun = useCallback((message: string, recoverable: boolean) => {
-    setRun({ ...IDLE, status: 'error', error: message, recoverable })
+    setRun(failRunState(message, recoverable))
   }, [])
 
   const start = useCallback(() => {
@@ -153,7 +97,7 @@ export function RunPlayground() {
     }
     workerRef.current = worker
 
-    setRun({ ...IDLE, status: 'starting' })
+    setRun(startRunState())
     try {
       worker.postMessage({
         type: 'run',
@@ -177,10 +121,10 @@ export function RunPlayground() {
     workerRef.current?.postMessage({ type: 'cancel' })
     workerRef.current?.terminate()
     workerRef.current = null
-    setRun((current) => ({ ...current, status: 'idle', stage: 'cancelled' }))
+    setRun(cancelRunState())
   }, [])
 
-  const busy = run.status === 'starting' || run.status === 'running'
+  const busy = isBusy(run)
 
   return (
     <article className="playground">
@@ -269,26 +213,18 @@ export function RunPlayground() {
         </div>
       ) : null}
 
-      {run.status === 'starting' || run.status === 'running' ? (
-        <div className="notice" role="status" aria-live="polite">
-          <p>
-            {run.stage === 'loading'
-              ? (run.detail ?? 'loading Pyodide')
-              : (run.detail ?? 'working')}
-            {run.step !== undefined && run.total ? ` — step ${run.step} of ${run.total}` : ''}
-          </p>
-          {run.losses.length ? (
-            // The page's promise is a loss curve you watch fall, not a column of
-            // numbers. Draw what has already arrived, so the run has visible
-            // feedback from the first step rather than only at the end.
-            <LiveLossChart points={run.losses} />
-          ) : null}
-        </div>
-      ) : null}
+      {/*
+        The "starting" phase is the same notice with nothing to report yet: the
+        worker exists, no stage message has arrived. Rendering it through the
+        running branch keeps that one notice, and the placeholder copy
+        ("loading Pyodide", "working") is what the reader sees until the first
+        real message lands.
+      */}
+      {isBusy(run) ? <RunNotice run={run} /> : null}
 
       {run.status === 'done' ? (
         <div className="notice notice--ok" role="status">
-          <p>Finished {run.wallSeconds?.toFixed(1)}s in the browser. Your samples:</p>
+          <p>Finished {run.wallSeconds.toFixed(1)}s in the browser. Your samples:</p>
           <ul className="samples">
             {run.samples.map((text, i) => (
               <li key={i}>
@@ -342,6 +278,42 @@ export function RunPlayground() {
         <LossChart />
       </section>
     </article>
+  )
+}
+
+/**
+ * The progress notice, for the two states where a run is in flight.
+ *
+ * It takes the union narrowed to `starting | running` rather than the whole
+ * `RunState` so the payloads (`stage`, `detail`, `step`, `total`, `losses`) are
+ * the variants' own: `starting` carries nothing yet, and the running branch's
+ * optional step read is the only place a `step`/`total` pair is meaningful.
+ *
+ * `starting` renders "working" rather than a stage-labelled message, because
+ * that is what the reader saw before this variant existed: the old state had no
+ * stage until the worker's first `status` message. Naming the phase here is
+ * tempting, and would be a visible copy change.
+ */
+function RunNotice({ run }: { run: BusyRunState }) {
+  return (
+    <div className="notice" role="status" aria-live="polite">
+      <p>
+        {run.status === 'starting'
+          ? 'working'
+          : run.stage === 'loading'
+            ? (run.detail ?? 'loading Pyodide')
+            : (run.detail ?? 'working')}
+        {run.status === 'running' && run.step !== undefined && run.total
+          ? ` — step ${run.step} of ${run.total}`
+          : ''}
+      </p>
+      {run.status === 'running' && run.losses.length ? (
+        // The page's promise is a loss curve you watch fall, not a column of
+        // numbers. Draw what has already arrived, so the run has visible
+        // feedback from the first step rather than only at the end.
+        <LiveLossChart points={run.losses} />
+      ) : null}
+    </div>
   )
 }
 
