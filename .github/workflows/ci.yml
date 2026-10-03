@@ -50,6 +50,15 @@ concurrency:
 
 env:
   PYTHONUNBUFFERED: '1'
+  # The single declared source for where the site is published and, therefore,
+  # the prefix the e2e suite serves under. A GitHub Pages *project* site is
+  # served from `https://<user>.github.io/<repo>/`, so this must equal the
+  # repository name -- the `web` job's "Check the e2e prefix" step fails with a
+  # clear message if it does not (a rename that was not reflected here, or a
+  # custom domain, would otherwise let the suite pass against a URL nobody
+  # visits). `deploy`'s `actions/configure-pages` reports the same value as
+  # `steps.pages.outputs.base_path`; `check-prefix.mjs` can compare against it.
+  PAGES_BASE_PATH: 'learn-micro-gpt'
   # `tools/` byte-compiles `reference/` as a syntax check, and `reference/` is
   # sha256-pinned. Without this, every run drops a `reference/__pycache__/` next
   # to the pinned sources -- noise in a directory whose whole point is that its
@@ -365,14 +374,26 @@ jobs:
         working-directory: visualizer
         run: npx playwright install --with-deps chromium
 
+      - name: Check the e2e prefix is the one Pages serves from
+        # The suite proves the site works under a mount point; this proves the
+        # mount point is the real one. Without it, a repository rename leaves the
+        # tests green against a prefix production no longer uses -- the deploy
+        # bug the suite exists to catch, one level up. The repository name IS the
+        # Pages project-site base path, so the two must agree.
+        run: node visualizer/e2e/check-prefix.mjs "$PAGES_BASE_PATH"
+
       - name: End-to-end, against a production build served from a subpath
         # The check that could not have passed before. Serving from `/` hides
-        # every subpath bug this site previously had.
+        # every subpath bug this site previously had. The prefix comes from
+        # `env.PAGES_BASE_PATH`, the one place the published base path is
+        # declared, checked against the repository name in the step above.
         working-directory: visualizer
+        env:
+          PREFIX: ${{ env.PAGES_BASE_PATH }}
         run: npx playwright test
 
       - name: End-to-end again, from a different subpath (the fork claim)
-        # The suite above proves the site works at `/learn-micro-gpt/`. The
+        # The suite above proves the site works at `env.PAGES_BASE_PATH`. The
         # router's claim is stronger -- that a fork at *any* subpath works -- and
         # a single hard-coded prefix cannot test it. `PREFIX` drives every
         # consumer (the static server, the Playwright baseURL, the escaped-request

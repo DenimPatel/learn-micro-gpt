@@ -148,6 +148,14 @@ asset URLs relative, one `dist/` is correct at every prefix, so the second run
 (`SKIP_BUILD=1`) reuses the build rather than paying for an identical one. CI runs
 both.
 
+**And the prefix itself is checked, not just parameterised** (IMP-054): CI declares
+it once as `env.PAGES_BASE_PATH` and feeds that to the e2e run, and a `web`-job
+step (`e2e/check-prefix.mjs`) fails with a clear message if the declared prefix
+disagrees with the repository name -- which is the Pages project-site base path --
+or, when `configure-pages` reports one, with the base path Pages actually serves
+from. Without it, a repository rename would leave the suite passing against a
+prefix production no longer uses: the same deploy bug, one level up.
+
 ### 4. Standard-library-only tooling
 
 `tools/` has **no dependencies at all**. The reference's whole ethos is that the
