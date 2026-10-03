@@ -384,7 +384,10 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
         r"\s*([^|]*?)\s*\|\s*$",  # | [Adam](content/concepts/adam.md) |
         re.MULTILINE,
     )
-    _CONCEPT_LINK_RE = re.compile(r"content/concepts/([a-z0-9-]+)\.md")
+    #: The doc lives in `docs/`, so it links concepts the way GitHub resolves
+    #: them -- relative to the file, `../content/concepts/adam.md`. The optional
+    #: prefix keeps this matching if a link is ever written without it.
+    _CONCEPT_LINK_RE = re.compile(r"(?:\.\./)?content/concepts/([a-z0-9-]+)\.md")
 
     def documented_rows(self) -> list[tuple[int, int, str, list[str]]]:
         """Every `(start, end, what, concept_ids)` row of the doc's table."""
@@ -448,6 +451,131 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
             f"docs/HOW-TO-READ.md links {sorted(linked)} but the corpus has "
             f"{sorted(expected)}",
         )
+
+
+class TestDocsLinksResolve(unittest.TestCase):
+    """Every link in `docs/*.md` must point at something that exists.
+
+    A doc is the one artifact a reader trusts without executing it, so a link
+    is the one claim nothing else in the build verifies. `docs/HOW-TO-READ.md`
+    linked twenty-one concepts as `content/concepts/adam.md`, which resolves
+    against `docs/` and lands on a directory that does not exist -- every one of
+    them a 404 on GitHub, and no test noticed because no test read the docs for
+    links at all.
+
+    Three kinds of link are checked, and the third is the reason this is not a
+    one-line `os.path.exists`:
+
+    | link | what must exist |
+    | --- | --- |
+    | `foo.md`, `../tools/yamlite.py` | the path, resolved against the *file* that links it |
+    | `#some-heading` | a heading in the same file, under GitHub's slug rules |
+    | `https://…` (or `<https://…>`) | nothing -- skipped, so tests need no network |
+
+    Fenced code blocks are stripped first. `docs/ADDING-A-CONCEPT.md` teaches the
+    documentation format with worked examples -- a template row linking
+    `content/concepts/head-dim.md`, a concept that deliberately does not exist --
+    and a link checker that read it as a real link would demand the example be
+    true, which is the opposite of what an example is for.
+    """
+
+    _LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+    _AUTOLINK_RE = re.compile(r"<((?:https?|mailto):[^>\s]+)>")
+    _FENCE_RE = re.compile(r"^```.*$", re.MULTILINE)
+    _DOCS = REPO_ROOT / "docs"
+
+    def doc_paths(self) -> list[Path]:
+        return sorted(self._DOCS.glob("*.md"))
+
+    @staticmethod
+    def slug(heading: str) -> str:
+        """GitHub's heading-to-anchor slug for a markdown heading line.
+
+        Lowercase, drop punctuation (keeping `-` and spaces), spaces to hyphens.
+        """
+        text = heading.lower().strip()
+        text = re.sub(r"[^\w\s-]", "", text)
+        return re.sub(r"\s+", "-", text)
+
+    @classmethod
+    def visible_text(cls, text: str) -> str:
+        """`text` with fenced code blocks removed, fence markers and all.
+
+        A lone ``` toggles: an even-run of fence lines is open-then-close, so
+        everything between a pair is dropped. `docs/ADDING-A-CONCEPT.md` nests a
+        ```` ````-fence around a ```-fence for its "add a concept" example; the
+        outer markers close the inner block, which is exactly how a reader skims
+        it, so the simple toggle matches the intent.
+        """
+        out: list[str] = []
+        in_fence = False
+        for line in text.splitlines():
+            if cls._FENCE_RE.match(line):
+                in_fence = not in_fence
+                continue
+            if not in_fence:
+                out.append(line)
+        return "\n".join(out)
+
+    def links_in(self, path: Path) -> list[str]:
+        text = self.visible_text(path.read_text(encoding="utf-8"))
+        return self._LINK_RE.findall(text) + self._AUTOLINK_RE.findall(text)
+
+    def test_the_scan_finds_the_links_it_is_supposed_to(self) -> None:
+        # A guard, so a regex that stops matching cannot silently make this
+        # whole class a no-op. The corpus has dozens of relative links and at
+        # least one anchor; if that ever reads as zero, the check is broken.
+        relative = [
+            link
+            for path in self.doc_paths()
+            for link in self.links_in(path)
+            if not link.startswith(("http://", "https://", "mailto:", "#"))
+        ]
+        self.assertGreater(
+            len(relative), 10, f"expected many relative links, found {relative!r}"
+        )
+        anchors = [
+            link
+            for path in self.doc_paths()
+            for link in self.links_in(path)
+            if link.startswith("#")
+        ]
+        self.assertTrue(anchors, "expected at least one in-page anchor link")
+
+    def test_every_relative_link_resolves(self) -> None:
+        for path in self.doc_paths():
+            for link in self.links_in(path):
+                if link.startswith(("http://", "https://", "mailto:", "#")):
+                    continue
+                target = link.split("#", 1)[0]
+                if not target:
+                    continue
+                resolved = (path.parent / target).resolve()
+                self.assertTrue(
+                    resolved.exists(),
+                    f"{path.relative_to(REPO_ROOT)} links to {link!r}, which "
+                    f"resolves to {resolved.relative_to(REPO_ROOT.resolve())} -- "
+                    f"and nothing is there",
+                )
+
+    def test_every_in_page_anchor_names_a_heading(self) -> None:
+        for path in self.doc_paths():
+            text = self.visible_text(path.read_text(encoding="utf-8"))
+            headings = {
+                self.slug(line.lstrip("#").strip())
+                for line in text.splitlines()
+                if line.startswith("#")
+            }
+            for link in self.links_in(path):
+                if not link.startswith("#"):
+                    continue
+                anchor = link[1:]
+                self.assertIn(
+                    anchor,
+                    headings,
+                    f"{path.relative_to(REPO_ROOT)} links to {link!r}, but no "
+                    f"heading slugs to that. Headings are {sorted(headings)}",
+                )
 
 
 class TestQuotedStatistics(unittest.TestCase):

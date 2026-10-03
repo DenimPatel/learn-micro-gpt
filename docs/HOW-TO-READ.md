@@ -4,8 +4,8 @@ Two ways in, and they are genuinely different.
 
 - **You want to understand the program.** Read the 199 lines, in order, with the
   concepts open beside them. Start at
-  [Loading the dataset](content/concepts/data-loading.md) and finish at
-  [Inference and sampling](content/concepts/inference-sampling.md).
+  [Loading the dataset](../content/concepts/data-loading.md) and finish at
+  [Inference and sampling](../content/concepts/inference-sampling.md).
 - **You want to understand one idea.** Use the graph, or the chapter list, and
   jump.
 
@@ -25,8 +25,9 @@ and prints 20 samples at the end. It executes the file in a scratch directory
 with `data/input.txt` copied in, so `reference/microgpt.py` itself is never
 modified. See [why that matters](#why-the-reference-runs-in-a-scratch-directory).
 
-Prefer to run it in a browser? The atlas has a playground that runs the same file
-in Pyodide, with 200 steps so a tab does not freeze for a minute.
+Prefer to run it in a browser? The atlas has a playground on its **run** page —
+`#/run` on the site — that runs the same file in Pyodide, with 200 steps so a tab
+does not freeze for a minute.
 
 ## Then read the file
 
@@ -40,14 +41,14 @@ It is 199 lines. Here is the shape of it, so you know what you are looking at:
 | --- | --- | --- |
 | 1–6 | the docstring | — |
 | 8–11 | imports, seed | — |
-| 13–20 | the dataset | [data-loading](content/concepts/data-loading.md) |
-| 22–26 | the tokenizer | [tokenizer](content/concepts/tokenizer.md) |
-| 29–71 | autograd | [a number that remembers](content/concepts/autograd-value.md), [walking the graph backwards](content/concepts/autograd-backward.md) |
-| 73–89 | the parameters | [parameters and their initialisation](content/concepts/params-init.md) |
-| 91–143 | the architecture | [linear](content/concepts/linear.md), [softmax](content/concepts/softmax.md), [RMSNorm](content/concepts/rmsnorm.md), [embedding](content/concepts/embedding.md), [multi-head attention](content/concepts/multi-head-attention.md), [the MLP block](content/concepts/mlp-block.md), [the attention block](content/concepts/attention-block.md), [the head](content/concepts/lm-head.md), [the forward pass](content/concepts/gpt-forward.md) |
-| 173–181 | Adam | [Adam](content/concepts/adam.md) |
-| 150–183 | training | [cross-entropy](content/concepts/cross-entropy-loss.md), [the training loop](content/concepts/training-loop.md) |
-| 185–199 | inference | [inference and sampling](content/concepts/inference-sampling.md) |
+| 13–20 | the dataset | [data-loading](../content/concepts/data-loading.md) |
+| 22–26 | the tokenizer | [tokenizer](../content/concepts/tokenizer.md) |
+| 29–71 | autograd | [a number that remembers](../content/concepts/autograd-value.md), [walking the graph backwards](../content/concepts/autograd-backward.md) |
+| 73–89 | the parameters | [parameters and their initialisation](../content/concepts/params-init.md) |
+| 91–143 | the architecture | [linear](../content/concepts/linear.md), [softmax](../content/concepts/softmax.md), [RMSNorm](../content/concepts/rmsnorm.md), [embedding](../content/concepts/embedding.md), [multi-head attention](../content/concepts/multi-head-attention.md), [the MLP block](../content/concepts/mlp-block.md), [the attention block](../content/concepts/attention-block.md), [the head](../content/concepts/lm-head.md), [the forward pass](../content/concepts/gpt-forward.md) |
+| 173–181 | Adam | [Adam](../content/concepts/adam.md) |
+| 150–183 | training | [cross-entropy](../content/concepts/cross-entropy-loss.md), [the training loop](../content/concepts/training-loop.md) |
+| 185–199 | inference | [inference and sampling](../content/concepts/inference-sampling.md) |
 
 Every range in that table is the range the corresponding concept's own selector
 resolves to, checked by `tools/tests/test_content.py` — so this table cannot drift
@@ -137,7 +138,7 @@ longer exists upstream.
 
 ## If you only read one concept
 
-[Multi-head attention](content/concepts/multi-head-attention.md). It is the
+[Multi-head attention](../content/concepts/multi-head-attention.md). It is the
 concept the file exists to demonstrate, it is the one the recorded traces say
 something surprising about, and it is the one where the intuition most people
 start with turns out to be wrong.
