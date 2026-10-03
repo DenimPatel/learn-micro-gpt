@@ -142,7 +142,16 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: visualizer/package-lock.json
+          # Key the cache on the lockfiles this job actually installs, not the
+          # visualizer's. This job installs the TypeScript track
+          # (`implementations/typescript`) and the research candidate that copies
+          # it (`autoresearch/candidate-ts`); it never touches `visualizer/`, so
+          # the old single-path key matched nothing and left the npm cache cold
+          # on every run. `benchmarks` keys on the first of these; this job needs
+          # both, because its candidate install is a separate package.
+          cache-dependency-path: |
+            implementations/typescript/package-lock.json
+            autoresearch/candidate-ts/package-lock.json
 
       - uses: dtolnay/rust-toolchain@stable
 
