@@ -9,14 +9,21 @@
  *
  *   - at the root of a domain,
  *   - under a subpath (`/learn-micro-gpt/`) on Pages,
- *   - from a `file://` URL, which is how someone will open a downloaded build,
  *   - and on a fork, at whatever subpath the fork's owner is.
  *
  * History routing needs the server to rewrite `/learn` to `/index.html`. GitHub
  * Pages does not do that for arbitrary paths, so every deep link 404s — and a
  * 404 in a teaching site is a broken lesson, not a cosmetic problem. Hash
- * routing needs no server configuration and behaves identically in all four
+ * routing needs no server configuration and behaves identically in all three
  * cases.
+ *
+ * The scheme *would* also be correct from a `file://` URL, but the site does not
+ * run there: `file://` is an opaque origin, so the browser blocks the
+ * `type="module"` script (and the CSS) with a CORS error before the router ever
+ * runs. That is browser security, not a routing decision, and no hash scheme can
+ * work around it. `index.html` detects the case and shows a "serve this over
+ * HTTP instead" message rather than a blank page; the `file://` claim used to
+ * live in this comment and was simply wrong.
  *
  * The cost is uglier URLs (`#/learn/softmax` rather than `/learn/softmax`).
  * Given the choice between prettier URLs that 404 on GitHub Pages and working

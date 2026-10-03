@@ -35,10 +35,10 @@ const CONTEXT_LINES = 3
  * Copy the visible slice, and say so for a moment.
  *
  * The failure is the interesting part: `navigator.clipboard` is undefined on an
- * insecure origin, which includes a bundle opened from `file://` -- one of the
- * four ways this site is meant to work (see `app/router.ts`). So a rejected or
- * missing clipboard is a no-op with no state change, rather than an unhandled
- * rejection and a button that claims success.
+ * insecure origin, which includes a bundle served over plain HTTP (and, in
+ * principle, one opened from `file://` — though the app does not boot there; see
+ * `app/router.ts`). So a rejected or missing clipboard is a no-op with no state
+ * change, rather than an unhandled rejection and a button that claims success.
  */
 async function copy(text: string, setCopied: (value: boolean) => void): Promise<void> {
   try {

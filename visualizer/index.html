@@ -88,6 +88,34 @@
         </p>
       </div>
     </noscript>
+    <script>
+      // A downloaded build opened straight from disk does not boot. `file://` is
+      // an opaque origin, so the browser blocks every `type="module"` script (and
+      // the CSS) with a CORS error and the page comes up blank -- with no
+      // <noscript> help, because JS is enabled. This is browser security, not
+      // something the bundle can fix, so the one honest thing left is to say so
+      // instead of showing an empty page. The router's hash scheme is
+      // file://-agnostic on purpose (see app/router.ts), but a scheme that works
+      // is moot if the script that reads it never loads.
+      ;(function () {
+        if (location.protocol !== 'file:') return
+        var root = document.getElementById('root')
+        if (!root) return
+        root.innerHTML =
+          '<div style="font-family:ui-serif,Georgia,Cambria,serif;max-width:40rem;' +
+          'margin:5rem auto;padding:0 1.5rem;color:#14131a;line-height:1.7">' +
+          '<h1 style="font-size:1.75rem;letter-spacing:-0.02em;margin-bottom:0.6em">' +
+          'learn microgpt</h1>' +
+          '<p style="color:#3b3846">This build does not run from a ' +
+          '<code>file://</code> URL. Your browser blocks module scripts loaded ' +
+          'from disk for security, so the app cannot start. Serve the folder over ' +
+          'HTTP instead &mdash; for example <code>npx serve visualizer/dist</code> ' +
+          '&mdash; or read the same material as plain prose in ' +
+          '<code>content/concepts/</code> on GitHub, where the reference itself is ' +
+          '<code>reference/microgpt.py</code>, 199 lines you can read in one sitting.</p>' +
+          '</div>'
+      })()
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -119,7 +119,16 @@ asserts the notice appears instead of a spinner.
 A static host with no rewrite config 404s every history-routing deep link, and a
 404 in a teaching site is a broken lesson rather than a cosmetic problem. The
 hash needs no server configuration and behaves identically at a domain root, under
-a subpath, and from `file://`.
+a subpath, and on a fork at whatever subpath it lands.
+
+It does **not** rescue `file://`. Opening a downloaded build from disk looks like
+the one case a hash router should win, but the router never runs: `file://` is an
+opaque origin, so the browser blocks the `type="module"` script and the CSS with a
+CORS error and the page comes up blank. No routing scheme fixes that, because the
+fix would have to run in the script the browser refused to load. So `index.html`
+detects `location.protocol === 'file:'` and swaps in a "serve this over HTTP
+instead" message — honest, and testable — rather than leaving an empty page. The
+earlier claim that routing "behaves identically ... from `file://`" was wrong.
 
 The uglier URLs (`#/learn/softmax`) are the price. Given the choice between
 prettier URLs that 404 on GitHub Pages and working ones, this takes the working
