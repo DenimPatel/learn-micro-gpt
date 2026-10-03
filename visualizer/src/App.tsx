@@ -62,6 +62,7 @@ export function App() {
   const [stuck, setStuck] = useState(false)
   const mainRef = useRef<HTMLElement | null>(null)
   const firstRender = useRef(true)
+  const previousRoute = useRef<Route | null>(null)
 
   useEffect(() => {
     document.title =
@@ -98,11 +99,23 @@ export function App() {
   // Move focus to the main region on navigation, but not on first paint -- that
   // would steal focus from the document on load, which is its own accessibility
   // bug.
+  //
+  // The same effect resets the scroll to the top, because moving focus is not
+  // enough: a reader who was scrolled to the bottom of one concept would land
+  // mid-page on the next. The guard is the *route identity*, not the hash
+  // string: in-page anchors (`#/learn/softmax#sections`) keep the same parsed
+  // route, so the `scrollIntoView`-driven table of contents still works. Only a
+  // genuinely different route scrolls to top.
   useEffect(() => {
     if (firstRender.current) {
       firstRender.current = false
+      previousRoute.current = route
       return
     }
+    if (previousRoute.current !== null && !sameRoute(previousRoute.current, route)) {
+      window.scrollTo({ top: 0, left: 0 })
+    }
+    previousRoute.current = route
     mainRef.current?.focus()
   }, [route])
 

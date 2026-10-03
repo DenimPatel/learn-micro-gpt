@@ -365,3 +365,41 @@ test.describe('the playground degrades', () => {
     await expect(notice).toContainText('make run')
   })
 })
+
+test.describe('scroll on navigation', () => {
+  test('navigating to the next concept lands at the top, and an in-page anchor does not', async ({
+    page,
+  }) => {
+    await page.goto('#/learn/softmax')
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    // Read to the bottom of the page, the way a reader who finishes a concept
+    // does, then take the "next" link.
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    await page.getByRole('link', { name: /next/i }).click()
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+
+    // Polled: click() resolving only guarantees the event dispatched, not that
+    // React's route effect has run and applied the scroll reset.
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    await expect
+      .poll(() =>
+        page
+          .getByRole('heading', { level: 1 })
+          .evaluate(
+            (el) =>
+              el.getBoundingClientRect().top >= 0 &&
+              el.getBoundingClientRect().top < window.innerHeight,
+          ),
+      )
+      .toBe(true)
+
+    // A same-page table-of-contents link still scrolls to its section instead of
+    // being reset to the top.
+    const toc = page.locator('.toc a').first()
+    await toc.click()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+  })
+})
