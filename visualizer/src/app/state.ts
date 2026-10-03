@@ -190,11 +190,50 @@ export function useTheme(): [Theme, () => void] {
 }
 
 /**
+ * The persisted shape of reading progress, and the codec that produces it.
+ *
+ * The stored value is the *export*: it is the only durable record of what a
+ * reader has opened, it is what survives a reload, and it is what a reader would
+ * copy out of devtools if they wanted to move their progress between machines.
+ * Its shape is therefore part of the app's contract, not an implementation
+ * detail, so it is written down here and pinned by a test:
+ *
+ *   - the key is `atlas:progress`;
+ *   - the value is a JSON array of concept ids (`string[]`), e.g.
+ *     `["adam","softmax"]`;
+ *   - the array is always **sorted ascending**, so two readers with the same set
+ *     of read concepts have byte-identical storage and a diff of two exports is
+ *     meaningful;
+ *   - duplicates never appear, because the source is a `Set`;
+ *   - `[]` is the empty export, not `null` or a missing key.
+ *
+ * Encoding lives in one place (`encodeProgress`/`decodeProgress`) so the test
+ * can call the exact functions the hook uses rather than a copy of the rule.
+ */
+export const PROGRESS_SHAPE = {
+  key: PROGRESS_KEY,
+  /** A JSON array of concept-id strings, sorted ascending. */
+  empty: '[]',
+} as const
+
+/** Set → the documented export (a sorted JSON array of ids). */
+export function encodeProgress(value: ReadonlySet<string>): string {
+  return JSON.stringify([...value].sort())
+}
+
+/** The documented export → Set. Throws only on malformed input, which the
+ * `useLocalStorage` read path already treats as "use the default". */
+export function decodeProgress(raw: string): Set<string> {
+  return new Set(JSON.parse(raw) as string[])
+}
+
+/**
  * Which concepts a reader has opened.
  *
  * Stored rather than derived, because "have I read this yet" is the only piece
  * of state the site has, and the reading order in `index.json` is already the
- * curriculum. The map is kept sorted on read so the export is stable.
+ * curriculum. The map is kept sorted on read so the export is stable -- see
+ * `PROGRESS_SHAPE` for exactly what the export is.
  */
 export function useProgress(): [ReadonlySet<string>, (id: string) => void, () => void] {
   // A `Set` is not JSON-representable, so it is stored as a sorted array: the
@@ -203,10 +242,7 @@ export function useProgress(): [ReadonlySet<string>, (id: string) => void, () =>
   const [seen, setSeen, clearSeen] = useLocalStorage<ReadonlySet<string>>(
     PROGRESS_KEY,
     () => new Set<string>(),
-    {
-      serialize: (value) => JSON.stringify([...value].sort()),
-      deserialize: (raw) => new Set(JSON.parse(raw) as string[]),
-    },
+    { serialize: encodeProgress, deserialize: decodeProgress },
   )
 
   const mark = useCallback(

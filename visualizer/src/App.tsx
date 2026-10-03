@@ -253,11 +253,7 @@ export function App() {
             >
               <span className="app__progress-fill" style={{ width: `${readPct}%` }} />
             </div>
-            {seen.size > 0 ? (
-              <button type="button" className="app__reset" onClick={resetSeen}>
-                <Icon name="reset" size={12} /> reset progress
-              </button>
-            ) : null}
+            {seen.size > 0 ? <ResetProgress count={seen.size} onReset={resetSeen} /> : null}
           </div>
 
           {index.chapters.map((chapter) => (
@@ -313,6 +309,59 @@ export function App() {
         </div>
       </footer>
     </div>
+  )
+}
+
+/**
+ * The reset control, as a two-step confirm rather than a one-click clear.
+ *
+ * Reset is the one irreversible action in the app: it throws away a reader's
+ * whole reading history and there is no undo. The old control fired on a single
+ * click, which made an accidental tap -- easy on the phone layout where the rail
+ * is a drawer -- cost the whole map. It now arms on the first click and only
+ * clears on a second, and it says how much it is about to discard in between.
+ *
+ * Deliberately *not* `window.confirm`: a native dialog is unstyleable, it blocks
+ * the page, and it is awkward to drive deterministically. An inline two-step is
+ * all the friction that is needed and stays a single accessible button whose
+ * label carries the state.
+ *
+ * The armed state disarms on Escape and on blur, so a reader who changes their
+ * mind never has a primed "yes, delete everything" button sitting under the
+ * cursor waiting for the next click.
+ */
+function ResetProgress({ count, onReset }: { count: number; onReset: () => void }) {
+  const [armed, setArmed] = useState(false)
+
+  useEffect(() => {
+    if (!armed) return
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setArmed(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [armed])
+
+  return (
+    <button
+      type="button"
+      className={armed ? 'app__reset is-armed' : 'app__reset'}
+      aria-label={
+        armed ? `Confirm reset: discard ${count} read concepts` : 'Reset reading progress'
+      }
+      onClick={() => {
+        if (armed) {
+          onReset()
+          setArmed(false)
+        } else {
+          setArmed(true)
+        }
+      }}
+      onBlur={() => setArmed(false)}
+    >
+      <Icon name="reset" size={12} />
+      {armed ? `confirm reset (${count})` : 'reset progress'}
+    </button>
   )
 }
 

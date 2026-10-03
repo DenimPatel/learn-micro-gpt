@@ -759,3 +759,115 @@ test.describe('no horizontal overflow on a phone', () => {
     })
   }
 })
+
+test.describe('reading progress: the empty, full and reset states', () => {
+  /*
+   * The site's only piece of durable state is "which concepts have I opened",
+   * and its only irreversible action is the reset that throws it away. Neither
+   * the 0/18 state, the 18/18 state, nor the reset itself was asserted before,
+   * on a control whose whole job is to delete a reader's history in one click.
+   *
+   * Playwright gives each test a fresh browser context, so `localStorage` starts
+   * empty and the export below can be seeded without leaking between cases --
+   * which is why this belongs in e2e and not in a unit test that would have to
+   * fake storage.
+   */
+
+  /** Every concept id, taken from the rail's links (which list them all). */
+  async function allConceptIds(page: import('@playwright/test').Page): Promise<string[]> {
+    return page.evaluate(() =>
+      Array.from(document.querySelectorAll('.app__sidebar-group a')).map(
+        (a) => (a as HTMLAnchorElement).getAttribute('href') ?? '',
+      ),
+    )
+  }
+
+  test('a fresh profile reads 0 of 18, with no reset control to press', async ({ page }) => {
+    await page.goto('./')
+    // Storage really is empty -- otherwise the assertions below would be vacuous.
+    expect(await page.evaluate(() => localStorage.getItem('atlas:progress'))).toBeNull()
+    await expect(page.locator('.app__sidebar-count')).toHaveText('0 of 18')
+    // Nothing to reset, so the control is absent rather than a no-op button.
+    await expect(page.locator('.app__reset')).toHaveCount(0)
+    await expect(page.getByRole('progressbar', { name: 'Reading progress' })).toHaveAttribute(
+      'aria-valuenow',
+      '0',
+    )
+  })
+
+  test('the header CTA invites a first read, then offers to continue', async ({ page }) => {
+    await page.goto('./')
+    await expect(page.getByRole('link', { name: /start reading/i })).toBeVisible()
+    // Seed a single read, rather than visiting a page and racing the write the
+    // concept page makes on mount: this test is about the copy the CTA chooses,
+    // not about when the mark lands.
+    await page.evaluate(() => localStorage.setItem('atlas:progress', JSON.stringify(['linear'])))
+    await page.reload()
+    await expect(page.getByRole('link', { name: /continue:/i })).toBeVisible()
+  })
+
+  test('a fully-read profile reads 18 of 18, at 100%', async ({ page }) => {
+    // Seed the export directly: visiting 18 pages to earn the state would make
+    // this test about navigation, not about the progress UI. The seed is the
+    // documented shape (a JSON array of ids) written under the documented key.
+    const hrefs = await (async () => {
+      await page.goto('./')
+      return allConceptIds(page)
+    })()
+    const ids = hrefs.map((h) => h.split('/').pop() ?? '').filter(Boolean)
+    expect(ids.length, 'the rail lists every concept').toBe(18)
+
+    await page.evaluate(([key, value]) => localStorage.setItem(key, value), [
+      'atlas:progress',
+      JSON.stringify([...ids].sort()),
+    ] as const)
+    await page.reload()
+
+    await expect(page.locator('.app__sidebar-count')).toHaveText('18 of 18')
+    await expect(page.getByRole('progressbar', { name: 'Reading progress' })).toHaveAttribute(
+      'aria-valuenow',
+      '100',
+    )
+    // Every rail link is marked opened, so the map agrees with the count.
+    await expect(page.locator('.app__sidebar-group a.is-opened')).toHaveCount(18)
+  })
+
+  test('reset takes two clicks, and the first one only arms it', async ({ page }) => {
+    // Seed a partial profile so the control is present.
+    await page.goto('./')
+    await page.evaluate(() =>
+      localStorage.setItem('atlas:progress', JSON.stringify(['adam', 'softmax'])),
+    )
+    await page.reload()
+    await expect(page.locator('.app__sidebar-count')).toHaveText('2 of 18')
+
+    const reset = page.locator('.app__reset')
+    await expect(reset).toHaveText(/reset progress/)
+    // One click must NOT clear anything: this is the regression the two-step
+    // confirm exists to prevent.
+    await reset.click()
+    await expect(reset).toHaveText(/confirm reset \(2\)/)
+    await expect(page.locator('.app__sidebar-count')).toHaveText('2 of 18')
+    expect(await page.evaluate(() => localStorage.getItem('atlas:progress'))).not.toBeNull()
+
+    // The second click is the one that clears it, in memory and in storage.
+    await reset.click()
+    await expect(page.locator('.app__sidebar-count')).toHaveText('0 of 18')
+    await expect(page.locator('.app__reset')).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('atlas:progress'))).toBeNull()
+  })
+
+  test('an armed reset disarms on Escape, so a stray confirm is recoverable', async ({ page }) => {
+    await page.goto('./')
+    await page.evaluate(() => localStorage.setItem('atlas:progress', JSON.stringify(['adam'])))
+    await page.reload()
+
+    const reset = page.locator('.app__reset')
+    await reset.click()
+    await expect(reset).toHaveText(/confirm reset/)
+    await page.keyboard.press('Escape')
+    await expect(reset).toHaveText(/reset progress/)
+    // Still armed-free and still intact: Escape must not have reset anything.
+    await expect(page.locator('.app__sidebar-count')).toHaveText('1 of 18')
+  })
+})

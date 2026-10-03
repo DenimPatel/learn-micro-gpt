@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
-import { useLocalStorage, useProgress, useTheme } from '../src/app/state'
+import {
+  useLocalStorage,
+  useProgress,
+  useTheme,
+  encodeProgress,
+  decodeProgress,
+  PROGRESS_SHAPE,
+} from '../src/app/state'
 import { createMockWindow } from './support/mock-window'
 
 /**
@@ -269,6 +276,73 @@ describe('useProgress on top of useLocalStorage', () => {
     await act(async () => read()[1]('adam'))
     expect(storage.map.get('atlas:progress')).toBe(JSON.stringify(['adam', 'softmax']))
     await unmount()
+  })
+
+  it('is idempotent: re-marking a concept neither changes the set nor rewrites storage', async () => {
+    // The item this guards (IMP-073) is about the *reset*, and a reset that can
+    // be followed by a stale write is the failure mode. Marking is the only
+    // writer, so it has to be stable: a second `mark` of the same id must be a
+    // no-op, not a new Set (which would re-serialize and could race a reset).
+    const storage = freshStorage()
+    vi.stubGlobal('localStorage', storage)
+    const { read, unmount } = await mountHook(() => useProgress())
+    await act(async () => read()[1]('softmax'))
+    const first = read()[0]
+    await act(async () => read()[1]('softmax'))
+    // Same identity: `mark` returned `current` unchanged rather than a new Set.
+    expect(read()[0]).toBe(first)
+    expect(storage.map.get('atlas:progress')).toBe(JSON.stringify(['softmax']))
+    await unmount()
+  })
+
+  it('resets to empty: the set is emptied and storage is cleared, not left stale', async () => {
+    // Reset is the one irreversible action in the app. After it, both the
+    // in-memory `Set` and the persisted export must agree that nothing is read,
+    // or a reload would resurrect the progress the reader just discarded.
+    const storage = freshStorage()
+    vi.stubGlobal('localStorage', storage)
+    const { read, unmount } = await mountHook(() => useProgress())
+    await act(async () => read()[1]('softmax'))
+    await act(async () => read()[1]('adam'))
+    expect(read()[0].size).toBe(2)
+    const reset = read()[2]
+    await act(async () => reset())
+    expect(read()[0].size).toBe(0)
+    expect(read()[0]).toBeInstanceOf(Set)
+    expect(storage.map.has('atlas:progress')).toBe(false)
+    await unmount()
+  })
+})
+
+describe('the progress export', () => {
+  // The export is the durable record of what a reader has opened -- it is what a
+  // reload restores and what a reader would copy out of devtools. Its shape is a
+  // contract, so it is pinned byte-for-byte here rather than left to whichever
+  // codec the hook happens to pass. See `PROGRESS_SHAPE` in the source.
+  it('is a JSON array of concept-id strings, sorted ascending order', () => {
+    expect(encodeProgress(new Set(['softmax', 'adam', 'mlp-block']))).toBe(
+      '["adam","mlp-block","softmax"]',
+    )
+    // Sorted, so two readers with the same set produce byte-identical storage.
+    expect(encodeProgress(new Set(['z', 'a', 'm']))).toBe(encodeProgress(new Set(['m', 'z', 'a'])))
+  })
+
+  it('has the documented empty export, and round-trips through the codec', () => {
+    expect(encodeProgress(new Set())).toBe(PROGRESS_SHAPE.empty)
+    // The key in the shape is the key the hook writes under; if that drifts, a
+    // reader's existing progress silently vanishes.
+    expect(PROGRESS_SHAPE.key).toBe('atlas:progress')
+    const ids = ['adam', 'softmax', 'rmsnorm']
+    expect([...decodeProgress(encodeProgress(new Set(ids)))].sort()).toEqual([
+      'adam',
+      'rmsnorm',
+      'softmax',
+    ])
+    expect(decodeProgress(PROGRESS_SHAPE.empty).size).toBe(0)
+  })
+
+  it('drops duplicates, because the source is a Set', () => {
+    expect(encodeProgress(new Set(['adam', 'adam', 'adam']))).toBe('["adam"]')
   })
 })
 

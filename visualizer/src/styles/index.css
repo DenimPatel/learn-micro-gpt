@@ -575,6 +575,22 @@ a:hover {
   color: var(--accent-ink);
 }
 
+/* The armed step of the two-step reset: it must read as "this will delete
+   everything", so it takes the danger colour (`--rose-*`, defined in both
+   themes) and stops looking like a quiet secondary action. */
+.app__reset.is-armed {
+  padding: 2px 6px;
+  color: var(--rose-ink);
+  border: 1px solid currentColor;
+  border-radius: 5px;
+  font-weight: 600;
+}
+
+.app__reset.is-armed:hover {
+  color: var(--paper);
+  background: var(--rose-ink);
+}
+
 .app__sidebar-group {
   margin-bottom: 20px;
 }
