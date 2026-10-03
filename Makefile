@@ -108,11 +108,12 @@ help:
 	@echo
 	@echo "SHIP IT"
 	@echo "  build                    production build of the visualizer"
+	@echo "  web-check                no absolute fetch() in the bundle; 404 fallback present"
 	@echo "  preview                  serve the production build locally"
 	@echo "  lint                     every linter this repo has"
 	@echo "  c-test                   C build-config equivalence + gradient checks"
 	@echo "  fmt                      every formatter, in place"
-	@echo "  check                    lint + test + validate + parity (what CI runs)"
+	@echo "  check                    lint + test + validate + parity + web-check (what CI runs)"
 	@echo
 	@echo "AUTORESEARCH  (a model improves the Rust track; see docs/AUTORESEARCH.md)"
 	@echo "  autoresearch-rust        run the loop, committing and pushing every experiment"
@@ -199,6 +200,39 @@ test-web: install-web
 
 install-web:
 	cd $(VIS) && $(NPM) install
+
+# The two deploy-critical properties of the built bundle, in one target because
+# they are checked at the same point in the same workflow and a reader expects
+# one command to reach them: nothing in the bundle is fetched at runtime, and
+# the SPA 404 fallback is emitted. Both live here rather than in the workflow so
+# a local green build and a CI green build mean the same thing -- see IMP-024.
+#
+# The `cd $(VIS)` is load-bearing, and this is the trap that made these checks
+# CI-only: run from the repository root, `dist/assets/*.js` matches nothing, so
+# the glob reaches grep as a literal filename and the guard "passes" without
+# having looked at anything. The `test -d dist` first turns that silent pass into
+# a named failure. A check that cannot fail is worse than no check, because it is
+# read as evidence.
+#
+# Each shell line runs in its own `sh`, so the guard is one expression: the exit
+# status of the command list is the status of the last command in it, and
+# `grep -q` cannot fail from an EPIPE like a piping `grep`.
+web-check:
+	@test -d $(VIS)/dist || { \
+		echo "error: $(VIS)/dist is missing. Nothing was built, so these checks" >&2; \
+		echo "  cannot be made -- run 'make build' first." >&2; exit 1; }
+	@cd $(VIS) && { \
+		if grep -rEn "fetch\(\s*['\"]/" dist/assets/*.js; then \
+			echo "error: an absolute fetch() in the built bundle."; \
+			echo "  GitHub Pages serves this site from a subpath, so an absolute"; \
+			echo "  URL 404s in production while working perfectly at /."; \
+			echo "  Import sources with Vite's ?raw instead -- see"; \
+			echo "  visualizer/src/data/sources.ts."; \
+			exit 1; \
+		fi; \
+		echo "no absolute fetches in the bundle"; \
+	}
+	@cd $(VIS) && test -f dist/404.html && cmp dist/index.html dist/404.html
 
 verify-provenance:
 	$(PYTHON) -m tools.check_provenance
@@ -334,7 +368,7 @@ lint:
 fmt:
 	$(PYTHON) -m tools.fmt
 
-check: lint test validate test-web c-test test-rust test-ts test-go parity build
+check: lint test validate test-web c-test test-rust test-ts test-go parity build web-check
 	$(PYTHON) -m tools.autoresearch verify
 
 ## ------------------------------------------------------ housekeeping ------
@@ -359,4 +393,4 @@ distclean: clean
         verify-provenance provenance trace trace-check parity bench c-test \
         test-rust test-ts test-go \
         autoresearch-rust autoresearch-c autoresearch-verify autoresearch-render \
-        dev build preview lint fmt check clean distclean
+        dev build preview web-check lint fmt check clean distclean

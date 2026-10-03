@@ -349,41 +349,17 @@ jobs:
         working-directory: visualizer
         run: npm run build
 
-      - name: Nothing in the build is fetched at runtime
-        # The property that makes the Pages deployment work. This fails if a
-        # `fetch('/...')` creeps back in, and it is the one check that would
-        # have caught the original bug.
+      - name: Nothing in the build is fetched at runtime, and the 404 fallback is emitted
+        # The two deploy-critical properties of the built bundle. The shell lives
+        # in `make web-check` rather than here so a local green build and a CI
+        # green build mean the same thing (IMP-024): previously these ran only in
+        # CI, and a check nobody can run locally is one nobody runs before a push.
         #
-        # The working directory matters here more than it looks. Without it this
-        # runs from the repository root, where `dist/` does not exist: the glob
-        # never matches, grep is handed a literal filename, and the step prints
-        # "no absolute fetches" and passes without having looked at anything.
-        # A check that cannot fail is worse than no check, because it is read as
-        # evidence.
-        working-directory: visualizer
-        run: |
-          if grep -rEn "fetch\(\s*['\"]/" dist/assets/*.js; then
-            echo "error: an absolute fetch() in the built bundle."
-            echo "  GitHub Pages serves this site from a subpath, so an absolute"
-            echo "  URL 404s in production while working perfectly at /."
-            echo "  Import sources with Vite's ?raw instead -- see"
-            echo "  visualizer/src/data/sources.ts."
-            exit 1
-          fi
-          echo "no absolute fetches in the bundle"
-
-      - name: The 404 fallback is emitted
-        # GitHub Pages serves 404.html for unresolvable paths, which is what
-        # keeps a deep link working if the router ever moves off the hash.
-        #
-        # Also `working-directory: visualizer`, for the same reason: `dist/` is
-        # the visualizer's, not the repository's, and `test -f dist/404.html`
-        # from the root is false -- which fails this step and, through `needs`,
-        # the deploy that depends on it.
-        working-directory: visualizer
-        run: |
-          test -f dist/404.html
-          cmp dist/index.html dist/404.html
+        # `make web-check` runs from the repository root on purpose -- the
+        # `cd visualizer` that makes the guard real, and the missing-`dist`
+        # failure that stops it passing vacuously, both live in the Makefile
+        # target. See it for why the working directory is load-bearing.
+        run: make web-check
 
       - name: Install the browser
         working-directory: visualizer
