@@ -226,7 +226,7 @@ an e2e test asserts the panel's background comes from the tokens.
 src/
   data/sources.ts     build-time imports, generated JSON, trace parsing, EMA
   data/types.ts        hand-written contract for the generated shapes
-  content/markdown.tsx marked token walk + KaTeX; no dangerouslySetInnerHTML
+  content/markdown.tsx marked token walk + KaTeX; markdown path sets no inner HTML
   content/highlight.ts Shiki, loaded lazily, five grammars
   app/router.ts        40-line hash router
   app/state.ts         theme and reading progress
@@ -237,10 +237,14 @@ src/
 ```
 
 **Markdown is walked as a token tree**, not parsed to an HTML string. Every
-element is created by React and inspectable, and there is no
-`dangerouslySetInnerHTML` anywhere except KaTeX's own output from a frontmatter
-literal. The reasoning: "the content is trusted" is exactly the assumption that
-rots, and a fork with a bad edit should render broken rather than execute.
+element created on the markdown path is created by React and inspectable, so no
+raw markdown reaches `dangerouslySetInnerHTML`. The app has exactly three such
+call sites, each fed pre-rendered HTML rather than source text: two in
+`components/CodePanel.tsx` (Shiki's syntax-highlight HTML, `html` for the light
+theme and `darkHtml` for the dark one) and one in `content/markdown.tsx` (KaTeX's
+own output for a frontmatter literal). The reasoning: "the content is trusted" is
+exactly the assumption that rots, and a fork with a bad edit should render broken
+rather than execute.
 
 **Highlighting cannot split a token.** The old site ran Prism and then split its
 output on newlines, one line at a time — and the reference opens with a

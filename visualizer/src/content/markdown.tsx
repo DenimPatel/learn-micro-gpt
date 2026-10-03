@@ -8,8 +8,9 @@
  * passes `html` through as escaped text. This is a documentation site whose
  * content comes from files in the same repository, but "the content is trusted"
  * is exactly the assumption that rots: a fork with a bad edit should render
- * broken, not execute. Every element below is created by React, so there is no
- * `dangerouslySetInnerHTML` anywhere in the app.
+ * broken, not execute. Every element this module creates is a React element, so
+ * markdown and the surrounding prose never go through `dangerouslySetInnerHTML`
+ * (the app has three call sites in total; see the note on the one below).
  *
  * **The math delimiters are stripped before markdown sees them**, so a formula
  * containing `*` or `_` cannot be read as emphasis. That is the usual way
@@ -86,9 +87,12 @@ export function Math({
   })
   return createElement('span', {
     className: display ? 'math-display' : 'math-inline',
-    // The one `dangerouslySetInnerHTML` in the app, and it is KaTeX's own output
-    // from a string literal in a frontmatter file -- not from user input, and not
-    // from markdown.
+    // One of the app's three `dangerouslySetInnerHTML` call sites, and the only
+    // one fed markdown-adjacent content: it receives KaTeX's own rendered output
+    // for a string literal that came out of a frontmatter file -- not from user
+    // input, and not from raw markdown. (The other two are in `CodePanel.tsx`,
+    // which feeds Shiki's syntax-highlight HTML -- `html` for the light theme and
+    // `darkHtml` for the dark one -- into the two theme spans.)
     dangerouslySetInnerHTML: { __html: html },
     // A screen reader should hear the formula's source, not "visual formula".
     ...(label ? { 'aria-label': label } : { 'aria-hidden': 'true' }),
@@ -183,7 +187,8 @@ function headingIds(tokens: unknown[]): Map<number, string> {
  * `marked.lexer` is used rather than `marked.parse` so the output is a token tree
  * this function walks itself. That is more code than parsing an HTML string, and
  * it is what lets math be rendered as React elements and links be given real
- * `href`s -- no `dangerouslySetInnerHTML`, and every element is inspectable.
+ * `href`s -- no `dangerouslySetInnerHTML` on the markdown path, and every element
+ * is inspectable.
  */
 export function Markdown({ children }: { children: string }) {
   const tokens = marked.lexer(children)
