@@ -291,12 +291,28 @@ test.describe('trace widgets', () => {
 
 test.describe('accessibility', () => {
   test('the skip link is the first tabbable element and it works', async ({ page }) => {
-    await page.goto('./')
+    // From a *concept* page, not `./`. The skip link used to put `#main` in the
+    // URL, and `parseRoute('#main')` falls through to `home` -- so activating it
+    // here navigated the reader away from the concept they were reading. From
+    // home that loss was invisible, which is why the old assertion started at
+    // `./` and passed for the wrong reason (IMP-049).
+    await page.goto('#/learn/softmax')
+    await expect(page.getByRole('heading', { name: 'Softmax' })).toBeVisible()
+
     await page.keyboard.press('Tab')
     const focused = page.locator(':focus')
     await expect(focused).toHaveClass(/skip-link/)
+
     await focused.press('Enter')
-    await expect(page).toHaveURL(/#main/)
+
+    // (a) The route did not change: the fragment must not replace the hash.
+    await expect(page).toHaveURL(/#\/learn\/softmax/)
+    expect(await page.evaluate(() => window.location.hash)).toMatch(/^#\/learn\/softmax/)
+    // ...and the concept is still the page being read.
+    await expect(page.getByRole('heading', { name: 'Softmax' })).toBeVisible()
+
+    // (b) Focus moved into the main region.
+    await expect(page.locator('#main')).toBeFocused()
   })
 
   test('every landmark is labelled and every nav is distinguishable', async ({ page }) => {

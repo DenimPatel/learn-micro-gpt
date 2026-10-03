@@ -137,7 +137,25 @@ export function App() {
 
   return (
     <div className="app">
-      <a className="skip-link" href="#main">
+      {/* A real link, so the no-JS/assistive-tech fallback (`#main`) is still
+          there, but the default is prevented: this site routes on
+          `window.location.hash`, and letting the browser follow `#main` would
+          replace the route (a reader on `#/learn/softmax` would be thrown back
+          to the concept index, per IMP-049). The click handler does what the
+          fragment would have done -- move focus into the main region -- without
+          touching the URL, mirroring the in-page table of contents in
+          `ConceptPage.tsx`. */}
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(event) => {
+          event.preventDefault()
+          const main = mainRef.current
+          if (!main) return
+          main.focus()
+          main.scrollIntoView({ block: 'start' })
+        }}
+      >
         Skip to content
       </a>
 
