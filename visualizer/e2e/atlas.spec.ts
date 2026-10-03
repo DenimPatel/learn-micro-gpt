@@ -499,6 +499,22 @@ test.describe('the playground degrades', () => {
     await page.goto('#/run')
     await page.getByRole('button', { name: /run in the browser/i }).click()
 
+    // The live loss curve is only mounted while status is starting/running and
+    // is unmounted at `done` (see RunPlayground.tsx), so it has to be caught
+    // *now*, before the run finishes. This is what makes the test's name honest:
+    // the curve is drawn from `__ATLAS_STEP__` messages the driver streams, so a
+    // regression that stopped the driver emitting step events -- while still
+    // printing samples at the end -- would reach `done` but never draw here.
+    // `waitForSelector` (not `toBeVisible`) because the element is transient:
+    // once ~200 steps land the run ends and the chart unmounts, so waiting for
+    // *sustained* visibility would time out against a real, working run.
+    // Scoped to the live figure: the recorded chart below carries a "Loss over"
+    // aria-label too and would otherwise satisfy the assertion.
+    await page.waitForSelector('.widget--live svg[aria-label*="Loss over"]', {
+      state: 'attached',
+      timeout: 150_000,
+    })
+
     // The done state is `.notice--ok`; the failure state is `.notice--warn`.
     // Waiting on either one and then asserting which arrived means a failure
     // reports the actual error text (`FileNotFoundError` on the old code) rather

@@ -36,6 +36,42 @@
  */
 export const DATASET_PATH = '/input.txt'
 
+/**
+ * The prefix the driver prints before each step's loss, as a JSON object.
+ *
+ * The worker reads stdout **while the run happens** (Pyodide's
+ * `setStdout({ batched })`) and turns each such line into a `step` message, which
+ * is what the live loss curve is drawn from. It is exported so the parser below
+ * and the driver string cannot disagree about the marker.
+ */
+export const STEP_MARKER = '__ATLAS_STEP__'
+
+/**
+ * Parse one stdout line into a step event, or `null` if it is an ordinary line.
+ *
+ * Pure and exported so the worker's streaming path is unit-testable without a
+ * worker, a DOM or a Pyodide download. The `step`/`loss` type checks matter: the
+ * chart does arithmetic on them, so a malformed marker must be *dropped*, not
+ * forwarded as `NaN` and silently drawn as a flat line.
+ */
+export function parseStepLine(line: string): { step: number; loss: number } | null {
+  const at = line.indexOf(STEP_MARKER)
+  if (at < 0) return null
+  const json = line.slice(at + STEP_MARKER.length).trim()
+  let payload: unknown
+  try {
+    payload = JSON.parse(json)
+  } catch {
+    return null
+  }
+  if (payload === null || typeof payload !== 'object') return null
+  const { step, loss } = payload as { step?: unknown; loss?: unknown }
+  if (typeof step !== 'number' || typeof loss !== 'number') return null
+  // `NaN`/`Infinity` survive `typeof === 'number'` but are not drawable.
+  if (!Number.isFinite(step) || !Number.isFinite(loss)) return null
+  return { step, loss }
+}
+
 export function buildDriver(source: string, steps: number, dataPath: string): string {
   return `
 import os, sys, io, json
@@ -80,7 +116,7 @@ class _Tee(io.StringIO):
             try:
                 step = int(s.split()[1])
                 loss = float(s.split("loss")[1])
-                print("__ATLAS_STEP__" + json.dumps({"step": step, "loss": loss}))
+                print(${JSON.stringify(STEP_MARKER)} + json.dumps({"step": step, "loss": loss}))
             except Exception:
                 pass
         return len(s)
@@ -89,10 +125,11 @@ sys.stdout = _Tee(sys.stdout)
 exec(code, ns)
 _output = sys.stdout.getvalue()
 sys.stdout = sys.stdout.real
-# Return the captured stdout explicitly. runPythonAsync resolves to the value of
-# the last expression, and an assignment is None -- so without this the worker's
-# output.matchAll(...) reads undefined and the samples are never parsed. (The
-# original had the same flaw: the samples path never worked.)
+# Return the captured stdout explicitly. The worker normally reads stdout
+# *during* the run (via setStdout) and parses the samples and step events from
+# that stream; this return value is the fallback for a runtime without
+# setStdout. It must be an expression, not an assignment -- runPythonAsync
+# resolves to the value of the last expression, and an assignment is None.
 _output
 `
 }
