@@ -22,7 +22,7 @@ related: [attention-block, softmax, linear, embedding]
 prereqs: [linear, embedding]
 ---
 
-This is the concept the whole file exists to demonstrate. Twelve lines of Python,
+This is the concept the whole file exists to demonstrate. Ten lines of Python,
 and it is the reason the model can compose at all.
 
 :::term head_dim

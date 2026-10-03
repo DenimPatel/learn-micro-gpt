@@ -738,6 +738,75 @@ class TestConceptProseDerivesTheLossRatio(unittest.TestCase):
             self.assertIn("belongs to the uniform *baseline*", body)
 
 
+class TestConceptProseCountsTheAttentionLoop(unittest.TestCase):
+    """`multi-head-attention.md` states the loop's line count; the reference decides.
+
+    The page opened with "Twelve lines of Python" while the attention loop it
+    quotes is ten lines -- the same block, verbatim, in `reference/microgpt.py`.
+    A prose count is cheap to write and easy to leave behind: the sentence is not
+    the highlighted region, so nothing about the rendered page looks wrong when
+    it drifts. This check derives the count from the reference by content (the
+    `x_attn = []` line through the `x_attn.extend(head_out)` line), so a
+    re-shaped loop updates the expected number instead of silently passing.
+    """
+
+    def _attention_loop_lines(self) -> int:
+        lines = (REPO_ROOT / "reference" / "microgpt.py").read_text(encoding="utf-8").splitlines()
+        start = next(n for n, line in enumerate(lines) if line.strip() == "x_attn = []")
+        end = next(n for n, line in enumerate(lines) if line.strip() == "x_attn.extend(head_out)")
+        # Inclusive of both endpoints: the loop body from the accumulator's
+        # creation to the last head output being appended.
+        return end - start + 1
+
+    def test_the_loop_count_matches_the_reference(self) -> None:
+        count = self._attention_loop_lines()
+        self.assertEqual(count, 10, "the reference attention loop grew; update the concept's count")
+        word = {10: "Ten"}[count]
+        body = (REPO_ROOT / "content" / "concepts" / "multi-head-attention.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(f"{word} lines of Python", body)
+        # And it must not still carry the old, wrong count.
+        self.assertNotIn("Twelve lines", body)
+
+
+class TestConceptProseCountsTheConfigNumbers(unittest.TestCase):
+    """`params-init.md`'s "five numbers" heading and its prose must agree.
+
+    The heading said "## The five numbers" while the paragraph below listed four
+    and closed with "follows from those four" -- a miscount a reader has no way
+    to resolve. This check derives the count of assigned config names from the
+    concept's own code block, so the number in both places is the block's, not a
+    second number typed into the test.
+    """
+
+    _NUMBER_WORDS = {2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven"}
+
+    def _assigned_config_names(self) -> list[str]:
+        # The config numbers are the scalars: `name = <int>` (or an expression of
+        # them, as with `head_dim = n_embd // n_head`). The matrices, the lambda
+        # and the flattened list are not "numbers", so they are excluded -- the
+        # derivation stays about the block, not about a hand-count here.
+        body = (REPO_ROOT / "content" / "concepts" / "params-init.md").read_text(encoding="utf-8")
+        block = _FENCE_RE.search(body)
+        assert block is not None, "params-init.md has no fenced code block"
+        return re.findall(r"^([a-z_]+)\s*=\s*(?:\d|n_)", block.group(2), re.MULTILINE)
+
+    def test_the_heading_and_the_prose_agree_on_the_count(self) -> None:
+        names = self._assigned_config_names()
+        self.assertEqual(
+            names,
+            ["n_embd", "n_head", "n_layer", "block_size", "head_dim"],
+            f"the config block assigns {names}; the test should be updated alongside it",
+        )
+        word = self._NUMBER_WORDS[len(names)]
+        body = (REPO_ROOT / "content" / "concepts" / "params-init.md").read_text(encoding="utf-8")
+        self.assertIn(f"## The {word} numbers", body)
+        self.assertIn(f"follows from those {word}", body)
+        # The old contradiction -- heading says five, closing sentence says four.
+        self.assertNotIn("follows from those four", body)
+
+
 class TestBenchmarksDoc(unittest.TestCase):
     """`docs/BENCHMARKS.md` is generated from `benchmarks/results.json`.
 

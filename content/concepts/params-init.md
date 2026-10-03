@@ -44,9 +44,10 @@ params = [p for mat in state_dict.values() for row in mat for p in row]
 `n_embd = 16` is the model's width — the size of every vector it passes around.
 `n_head = 4` splits that into four independent attention heads of width
 `head_dim = 16 // 4 = 4`. `n_layer = 1` is the depth. `block_size = 16` is the
-maximum context length.
+maximum context length. `head_dim` is the fifth: unlike the other four it is
+derived, not declared, but it is the width every head actually computes with.
 
-Every other shape follows from those four. Change `n_embd` to 32 and the model
+Every other shape follows from those five. Change `n_embd` to 32 and the model
 is still 199 lines; you have simply made it twice as wide.
 
 ## `state_dict` is the whole model
