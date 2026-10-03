@@ -191,6 +191,8 @@ import anchorsJson from './generated/anchors.json'
 import benchmarksJson from '../../../benchmarks/results.json'
 import researchJson from '../../../autoresearch/results.json'
 
+import { validateContent } from './validate-content'
+
 import type {
   AttnRow,
   Benchmarks,
@@ -204,7 +206,7 @@ import type {
   TraceMeta,
 } from './types'
 
-export const content = contentJson as unknown as { concepts: Concept[] }
+export const content = validateContent(contentJson)
 export const index = indexJson as unknown as ContentIndex
 export const anchors = anchorsJson as unknown as ResolvedAnchors
 export const benchmarks = benchmarksJson as unknown as Benchmarks
