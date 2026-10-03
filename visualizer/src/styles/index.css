@@ -1565,6 +1565,37 @@ td {
   min-width: 0;
 }
 
+.concept__suggestions {
+  margin-top: 2em;
+  padding: 1.2em 1.4em;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+}
+
+.concept__suggestions h2 {
+  margin: 0 0 0.6em;
+  color: var(--faint);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.concept__suggestions ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em 1.4em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.concept__suggestions a {
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
 .concept__breadcrumb {
   display: flex;
   align-items: center;

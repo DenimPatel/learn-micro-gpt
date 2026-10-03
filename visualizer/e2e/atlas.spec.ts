@@ -225,6 +225,32 @@ test.describe('content and anchors', () => {
     await expect(page.getByRole('heading', { name: 'No such concept' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Back to all concepts' })).toBeVisible()
   })
+
+  test('an unknown concept suggests the nearest real concepts, and they load', async ({ page }) => {
+    // `softmax` with a transposed pair: the state should offer the real concept
+    // rather than leaving the reader to retype the URL.
+    await page.goto('#/learn/softmxa')
+    await expect(page.getByRole('heading', { name: 'No such concept' })).toBeVisible()
+
+    const suggestions = page.getByRole('navigation', { name: 'Did you mean' })
+    await expect(suggestions).toBeVisible()
+
+    // The suggestions must be links, and the *first* one is the best match.
+    const first = suggestions.getByRole('link').first()
+    await expect(first).toHaveText(/softmax/i)
+    await first.click()
+
+    // Following a suggestion loads a real concept, not another dead end.
+    await expect(page.getByRole('heading', { name: 'No such concept' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/softmax/i)
+
+    // And the typo the reader actually asked for is *not* silently rewritten
+    // behind their back: the suggestion is a link they chose. Going back has to
+    // restore the state they were in, hash and all.
+    await page.goBack()
+    await expect(page).toHaveURL(/#\/learn\/softmxa$/)
+    await expect(page.getByRole('heading', { name: 'No such concept' })).toBeVisible()
+  })
 })
 
 test.describe('trace widgets', () => {

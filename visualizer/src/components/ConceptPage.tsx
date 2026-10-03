@@ -331,7 +331,60 @@ function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: 
   )
 }
 
+/**
+ * Levenshtein distance, two rows instead of a full matrix.
+ *
+ * The alphabet here is concept ids (`multi-head-attention`), so the strings are
+ * short and the table would be wasteful; the rolling rows keep it O(min(a,b))
+ * in memory. Ties are not meaningful -- the caller only asks for the nearest
+ * few -- so no backtrace is kept.
+ */
+export function editDistance(a: string, b: string): number {
+  if (a === b) return 0
+  let prev: number[] = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i += 1) {
+    const curr: number[] = [i]
+    for (let j = 1; j <= b.length; j += 1) {
+      const substitute = (prev[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1)
+      curr[j] = globalThis.Math.min((prev[j] ?? 0) + 1, (curr[j - 1] ?? 0) + 1, substitute)
+    }
+    prev = curr
+  }
+  return prev[b.length] ?? 0
+}
+
+/**
+ * The concepts closest to a mistyped id, best first.
+ *
+ * Distance alone would offer `cross-entropy` to someone who typed `softmax`,
+ * which is a correct answer to the wrong question, so the ids are compared by
+ * both their full string and their final hyphen-separated segment: a reader who
+ * half-remembers a term usually remembers the tail (`attention`, `softmax`,
+ * `sampling`). The segment match is a bonus rather than a filter, so an id with
+ * no close tail still falls back to the whole-string edit distance.
+ *
+ * Ties break on id so the order is stable across runs and testable.
+ */
+export function nearestConcepts(id: string, ids: string[], limit = 3): string[] {
+  const needle = id.toLowerCase()
+  const tail = needle.split('-').pop() ?? needle
+  return ids
+    .map((candidate) => ({
+      id: candidate,
+      distance:
+        editDistance(needle, candidate.toLowerCase()) +
+        editDistance(tail, candidate.toLowerCase().split('-').pop() ?? candidate),
+    }))
+    .sort((x, y) => x.distance - y.distance || x.id.localeCompare(y.id))
+    .slice(0, limit)
+    .map((entry) => entry.id)
+}
+
 export function ConceptNotFound({ id }: { id: string }) {
+  // The hash is deliberately left alone: a shared `#/learn/typo` link stays the
+  // link the sender sent, so the recipient sees the same repair the sender did
+  // rather than a silently corrected URL that hides the mistake.
+  const suggestions = nearestConcepts(id, Object.keys(conceptsById))
   return (
     <article className="concept">
       <h1>No such concept</h1>
@@ -339,6 +392,18 @@ export function ConceptNotFound({ id }: { id: string }) {
         There is no concept called <code>{id}</code>. It may have been renamed.{' '}
         <a href="#/learn">Back to all concepts</a>.
       </p>
+      {suggestions.length > 0 && (
+        <nav className="concept__suggestions" aria-label="Did you mean">
+          <h2>Did you mean</h2>
+          <ul>
+            {suggestions.map((candidate) => (
+              <li key={candidate}>
+                <a href={`#/learn/${candidate}`}>{conceptsById[candidate]?.title}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
     </article>
   )
 }
