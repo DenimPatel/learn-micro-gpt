@@ -139,7 +139,14 @@ support.
 **And the test that proves it:** the e2e suite runs against a production build
 served from `/learn-micro-gpt/` by a 60-line static server that 404s anything
 outside that prefix. `vite preview` strips the base path rather than serving under
-it, so it would have passed while the site was broken in production.
+it, so it would have passed while the site was broken in production. The prefix is
+a parameter (`PREFIX`, read by the server, the Playwright config and the tests
+from one module), not a constant: `PREFIX=/some-fork/ npx playwright test` re-runs
+the whole suite under a fork-like prefix, because "a fork at any subpath works" is
+a claim a single hard-coded prefix cannot test. Since `base: './'` makes the built
+asset URLs relative, one `dist/` is correct at every prefix, so the second run
+(`SKIP_BUILD=1`) reuses the build rather than paying for an identical one. CI runs
+both.
 
 ### 4. Standard-library-only tooling
 

@@ -371,6 +371,22 @@ jobs:
         working-directory: visualizer
         run: npx playwright test
 
+      - name: End-to-end again, from a different subpath (the fork claim)
+        # The suite above proves the site works at `/learn-micro-gpt/`. The
+        # router's claim is stronger -- that a fork at *any* subpath works -- and
+        # a single hard-coded prefix cannot test it. `PREFIX` drives every
+        # consumer (the static server, the Playwright baseURL, the escaped-request
+        # test) from one place, so this re-runs the *same* suite under a fork-like
+        # prefix through the same code path. `SKIP_BUILD=1` because `base: './'`
+        # makes the asset URLs relative: one `dist/` is correct at every prefix.
+        # A different `PORT` so nothing can be confused with the run above.
+        working-directory: visualizer
+        env:
+          PREFIX: '/some-fork/'
+          PORT: '4199'
+          SKIP_BUILD: '1'
+        run: npx playwright test
+
       - name: The playground's real run (pinned Pyodide from a CDN)
         # The default suite aborts the Pyodide CDN request, so it can only ever
         # test the CDN-*failure* notice -- which is how the playground shipped

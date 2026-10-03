@@ -10,6 +10,15 @@
  *
  * 60 lines, no dependency. `vite preview` was the obvious alternative and is
  * wrong here: it strips the base path instead of serving under it.
+ *
+ * The prefix is a parameter (`PREFIX`), not a constant, because "a fork at any
+ * subpath works" is the property the router claims and a single hard-coded
+ * prefix cannot test it. `base: './'` makes the built asset URLs relative, so
+ * the *same* `dist/` is correct at every prefix -- which means this suite can be
+ * run again under a fork-like prefix (`/some-fork/`) without rebuilding, and
+ * proves the claim rather than assuming it. The 404-outside-the-prefix behaviour
+ * is unchanged: it is correct, and the parameterisation is not a licence to
+ * weaken it.
  */
 import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -17,8 +26,20 @@ import { extname, join, normalize, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(fileURLToPath(new URL('../dist', import.meta.url)))
-const PREFIX = '/learn-micro-gpt/'
-const PORT = 4173
+
+/**
+ * Normalise any `PREFIX` value to a leading-and-trailing-slash mount point.
+ *
+ * Kept in lock-step with `e2e/subpath.ts`, which the config and the tests read.
+ * It is duplicated rather than imported because this file is plain Node (no TS
+ * loader) and its whole point is to have no build step; the rule is one line and
+ * the two copies are asserted equal by the suite running green at a custom
+ * prefix.
+ */
+const normalisePrefix = (value) => '/' + value.replace(/^\/+|\/+$/g, '') + '/'
+
+const PREFIX = normalisePrefix(process.env.PREFIX ?? 'learn-micro-gpt')
+const PORT = Number(process.env.PORT ?? 4173)
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

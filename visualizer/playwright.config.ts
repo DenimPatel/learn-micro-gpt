@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
+import { ORIGIN, PREFIX } from './e2e/subpath'
+
 /**
  * Playwright config.
  *
@@ -14,6 +16,15 @@ import { defineConfig, devices } from '@playwright/test'
  * site would 404 in production. Serving from `/learn-micro-gpt/` and pointing
  * the browser at it is the only way to catch that class of bug, and it is why
  * `base: './'` is in the vite config and `server.fs.allow` is in the dev config.
+ *
+ * The mount point is `PREFIX` (see `e2e/subpath.ts`), not a constant, so the
+ * suite is not tied to `/learn-micro-gpt/`. `PREFIX=/some-fork/ npx playwright
+ * test` re-runs every test under a fork-like prefix through the same code path,
+ * which is what the router's "works at any subpath" claim actually needs.
+ *
+ * The build is skipped when `SKIP_BUILD=1`: `base: './'` makes the asset URLs
+ * relative, so one `dist/` is correct at every prefix and the second run reuses
+ * it rather than paying for an identical rebuild.
  */
 export default defineConfig({
   testDir: './e2e',
@@ -26,7 +37,7 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 
   use: {
-    baseURL: 'http://127.0.0.1:4173/learn-micro-gpt/',
+    baseURL: `${ORIGIN}${PREFIX}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -42,8 +53,8 @@ export default defineConfig({
    * anything outside the prefix -- which is exactly what Pages does.
    */
   webServer: {
-    command: 'npm run build && node e2e/static-server.mjs',
-    url: 'http://127.0.0.1:4173/learn-micro-gpt/',
+    command: `${process.env.SKIP_BUILD ? '' : 'npm run build && '}node e2e/static-server.mjs`,
+    url: `${ORIGIN}${PREFIX}`,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
     stdout: 'pipe',

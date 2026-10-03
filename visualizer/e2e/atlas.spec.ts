@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { PREFIX } from './subpath'
+
 /**
  * The subpath suite.
  *
@@ -33,7 +35,7 @@ test.describe('served from a subpath', () => {
     page.on('request', (request) => {
       const url = new URL(request.url())
       const path = url.pathname
-      if (url.hostname === '127.0.0.1' && !path.startsWith('/learn-micro-gpt/')) {
+      if (url.hostname === '127.0.0.1' && !path.startsWith(PREFIX)) {
         escaped.push(`${request.method()} ${path}`)
       }
     })
