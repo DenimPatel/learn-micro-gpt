@@ -45,7 +45,7 @@ It is 199 lines. Here is the shape of it, so you know what you are looking at:
 | 29–71 | autograd | [a number that remembers](content/concepts/autograd-value.md), [walking the graph backwards](content/concepts/autograd-backward.md) |
 | 73–89 | the parameters | [parameters and their initialisation](content/concepts/params-init.md) |
 | 91–143 | the architecture | [linear](content/concepts/linear.md), [softmax](content/concepts/softmax.md), [RMSNorm](content/concepts/rmsnorm.md), [embedding](content/concepts/embedding.md), [multi-head attention](content/concepts/multi-head-attention.md), [the MLP block](content/concepts/mlp-block.md), [the attention block](content/concepts/attention-block.md), [the head](content/concepts/lm-head.md), [the forward pass](content/concepts/gpt-forward.md) |
-| 145–148 | Adam | [Adam](content/concepts/adam.md) |
+| 173–181 | Adam | [Adam](content/concepts/adam.md) |
 | 150–183 | training | [cross-entropy](content/concepts/cross-entropy-loss.md), [the training loop](content/concepts/training-loop.md) |
 | 185–199 | inference | [inference and sampling](content/concepts/inference-sampling.md) |
 

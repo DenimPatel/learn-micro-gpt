@@ -375,50 +375,79 @@ class TestDocsQuoteTheAnchors(unittest.TestCase):
     site's own highlights.
     """
 
-    #: concept id -> the range `docs/HOW-TO-READ.md` claims.
-    HOW_TO_READ = {
-        "data-loading": (13, 20),
-        "tokenizer": (22, 26),
-        "autograd-value": (29, 71),
-        "autograd-backward": (58, 71),
-        "params-init": (73, 89),
-        "linear": (93, 94),
-        "softmax": (96, 100),
-        "rmsnorm": (102, 105),
-        "embedding": (108, 111),
-        "multi-head-attention": (122, 131),
-        "mlp-block": (134, 140),
-        "lm-head": (142, 143),
-        "adam": (173, 181),
-        "cross-entropy-loss": (162, 168),
-        "training-loop": (150, 183),
-        "inference-sampling": (185, 199),
-    }
+    #: A row of the "shape of it" table: `| start–end | what | concepts |`.
+    #: The range is what a reader is *told* to open; the concept links say which
+    #: concept(s) the row is standing in for.
+    _ROW_RE = re.compile(
+        r"^\|\s*(\d+)\s*[–-]\s*(\d+)\s*\|"  # | 145–148 |
+        r"\s*([^|]*?)\s*\|"  # | Adam |
+        r"\s*([^|]*?)\s*\|\s*$",  # | [Adam](content/concepts/adam.md) |
+        re.MULTILINE,
+    )
+    _CONCEPT_LINK_RE = re.compile(r"content/concepts/([a-z0-9-]+)\.md")
+
+    def documented_rows(self) -> list[tuple[int, int, str, list[str]]]:
+        """Every `(start, end, what, concept_ids)` row of the doc's table."""
+        doc = (REPO_ROOT / "docs" / "HOW-TO-READ.md").read_text(encoding="utf-8")
+        rows: list[tuple[int, int, str, list[str]]] = []
+        for start, end, what, concepts_cell in self._ROW_RE.findall(doc):
+            ids = self._CONCEPT_LINK_RE.findall(concepts_cell)
+            rows.append((int(start), int(end), what.strip(), ids))
+        return rows
 
     def test_documented_ranges_match_the_resolved_anchors(self) -> None:
-        for concept_id, claimed in self.HOW_TO_READ.items():
-            with self.subTest(concept=concept_id):
-                concept = content.load_concept(REPO_ROOT / "content" / "concepts" / f"{concept_id}.md")
-                selector = concept.frontmatter["anchors"]["python"]["selector"]
-                span = selectors.resolve("python", selector, REPO_ROOT)
-                self.assertEqual(
-                    (span.start, span.end),
-                    claimed,
-                    f"docs/HOW-TO-READ.md says {claimed[0]}-{claimed[1]} for {concept_id} "
-                    f"but its selector {selector!r} resolves to {span.start}-{span.end}",
-                )
+        """Every *single-concept* row must equal that concept's resolved span.
+
+        The doc is the only place line numbers are hardcoded, so it is the only
+        place they can silently rot -- and they did: the Adam row read
+        `145–148` while the selector resolved to `173–181`. The old form of this
+        test checked a *hand-written copy* of the numbers, so it passed while the
+        doc was wrong, which is exactly the failure it was supposed to catch. It
+        now parses the doc, so the number in the doc is the number under test.
+
+        Rows that link more than one concept (the architecture row, the autograd
+        row) describe a superset of any one selector and are deliberately not
+        asserted here; their member concepts are covered by their own rows or by
+        the anchor tests above.
+        """
+        rows = self.documented_rows()
+        self.assertTrue(rows, "the 'shape of it' table was not found in docs/HOW-TO-READ.md")
+        single = [(s, e, w, ids[0]) for s, e, w, ids in rows if len(ids) == 1]
+        # A parser guard, so a table reflow that stops matching does not quietly
+        # turn this test into a no-op. Counted from the parsed rows, not from the
+        # passing assertions below, so a wrong range cannot trip it as well.
+        self.assertGreaterEqual(
+            len(single),
+            5,
+            f"expected several single-concept rows, parsed {single!r}",
+        )
+        for start, end, what, concept_id in single:
+            concept = content.load_concept(
+                REPO_ROOT / "content" / "concepts" / f"{concept_id}.md"
+            )
+            selector = concept.frontmatter["anchors"]["python"]["selector"]
+            span = selectors.resolve("python", selector, REPO_ROOT)
+            self.assertEqual(
+                (start, end),
+                (span.start, span.end),
+                f"docs/HOW-TO-READ.md says {start}-{end} for {what!r} "
+                f"({concept_id}) but its selector {selector!r} resolves to "
+                f"{span.start}-{span.end}",
+            )
 
     def test_the_documented_table_names_every_concept_it_can(self) -> None:
         # If a concept is added and the table is not, a reader gets no pointer to
-        # it. The converse -- a table row for a concept that no longer exists --
-        # is caught by the previous test.
+        # it. Every concept that has its own single-concept row is listed below;
+        # composite rows (the architecture, the training section) cover the rest.
         doc = (REPO_ROOT / "docs" / "HOW-TO-READ.md").read_text(encoding="utf-8")
-        for concept_id in self.HOW_TO_READ:
-            self.assertIn(
-                f"content/concepts/{concept_id}.md",
-                doc,
-                f"docs/HOW-TO-READ.md does not link {concept_id}",
-            )
+        linked = set(self._CONCEPT_LINK_RE.findall(doc))
+        expected = {c.id for c in content.load_all(REPO_ROOT)}
+        self.assertEqual(
+            linked,
+            expected,
+            f"docs/HOW-TO-READ.md links {sorted(linked)} but the corpus has "
+            f"{sorted(expected)}",
+        )
 
 
 class TestQuotedStatistics(unittest.TestCase):
