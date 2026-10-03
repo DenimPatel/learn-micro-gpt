@@ -166,6 +166,130 @@ class TestLegacyMappingParity(unittest.TestCase):
                 )
 
 
+class TestDuplicateNames(unittest.TestCase):
+    """A *definition* name must mean one thing. Two of them is a hard error.
+
+    The failure this guards: `dict.setdefault` kept the first definition and
+    discarded the second with no diagnostic, so a concept that typo'd one
+    definition's name for the other's pointed at the wrong code and rendered it
+    confidently. That is the same silent-wrong-answer class as a selector that
+    matches nothing.
+
+    Only definitions are strict. `assign:` of a mutable local is a value
+    binding, not a declaration -- `x = rmsnorm(x)` twice in one function, or
+    `logits` in two different functions, is ordinary code -- so `assign:` keeps
+    the documented first-wins behaviour. Making those fatal would reject the
+    reference implementation itself.
+    """
+
+    def test_python_duplicate_function_name_raises_and_names_both_origins(self) -> None:
+        source = (
+            "def thing():\n"
+            "    return 1\n"
+            "\n"
+            "def other():\n"
+            "    return 2\n"
+            "\n"
+            "def thing():\n"
+            "    return 3\n"
+        )
+        with self.assertRaises(selectors.SelectorDuplicateError) as caught:
+            selectors.resolve("python", "def:thing", REPO_ROOT, source)
+        message = str(caught.exception)
+        self.assertIn("def:thing", message)
+        self.assertIn("1..2", message)  # first origin
+        self.assertIn("7..8", message)  # second origin
+        # It is still a SelectorError, so the documented catch contract holds.
+        self.assertIsInstance(caught.exception, selectors.SelectorError)
+
+    def test_c_duplicate_function_name_raises(self) -> None:
+        source = (
+            "static void f(void) {\n"
+            "  int x = 1;\n"
+            "}\n"
+            "\n"
+            "static void f(void) {\n"
+            "  int x = 2;\n"
+            "}\n"
+        )
+        with self.assertRaises(selectors.SelectorDuplicateError) as caught:
+            selectors.resolve("c", "def:f", REPO_ROOT, source)
+        self.assertIn("def:f", str(caught.exception))
+
+    def test_c_duplicate_macro_name_raises(self) -> None:
+        # A `#define` is a declaration, so a same-named macro twice is a
+        # collision even though it is registered under `assign:`.
+        source = "#define N_STEPS 10\n\nvoid f(void) { (void)0; }\n\n#define N_STEPS 20\n"
+        with self.assertRaises(selectors.SelectorDuplicateError) as caught:
+            selectors.resolve("c", "assign:N_STEPS", REPO_ROOT, source)
+        self.assertIn("assign:N_STEPS", str(caught.exception))
+
+    def test_local_rebinding_is_not_a_duplicate(self) -> None:
+        # The regression this whole rule has to survive: the reference's own
+        # `gpt` reassigns `x` ten times and one function's `logits` is another
+        # function's `logits`. Ordinary reuse must resolve, not raise.
+        source = (
+            "def thing():\n"
+            "    x = 1\n"
+            "    x = 2\n"
+            "    return x\n"
+            "\n"
+            "def other():\n"
+            "    x = 3\n"
+            "    return x\n"
+        )
+        self.assertEqual(
+            selectors.resolve("python", "assign:x", REPO_ROOT, source).as_dict(),
+            {"start": 2, "end": 2},  # first binding wins
+        )
+
+    def test_same_span_recorded_twice_is_not_a_duplicate(self) -> None:
+        # `ast.walk` can reach one node by more than one route, and Go's export
+        # spelling registers `gpt` and `GPT` from one definition. Neither is a
+        # collision: the name still means exactly one span.
+        source = "def thing():\n    return 1\n"
+        self.assertEqual(
+            selectors.resolve("python", "def:thing", REPO_ROOT, source).as_dict(),
+            {"start": 1, "end": 2},
+        )
+        go_source = "// pkg header\nfunc add(a int) int {\n\treturn a\n}\n"
+        span = selectors.resolve("go", "def:add", REPO_ROOT, go_source)
+        self.assertEqual(span.as_dict(), {"start": 2, "end": 4})
+
+    def test_distinct_names_still_register(self) -> None:
+        # The ordinary case must be untouched: two different names, two spans,
+        # no error, each resolving to its own definition.
+        source = (
+            "def thing():\n"
+            "    alpha = 1\n"
+            "    return alpha\n"
+            "\n"
+            "def other():\n"
+            "    beta = 2\n"
+            "    return beta\n"
+        )
+        self.assertEqual(
+            selectors.resolve("python", "assign:alpha", REPO_ROOT, source).as_dict(),
+            {"start": 2, "end": 2},
+        )
+        self.assertEqual(
+            selectors.resolve("python", "assign:beta", REPO_ROOT, source).as_dict(),
+            {"start": 6, "end": 6},
+        )
+
+    def test_real_sources_are_definition_duplicate_free(self) -> None:
+        # The registry is only strict if the tracked content is clean. If this
+        # fails, a real definition collision landed in a source file and every
+        # concept anchored into that file is now ambiguous. These all resolve
+        # against the *real* tracked files (no injected source), so the check is
+        # on the content itself.
+        selectors.resolve("python", "def:gpt", REPO_ROOT)
+        selectors.resolve("c", "def:forward_pos", REPO_ROOT)
+        selectors.resolve("go", "def:Add", REPO_ROOT)
+        selectors.resolve("rust", "def:run", REPO_ROOT)
+        selectors.resolve("typescript", "def:sum", REPO_ROOT)
+
+
 class TestCResolution(unittest.TestCase):
     """
     These assert *semantic* properties -- that a selector resolves to a range

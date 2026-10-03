@@ -80,6 +80,7 @@ __all__ = [
     "SelectorError",
     "SelectorSyntaxError",
     "SelectorUnresolvedError",
+    "SelectorDuplicateError",
     "parse_selector",
     "resolve",
     "source_for_language",
@@ -96,6 +97,29 @@ class SelectorSyntaxError(SelectorError):
 
 class SelectorUnresolvedError(SelectorError):
     """The selector is well-formed but matched nothing in the source."""
+
+
+class SelectorDuplicateError(SelectorError):
+    """A *definition* name resolves to two different spans.
+
+    `def:gpt` is only an anti-rot mechanism if it means exactly one thing. Two
+    functions called `gpt` -- or two `#define` macros of one name -- make the
+    selector ambiguous, and the first-wins rule a plain `dict.setdefault` gives
+    you keeps the *first* definition and points the concept at the wrong code
+    with no warning. That is the exact silent-wrong-answer failure this module
+    exists to prevent, so a colliding definition is a hard error naming both
+    origins.
+
+    Only definitions are strict. An `assign:` anchor for a mutable local is a
+    *value binding*, not a declaration: `x = rmsnorm(x)` twice in one function,
+    or `logits` in two functions, is ordinary code, and `assign:` is documented
+    to mean "the first binding, smallest span". Making those fatal would reject
+    the reference implementation itself, so `assign:` keeps first-wins.
+
+    Two spans that *are* the same origin (identical start and end) are one
+    definition seen twice -- two walkers can reach one node, Go's `func gpt`
+    registers both `gpt` and `GPT` -- and are never a collision.
+    """
 
 
 @dataclass(frozen=True)
@@ -215,11 +239,38 @@ def _bound_names(target: ast.expr) -> list[str]:
     return []
 
 
+def _register(
+    spans: dict[tuple[str, str], Span],
+    origins: dict[tuple[str, str], Span],
+    key: tuple[str, str],
+    span: Span,
+    *,
+    strict: bool,
+) -> None:
+    """Record one `(kind, name) -> span`, refusing to overwrite a sibling.
+
+    A *definition* may only mean one thing per registry, so `strict` keys
+    (`def:`, `#define`) raise on a genuine collision. Non-strict keys
+    (`assign:` of a mutable local) keep the first origin, which is the
+    documented `assign:` semantics. The *same* origin recorded twice is never a
+    collision, so the check is on the pair, not on the span text.
+    """
+    previous = origins.get(key)
+    if strict and previous is not None and previous != span:
+        raise SelectorDuplicateError(
+            f"duplicate source anchor {key[0]}:{key[1]}: defined at lines "
+            f"{previous.start}..{previous.end} and again at lines {span.start}..{span.end}"
+        )
+    origins[key] = previous or span
+    spans[key] = previous or span
+
+
 def _python_spans(source: str) -> dict[tuple[str, str], Span]:
     tree = ast.parse(source)
     lines = source.split("\n")
     total = len(lines)
     spans: dict[tuple[str, str], Span] = {}
+    origins: dict[tuple[str, str], Span] = {}
 
     def record(kind: str, name: str, node: ast.AST) -> None:
         start = getattr(node, "lineno", None)
@@ -227,7 +278,7 @@ def _python_spans(source: str) -> dict[tuple[str, str], Span]:
         if start is None or end is None:
             return
         span = Span(start, end).clamp(total)
-        spans.setdefault((kind, name), span)
+        _register(spans, origins, (kind, name), span, strict=(kind == "def"))
 
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
@@ -423,10 +474,11 @@ def _c_spans(source: str, language: str) -> dict[tuple[str, str], Span]:
     lines = source.split("\n")
     total = len(lines)
     spans: dict[tuple[str, str], Span] = {}
+    origins: dict[tuple[str, str], Span] = {}
     statements = _logical_statements(lines)
 
-    def record(kind: str, name: str, start: int, end: int) -> None:
-        spans.setdefault((kind, name), Span(start + 1, min(end + 1, total)))
+    def record(kind: str, name: str, start: int, end: int, *, strict: bool = False) -> None:
+        _register(spans, origins, (kind, name), Span(start + 1, min(end + 1, total)), strict=strict)
 
     if language in {"go", "rust", "typescript"}:
         return _c_like_spans(lines, total, language, statements)
@@ -436,13 +488,14 @@ def _c_spans(source: str, language: str) -> dict[tuple[str, str], Span]:
         if statement.end > statement.start and not _CONTROL_RE.match(code):
             match = _C_DEF_RE.match(code)
             if match:
-                record("def", match.group("name"), statement.start, statement.end)
+                record("def", match.group("name"), statement.start, statement.end, strict=True)
 
     for index, raw in enumerate(lines):
         define = _C_ASSIGN_DEFINE_RE.match(raw)
         if define:
-            # `#define X ...` -- the macro definition, not a use site.
-            record("assign", define.group("name"), index, index)
+            # `#define X ...` -- the macro definition, not a use site. A macro is
+            # a declaration, so a same-named macro defined twice is a collision.
+            record("assign", define.group("name"), index, index, strict=True)
 
     # `assign:` for C: the first declaration or binding statement, smallest span.
     for statement in statements:
@@ -470,11 +523,12 @@ def _c_like_spans(
     statements: list[LogicalStatement] | None = None,
 ) -> dict[tuple[str, str], Span]:
     spans: dict[tuple[str, str], Span] = {}
+    origins: dict[tuple[str, str], Span] = {}
     if statements is None:
         statements = _logical_statements(lines)
 
-    def record(kind: str, name: str, start: int, end: int) -> None:
-        spans.setdefault((kind, name), Span(start + 1, min(end + 1, total)))
+    def record(kind: str, name: str, start: int, end: int, *, strict: bool = False) -> None:
+        _register(spans, origins, (kind, name), Span(start + 1, min(end + 1, total)), strict=strict)
 
     for statement in statements:
         code = statement.text.strip()
@@ -485,21 +539,21 @@ def _c_like_spans(
                 name = match.group("name")
                 # Go exports are conventionally capitalised; a concept that reads
                 # like `func:GPT` should find it without a per-language alias list.
-                record("def", name, statement.start, statement.end)
-                record("def", name[:1].upper() + name[1:], statement.start, statement.end)
+                record("def", name, statement.start, statement.end, strict=True)
+                record("def", name[:1].upper() + name[1:], statement.start, statement.end, strict=True)
         elif language == "rust":
             match = _RUST_FN_RE.match(code)
             if match:
-                record("def", match.group("name"), statement.start, statement.end)
+                record("def", match.group("name"), statement.start, statement.end, strict=True)
         else:  # typescript
             match = _TS_FUNC_RE.match(code)
             if match:
                 name = match.group("fn") or match.group("var")
-                record("def", name, statement.start, statement.end)
+                record("def", name, statement.start, statement.end, strict=True)
             if has_body:
                 assign = _TS_ASSIGN_RE.match(code)
                 if assign:
-                    record("assign", assign.group("name"), statement.start, statement.end)
+                    record("assign", assign.group("name"), statement.start, statement.end, strict=True)
     return spans
 
 
