@@ -41,14 +41,58 @@ _KEYWORDS = (
 _QUOTES_RE = re.compile(r"'{3}|\"{3}|'|\"")
 
 
+def _find_quote(line: str, quote: str, start: int) -> int:
+    """Index of the next *unescaped* `quote` at or after `start`, or -1.
+
+    A delimiter preceded by an odd number of backslashes is escaped (`\\"`), so
+    it is data inside the literal rather than its end. Counting the backslash
+    run -- rather than testing the single preceding character -- is what keeps
+    `"a\\\\"` (a literal ending in a backslash, then a real closing quote) from
+    being misread as an escaped quote with no terminator.
+    """
+    index = start
+    while True:
+        end = line.find(quote, index)
+        if end < 0:
+            return -1
+        backslashes = 0
+        at = end - 1
+        while at >= 0 and line[at] == "\\":
+            backslashes += 1
+            at -= 1
+        if backslashes % 2 == 0:
+            return end
+        index = end + len(quote)
+
+
 def _strip_comment(line: str) -> str:
     """Drop a trailing `#` comment but keep every `#` inside a string literal.
 
-    `line.split("#")[0]` truncates at the first `#` anywhere, so
-    `print("a # b")` normalises to `print("a` and gets classified on the wrong
-    text -- and, worse, an excerpt that *looks* like the anchor stops matching
-    it. Scanning literals left to right fixes both: only a `#` seen outside a
-    quoted run starts a comment.
+    ``line.split("#")[0]`` truncates at the first `#` anywhere, so
+    ``print("a # b")`` normalises to ``print("a`` and gets classified on the
+    wrong text -- and, worse, an excerpt that *looks* like the anchor stops
+    matching it. Scanning literals left to right fixes both: only a `#` seen
+    outside a quoted run starts a comment.
+
+    Two cases the left-to-right scan must get right, both latent in the corpus
+    (no such line carries a `#` today) but wrong if the scanner ignores them:
+
+    * An *escaped* quote does not close the literal, so a `#` after it is still
+      data: the line ``x = "a\\" # b"`` keeps its `#`.
+    * An *unterminated* literal does not make the rest of the line a comment
+      either: in ``x = "abc # def`` the `#` sits inside a run that never closed,
+      and truncating there would silently drop the `def`. When the *first*
+      quote on the line opens a run that never closes, there is no surrounding
+      prose to read the `#` as a comment, so the line comes back unchanged.
+
+    The two cases are in tension, and the scanner cannot tell them apart from
+    one line alone: a line ending in an apostrophe has an unterminated quote
+    that must *not* swallow a real trailing comment, while ``x = "abc # def``
+    has one that must. The tie-break is position -- an unclosed run that begins
+    the line is data, one that follows a *balanced* literal is prose. The
+    routine caller is a triple-quote docstring delimiter, which has no closing
+    run on its line and no `#` either; the anchored reference source has exactly
+    two such lines.
     """
     index = 0
     while True:
@@ -56,18 +100,23 @@ def _strip_comment(line: str) -> str:
         if match is None:
             break
         quote = match.group(0)
-        end = line.find(quote, match.end())
+        end = _find_quote(line, quote, match.end())
         if end < 0:
-            # No closing quote on this line: a lone `"""` (a docstring
+            # No unescaped closing quote on this line: a lone `"""` (a docstring
             # delimiter, opening or closing its run on another line), a string
-            # built across lines, or an apostrophe in prose. Routinely reached,
-            # not just on malformed input -- the anchored reference source alone
-            # has two `"""` lines, one opening a docstring and one closing it.
-            # Stopping here leaves `index` at the end of the last *balanced*
-            # literal, so the comment search below resumes from there rather
-            # than from inside the unclosed run. A leading `#` still strips
-            # normally; the point is only that the unclosed quote is not treated
-            # as a delimiter the scanner has passed.
+            # built across lines, an apostrophe in prose, or a genuinely
+            # unterminated literal. Routinely reached, not just on malformed
+            # input -- the anchored reference source alone has two `"""` lines,
+            # one opening a docstring and one closing it.
+            if index == 0:
+                # The unclosed run is the whole line: treat the line as data
+                # (see the docstring). No `#` search happens inside it.
+                return line
+            # An unclosed quote *after* a balanced literal is far more likely
+            # prose -- an apostrophe in a trailing comment. Stop the comment
+            # search at the end of the last balanced literal, so a real comment
+            # after it still strips (but one from inside the unclosed run does
+            # not).
             break
         index = end + len(quote)
     tail = line[index:]

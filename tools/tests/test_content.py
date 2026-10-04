@@ -1382,6 +1382,42 @@ class TestTagFencesNormalise(unittest.TestCase):
         # The `#` here is genuinely a comment, not inside a literal.
         self.assertEqual(tag_fences.normalise("foo(  # inline"), "foo(")
 
+    def test_escaped_quote_does_not_close_the_literal(self) -> None:
+        # IMP-110: a `\"` is data, not the end of the string. The scanner used
+        # to close the literal at the backslash-quote and read the following `#`
+        # as a comment, truncating mid-literal to `print("a \" `.
+        self.assertEqual(
+            tag_fences.normalise('print("a \\" # not a comment")'),
+            'print("a \\" # not a comment")',
+        )
+        # A real comment *after* the escaped quote and the closing quote still
+        # strips -- the escape only protects the quote, not everything after it.
+        self.assertEqual(
+            tag_fences.normalise('x = "a \\" b"  # trailing'),
+            'x = "a \\" b"',
+        )
+
+    def test_even_backslashes_do_not_escape_the_closing_quote(self) -> None:
+        # A literal ending in a backslash is written `"...\\\\"`; the pair of
+        # backslashes is even, so the following quote *does* close it and a
+        # trailing comment is found. Counting the run, rather than looking at
+        # one preceding character, is what makes this line come out right.
+        self.assertEqual(
+            tag_fences.normalise('x = "a\\\\"  # comment'),
+            'x = "a\\\\"',
+        )
+
+    def test_unterminated_literal_is_not_treated_as_a_comment(self) -> None:
+        # IMP-110: `x = "abc # def` never closes its string, so the `#` is data
+        # and the line must come back unchanged -- truncating to `x = "abc ` was
+        # the bug. Only an unterminated run that *begins* the line is data; an
+        # unclosed quote after a balanced literal is read as trailing prose (the
+        # apostrophe case above), because one line cannot distinguish the two.
+        self.assertEqual(tag_fences.normalise('x = "abc # def'), 'x = "abc # def')
+        self.assertEqual(
+            tag_fences.normalise("x = 'abc # def"), "x = 'abc # def"
+        )
+
 
 class TestTagFencesUnterminatedFence(unittest.TestCase):
     """An unterminated fence must not be reported as success.
