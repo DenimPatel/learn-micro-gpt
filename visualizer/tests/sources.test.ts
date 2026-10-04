@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { err, isErr, isOk, ok, type Result } from '../src/data/types'
-import { intoResult, loadCandidate, loadPatch, loadSource } from '../src/data/sources'
+import {
+  HIGHLIGHT_LANG,
+  LANGUAGES,
+  TRACK_ORDER,
+  intoResult,
+  loadCandidate,
+  loadPatch,
+  loadSource,
+} from '../src/data/sources'
 
 /**
  * The `Result` boundary the content loaders are.
@@ -121,5 +129,45 @@ describe('the loaders resolve a Result and never reject', () => {
     // different state from "the chunk failed", and the two must not collapse.
     const result = await loadPatch('no-such-run')
     expect(result).toEqual({ ok: true, value: null })
+  })
+})
+
+/**
+ * The language tables agree with each other.
+ *
+ * `TRACK_ORDER`, `LANGUAGES` and `HIGHLIGHT_LANG` are three encodings of the
+ * same five tracks. The types catch a *member* going missing from any of them
+ * (`Record<Language, ...>` for the maps, and the exhaustiveness check beside
+ * `TRACK_ORDER`), but they cannot catch the display order quietly listing a
+ * track twice, or a stray key that is not a `Language` at all surviving an
+ * `as` somewhere. This asserts the sets, and separately that `TRACK_ORDER` is a
+ * permutation of them rather than a truncated or duplicated copy.
+ */
+describe('the language tables cover the same tracks', () => {
+  it('TRACK_ORDER and Object.keys(LANGUAGES) describe the same set', () => {
+    expect([...TRACK_ORDER].sort()).toEqual(Object.keys(LANGUAGES).sort())
+  })
+
+  it('HIGHLIGHT_LANG keys the same set as LANGUAGES', () => {
+    expect(Object.keys(HIGHLIGHT_LANG).sort()).toEqual(Object.keys(LANGUAGES).sort())
+  })
+
+  it('TRACK_ORDER lists each track exactly once', () => {
+    // Set equality above would still pass on `['python', 'python', ...]`; this
+    // is the half that makes it an order over distinct tracks.
+    expect(new Set(TRACK_ORDER).size).toBe(TRACK_ORDER.length)
+  })
+
+  it('keeps the reference track first and the display order explicit', () => {
+    // Order is a presentation decision and must not silently change: the compare
+    // table, the language switcher and `languagesFor` all read this array.
+    expect(TRACK_ORDER).toEqual(['python', 'c', 'rust', 'go', 'typescript'])
+  })
+
+  it('points every highlight grammar at a non-empty name', () => {
+    for (const language of TRACK_ORDER) {
+      expect(HIGHLIGHT_LANG[language]).toBeTruthy()
+      expect(LANGUAGES[language].label).toBeTruthy()
+    }
   })
 })

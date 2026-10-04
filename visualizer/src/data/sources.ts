@@ -94,7 +94,48 @@ export function loadedSource(language: Language): string | undefined {
   return cache.get(language)
 }
 
-export const TRACK_ORDER: readonly Language[] = ['python', 'c', 'rust', 'go', 'typescript']
+/**
+ * The display order of the tracks -- reference first, and explicit.
+ *
+ * Ordered by hand on purpose: this is the order the tracks appear in the compare
+ * table, the language switcher and `languagesFor`, and it is a presentation
+ * decision, not something to derive alphabetically from a map's keys.
+ *
+ * "Hand-written" used to mean "unchecked": the annotation was
+ * `readonly Language[]`, which accepts *any* subset of the union, so a sixth
+ * language could be added to `Language` and never appear anywhere without a
+ * word from the compiler. The `satisfies` clause pins each element, and the
+ * exhaustiveness check just below pins the *set*.
+ */
+export const TRACK_ORDER = [
+  'python',
+  'c',
+  'rust',
+  'go',
+  'typescript',
+] as const satisfies readonly Language[]
+
+/**
+ * The tracks `TRACK_ORDER` forgets -- `never` while it lists all of them.
+ *
+ * `(typeof TRACK_ORDER)[number]` is the union of the literals the array holds,
+ * and `Exclude` is the set difference against the union they have to cover.
+ */
+type MissingTrack = Exclude<Language, (typeof TRACK_ORDER)[number]>
+
+/**
+ * The check. When the array covers every language `MissingTrack` is `never`,
+ * `Record<never, true>` accepts `{}`, and the line compiles.
+ *
+ * The moment a language is left out `MissingTrack` is that literal, `{}` no
+ * longer has the required key, and the error names it -- for IMP-079 a sixth
+ * union member produced `Property '"zzz-temp"' is missing in type '{}' but
+ * required in type 'Record<"zzz-temp", true>'`. Nothing is emitted for it at
+ * run time beyond an empty frozen-ish object literal, and the `void` is only
+ * there so the linter sees it used.
+ */
+const TRACK_ORDER_IS_EXHAUSTIVE: Record<MissingTrack, true> = {}
+void TRACK_ORDER_IS_EXHAUSTIVE
 
 /*
  * The research candidate, lazily.
