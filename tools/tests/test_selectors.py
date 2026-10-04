@@ -395,6 +395,30 @@ class TestSpan(unittest.TestCase):
     def test_clamp_trims_to_file_length(self) -> None:
         self.assertEqual(selectors.Span(1, 5000).clamp(199).end, 199)
 
+    def test_a_span_cannot_start_before_line_one(self) -> None:
+        # The sibling of the clamp() case below, and it was a bare ValueError.
+        # `__post_init__` is the choke point: it runs at construction, so a span
+        # with a start below 1 cannot exist for `clamp()` to be called on and
+        # `clamp()` guards only the top end. `apply_offset` does guard the bottom
+        # itself, with a better message naming the offsets, and that is
+        # deliberate -- but it is the backstop here that keeps the class's catch
+        # contract whole for every other construction path.
+        with self.assertRaises(selectors.SelectorUnresolvedError) as ctx:
+            selectors.Span(-3, 5)
+        self.assertIsInstance(ctx.exception, selectors.SelectorError)
+        message = str(ctx.exception)
+        # Named line number, so a caller can point at the offending anchor.
+        self.assertIn("start=-3", message)
+        self.assertIn("1-based", message)
+
+    def test_an_offset_that_goes_off_the_top_is_still_a_selector_error(self) -> None:
+        # The route that does reach it today raises earlier, in `apply_offset`.
+        # Pinned so the two stay consistent: whichever guard fires, the caller
+        # must see a SelectorError naming the line, never a ValueError.
+        with self.assertRaises(selectors.SelectorUnresolvedError) as ctx:
+            selectors.Span(1, 5).apply_offset((-1, 0))
+        self.assertIsInstance(ctx.exception, selectors.SelectorError)
+
     def test_starting_past_the_end_is_an_error(self) -> None:
         # A SelectorError, not a bare ValueError: `tools/validate_concepts.py` and
         # `tools/gen_anchors.py` catch SelectorError to turn this into a clean

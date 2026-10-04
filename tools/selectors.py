@@ -129,7 +129,28 @@ class Span:
 
     def __post_init__(self) -> None:
         if self.start < 1:
-            raise ValueError(f"line numbers are 1-based, got start={self.start}")
+            # Same catch contract as clamp() below: callers catch SelectorError
+            # and turn it into a diagnostic naming the concept and selector. A
+            # bare ValueError here escapes that and surfaces as a traceback.
+            #
+            # Unresolved rather than a syntax error, because a bad span is
+            # something the selector *matched* -- just not a region that exists.
+            #
+            # This is a backstop, not a live route, and the reason is narrower
+            # than "the other methods guard first". `apply_offset` does guard
+            # `start < 1` itself, with a better message naming the offsets; but
+            # `clamp` only guards `start > total`, so `Span(0, 5).clamp(199)`
+            # *would* land here. The real reason it cannot is ordering: this
+            # method runs at construction, so a bad span cannot exist for
+            # `clamp` to be called on. That makes this the single choke point
+            # for the whole class -- every path that could build a `Span` with
+            # a start below 1, including any future caller constructing one
+            # directly, is covered here rather than relying on each method to
+            # remember.
+            raise SelectorUnresolvedError(
+                f"line numbers are 1-based, got start={self.start}; "
+                f"a span must start at line 1 or later"
+            )
 
     def clamp(self, total: int) -> "Span":
         if self.start > total:
