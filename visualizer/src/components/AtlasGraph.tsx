@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { index } from '../data/sources'
+import { chapters } from '../data/sequence'
 
 interface Node {
   id: string
@@ -62,7 +63,7 @@ export function AtlasGraph() {
         }
         dagre.layout(graph)
 
-        const laidOut: Node[] = index.chapters.flatMap((chapter) =>
+        const laidOut: Node[] = chapters.flatMap((chapter) =>
           chapter.concepts.map((concept) => {
             const laid = graph.node(concept.id) as { x: number; y: number } | undefined
             return {
@@ -168,7 +169,7 @@ export function AtlasGraph() {
       )}
 
       <ol className="atlas__list">
-        {index.chapters.map((chapter) => (
+        {chapters.map((chapter) => (
           <li key={chapter.id}>
             <h3>{chapter.title}</h3>
             <ul>

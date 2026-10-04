@@ -240,6 +240,7 @@ an e2e test asserts the panel's background comes from the tokens.
 ```
 src/
   data/sources.ts     build-time imports, generated JSON, trace parsing, EMA
+  data/sequence.ts     the one reading order, derived from index.json
   data/types.ts        hand-written contract for the generated shapes
   content/markdown.tsx marked token walk + KaTeX; markdown path sets no inner HTML
   content/highlight.ts Shiki, loaded lazily, five grammars

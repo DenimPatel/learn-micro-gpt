@@ -23,15 +23,23 @@
  */
 
 import type { Block, ChapterId, Concept } from './types'
+import indexJson from './generated/index.json'
 
-/** The five chapters, as a runtime value so the union and the check cannot drift. */
-const CHAPTER_IDS: readonly ChapterId[] = [
-  'data',
-  'machinery',
-  'architecture',
-  'training',
-  'inference',
-]
+/**
+ * The chapters, but *not* as a literal list.
+ *
+ * This used to be `const CHAPTER_IDS = ['data', 'machinery', ...]`, which is
+ * exactly the kind of restatement `IMP-092` is about: a chapter added to
+ * `content/index.json` would appear in the sidebar and pass `make validate`,
+ * while this check -- the one thing standing between a renamed chapter and
+ * `undefined` in a heading -- kept rejecting it. The ids now come from the same
+ * generated `index.json` the rail renders from, so the validator's idea of a
+ * valid chapter and the app's are the same idea. The order is the file's order;
+ * it is only ever used in the error message.
+ */
+const CHAPTER_IDS: readonly string[] = (
+  indexJson as { chapters: { id: ChapterId }[] }
+).chapters.map((chapter) => chapter.id)
 
 const BLOCK_KINDS: readonly Block['kind'][] = [
   'prose',

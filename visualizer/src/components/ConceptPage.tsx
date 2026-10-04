@@ -23,7 +23,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Math, Markdown, headings } from '../content/markdown'
-import { anchors, conceptsById, index, languagesFor } from '../data/sources'
+import { anchors, conceptsById, languagesFor } from '../data/sources'
+import { chapterOf, neighbours } from '../data/sequence'
 import type { Block, Concept, Language } from '../data/types'
 import { CodePanel } from './CodePanel'
 import { Icon } from './Icon'
@@ -45,7 +46,7 @@ export function ConceptPage({
 
   const languages = languagesFor(concept.id)
   const [primary, ...rest] = languages
-  const chapter = index.chapters.find((c) => c.id === concept.chapter)
+  const chapter = chapterOf(concept.id)
   const difficulty = concept.difficulty ?? 1
 
   return (
@@ -291,11 +292,7 @@ function Contents({ concept }: { concept: Concept }) {
 }
 
 function PrevNext({ concept, onNavigate }: { concept: Concept; onNavigate: (id: string) => void }) {
-  const chapter = index.chapters.find((c) => c.id === concept.chapter)
-  if (!chapter) return null
-  const at = chapter.concepts.findIndex((c) => c.id === concept.id)
-  const previous = at > 0 ? chapter.concepts[at - 1] : undefined
-  const next = at < chapter.concepts.length - 1 ? chapter.concepts[at + 1] : undefined
+  const { previous, next } = neighbours(concept.id)
 
   return (
     <div className="prevnext">

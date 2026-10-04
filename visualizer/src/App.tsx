@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRoute, hrefFor, type Route, type RouteName } from './app/router'
 import { useProgress, useTheme } from './app/state'
 import { TRACK_ORDER, conceptsById, index } from './data/sources'
+import { chapters, conceptCount, firstConcept, firstUnread } from './data/sequence'
 import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
@@ -132,7 +133,7 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [railOpen])
 
-  const total = index.chapters.reduce((sum, chapter) => sum + chapter.concepts.length, 0)
+  const total = conceptCount
   const readPct = total === 0 ? 0 : Math.round((seen.size / total) * 100)
 
   return (
@@ -256,7 +257,7 @@ export function App() {
             {seen.size > 0 ? <ResetProgress count={seen.size} onReset={resetSeen} /> : null}
           </div>
 
-          {index.chapters.map((chapter) => (
+          {chapters.map((chapter) => (
             <section key={chapter.id} className="app__sidebar-group">
               <h2>{chapter.title}</h2>
               <ol>
@@ -458,8 +459,8 @@ function ConceptRoute({
  * rounded.
  */
 function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number }) {
-  const first = index.chapters[0]?.concepts[0]
-  const next = index.chapters.flatMap((c) => c.concepts).find((c) => !seen.has(c.id))
+  const first = firstConcept
+  const next = firstUnread(seen)
   const parameters = Number(index.hyperparameters.num_params ?? 0)
 
   return (
@@ -562,7 +563,7 @@ function LearnPage({ seen }: { seen: ReadonlySet<string> }) {
         The chapters are the order. The links between them are the prerequisites, drawn from each
         concept&rsquo;s own <code>prereqs</code>, so the graph and the order cannot disagree.
       </p>
-      {index.chapters.map((chapter) => (
+      {chapters.map((chapter) => (
         <section key={chapter.id}>
           <h2>
             <span className="learn__chapter-order">{chapter.order}</span>
