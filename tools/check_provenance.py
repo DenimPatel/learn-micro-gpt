@@ -68,7 +68,7 @@ def _check_annotated_sync() -> list[str]:
     ]
 
 
-def run() -> int:
+def main() -> int:
     failures: list[str] = []
 
     for entry in all_entries():
@@ -111,4 +111,4 @@ def run() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(run())
+    raise SystemExit(main())

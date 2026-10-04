@@ -330,7 +330,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.check:
         from tools import check_provenance  # noqa: PLC0415
 
-        return check_provenance.run()
+        return check_provenance.main()
 
     for entry in all_entries():
         print(f"{entry.sha256:<64}  {entry.path}")

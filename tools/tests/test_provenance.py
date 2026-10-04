@@ -22,11 +22,14 @@ from __future__ import annotations
 
 import re
 import shutil
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tools import provenance
+from tools import check_provenance, provenance
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def build_sandbox() -> tuple[Path, Path]:
@@ -175,6 +178,79 @@ class TestRefreshDerived(SandboxCase):
         self.assertEqual(self.manifest.read_text(), once)
 
 
+class TestTheCheckFlagActuallyChecks(unittest.TestCase):
+    """`--check` must delegate to `check_provenance`, and report what it finds.
+
+    `--check` is the flag `make verify-provenance` drives, and until this test
+    existed nothing exercised the delegation. Renaming `check_provenance.run` to
+    `main` meant editing the call site in `provenance.py`, and breaking that call
+    site left the whole suite green -- a renamed dead branch would have been
+    caught by CI on the next drift and by nothing else.
+
+    The fixture moves one global: `tools.provenance.REPO_ROOT`. It has to be that
+    global and not a copy of `provenance.py`: `check_provenance` does `from
+    tools.provenance import all_entries`, so the check always calls the function
+    in the real module and always reads that module's `REPO_ROOT`. A fixture that
+    copied `provenance.py` into a temp package looked right and asserted nothing
+    -- the first version of this test tampered with a pinned file, saw exit 0,
+    and the check turned out to be reading the real repository the whole time.
+
+    Tampering in a sandbox rather than asserting on the live tree also keeps the
+    test from depending on whether anyone happens to have edited the repository.
+    """
+
+    def _sandbox(self) -> Path:
+        """Copy every pinned file into a temp tree and point the check at it.
+
+        `all_entries` resolves `REPO_ROOT` from its own module globals at call
+        time, so that entry in `tools.provenance.__dict__` is what decides which
+        files are hashed. `check_provenance` holds no copy of it.
+        """
+        root = Path(tempfile.mkdtemp(prefix="provenance-check-"))
+        self.addCleanup(shutil.rmtree, root, ignore_errors=True)
+        for entry in provenance.all_entries():
+            destination = root / entry.path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(REPO_ROOT / entry.path, destination)
+
+        globals_of_all_entries = provenance.all_entries.__globals__
+        original = globals_of_all_entries["REPO_ROOT"]
+        self.addCleanup(globals_of_all_entries.__setitem__, "REPO_ROOT", original)
+        globals_of_all_entries["REPO_ROOT"] = root
+        return root
+
+    def test_the_check_flag_passes_on_a_healthy_tree(self) -> None:
+        self._sandbox()
+        self.assertEqual(provenance.main(["--check"]), 0)
+
+    def test_the_check_flag_fails_on_a_tampered_pin(self) -> None:
+        root = self._sandbox()
+        pinned = next(entry for entry in provenance.all_entries() if not entry.derived)
+        (root / pinned.path).write_text("TAMPERED\n")
+        self.assertEqual(provenance.main(["--check"]), 1)
+
+    def test_the_check_flag_fails_on_a_missing_pin(self) -> None:
+        # A deleted file is the other half of the same report, and the branch is
+        # separate: `actual_sha256` returns None rather than a wrong digest.
+        root = self._sandbox()
+        pinned = next(entry for entry in provenance.all_entries() if not entry.derived)
+        (root / pinned.path).unlink()
+        self.assertEqual(provenance.main(["--check"]), 1)
+
+    def test_a_listing_without_the_flag_is_not_a_check(self) -> None:
+        """The default branch prints digests and must not fail.
+
+        Guards the other direction: if `--check` were wired to the default
+        branch, or the reverse, the tampered case above would still pass as a
+        pair -- so this pins the default path's exit code on a broken tree, which
+        is what tells the two branches apart.
+        """
+        root = self._sandbox()
+        pinned = next(entry for entry in provenance.all_entries() if not entry.derived)
+        (root / pinned.path).write_text("TAMPERED\n")
+        self.assertEqual(provenance.main([]), 0)
+
+
 class TestTheRealManifestIsInASaneState(unittest.TestCase):
     """On the real repository, not the sandbox."""
 
@@ -183,7 +259,7 @@ class TestTheRealManifestIsInASaneState(unittest.TestCase):
         # before `--refresh-derived` existed.
         from tools import check_provenance
 
-        result = check_provenance.run()
+        result = check_provenance.main()
         self.assertEqual(result, 0, "run `python3 -m tools.provenance --refresh-derived`")
 
     def test_every_pinned_entry_is_actually_present_on_disk(self) -> None:
