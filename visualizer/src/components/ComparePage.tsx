@@ -11,8 +11,9 @@
 import { useEffect, useState } from 'react'
 import { Markdown } from '../content/markdown'
 import { TRACK_ORDER, benchmarks, index, loadSource, loadedSource, trace } from '../data/sources'
-import type { Language } from '../data/types'
+import { isOk, ok, type Language } from '../data/types'
 import { CodePanel } from './CodePanel'
+import { type Loadable } from './LoadableResult'
 import { LossChart } from './widgets'
 
 const ORDER: Language[] = ['python', 'c', 'rust', 'go', 'typescript']
@@ -27,23 +28,27 @@ export function ComparePage() {
    * this page needs the sources at all -- the code panels below need them anyway,
    * but only when expanded -- so the counts fill in as the chunks arrive and the
    * table renders immediately with a placeholder rather than blocking.
+   *
+   * One entry per track, and each entry is the shared `Loadable<string>`: the
+   * loader's own `Result` once it has settled, `undefined` until then. That keeps
+   * "still loading", "loaded" and "the chunk failed" three *different* cells --
+   * it used to collapse a failure and a chunk in flight into the same `…`, which
+   * is how a failed chunk could sit on the page looking like a slow one forever.
    */
-  const [sizes, setSizes] = useState<Record<string, { chars: number; lines: number }>>({})
+  const [sizes, setSizes] = useState<Partial<Record<Language, Loadable<string>>>>({})
   useEffect(() => {
     let cancelled = false
     void Promise.all(
       ORDER.map(async (language) => {
         // `loadSource` resolves a `Result`, so a failed chunk is a value rather
         // than a rejection that would take the whole `Promise.all` -- and with it
-        // the table -- down. On failure the row falls back to `''` (0 chars, 1
-        // line), the table still renders, and the success path is unchanged.
+        // the table -- down.
         const cached = loadedSource(language)
-        const result = cached !== undefined ? null : await loadSource(language)
-        const text = cached ?? (result && result.ok ? result.value : '')
-        return [language, { chars: text.length, lines: text.split('\n').length }] as const
+        return [language, cached === undefined ? await loadSource(language) : ok(cached)] as const
       }),
     ).then((entries) => {
-      if (!cancelled) setSizes(Object.fromEntries(entries))
+      if (!cancelled)
+        setSizes(Object.fromEntries(entries) as Partial<Record<Language, Loadable<string>>>)
     })
     return () => {
       cancelled = true
@@ -149,8 +154,7 @@ export function ComparePage() {
               {ORDER.map((language) => (
                 <tr key={language}>
                   <th scope="row">{language}</th>
-                  <td>{sizes[language]?.lines ?? '…'}</td>
-                  <td>{sizes[language] ? sizes[language]!.chars.toLocaleString() : '…'}</td>
+                  <SizeCells result={sizes[language]} />
                   <td>
                     {language === 'python'
                       ? 'the reference'
@@ -215,5 +219,42 @@ export function ComparePage() {
         </p>
       </section>
     </article>
+  )
+}
+
+/**
+ * The lines/characters cells of one table row.
+ *
+ * These are the `Loadable` states made visible rather than collapsed: while the
+ * chunk is in flight both cells hold a placeholder, a loaded chunk fills in the
+ * real counts, and a chunk that failed says so in the cell instead of leaving an
+ * ellipsis behind that reads as "still loading" forever. That is the whole point
+ * of keeping the `Result` here instead of flattening it to an empty string -- a
+ * failed chunk and a slow one no longer look identical.
+ */
+function SizeCells({ result }: { result: Loadable<string> | undefined }) {
+  if (result === undefined) {
+    return (
+      <>
+        <td>…</td>
+        <td>…</td>
+      </>
+    )
+  }
+  // `isOk` narrows positively, so `else` is the error variant and `result.error`
+  // type-checks without a cast.
+  if (!isOk(result)) {
+    return (
+      <td className="compare__error" colSpan={2}>
+        {result.error}
+      </td>
+    )
+  }
+  const { chars, lines } = { chars: result.value.length, lines: result.value.split('\n').length }
+  return (
+    <>
+      <td>{lines}</td>
+      <td>{chars.toLocaleString()}</td>
+    </>
   )
 }

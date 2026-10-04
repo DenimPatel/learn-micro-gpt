@@ -993,10 +993,25 @@ pre.code-block code {
   color: var(--faint);
 }
 
-.code-panel__missing {
+.compare__error {
+  padding: 18px;
+  color: var(--amber-ink);
+  font-size: var(--text-sm);
+}
+
+/*
+ * The shared loading/error states for an asynchronous load (see
+ * `components/LoadableResult.tsx`). Muted for the wait, which is not a problem
+ * to report, and the amber warning ink for a failure, which is.
+ */
+.loadable__message {
   padding: 18px;
   color: var(--faint);
   font-size: var(--text-sm);
+}
+
+.loadable--error .loadable__message {
+  color: var(--amber-ink);
 }
 
 .dark-only {

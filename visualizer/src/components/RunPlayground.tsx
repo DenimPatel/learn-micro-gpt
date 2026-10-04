@@ -18,7 +18,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { loadSource, loadedSource } from '../data/sources'
+import { ok } from '../data/types'
 import { CodePanel } from './CodePanel'
+import { LoadableResult, loadableText, type Loadable } from './LoadableResult'
 import { LossChart, LiveLossChart } from './widgets'
 import { PYODIDE_PINNED_VERSION, createWorker, type WorkerResponse } from '../worker/protocol'
 import {
@@ -38,20 +40,31 @@ export function RunPlayground() {
   const [edited, setEdited] = useState<string | null>(null)
   // The reference source, loaded from its own chunk. The editor needs it in
   // hand, so it is fetched eagerly here rather than lazily by a CodePanel.
-  const [reference, setReference] = useState<string | null>(() => loadedSource('python') ?? null)
+  // `Loadable<string>` is the loader's own `Result` while it is in flight and
+  // `undefined` before it: one shape for "not loaded", "loaded" and "failed".
+  const [reference, setReference] = useState<Loadable<string>>(() => {
+    const cached = loadedSource('python')
+    return cached === undefined ? undefined : ok(cached)
+  })
   const workerRef = useRef<Worker | null>(null)
   const textRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
+    if (reference !== undefined) return
     let cancelled = false
-    // `loadSource` resolves a `Result`, so a failed chunk is a value here rather
-    // than an unhandled rejection; the editor simply stays empty, as before.
+    // `loadSource` resolves a `Result`, and this effect keeps the whole of it
+    // rather than extracting the value: the failure variant is what the editor
+    // renders instead of an empty box (`LoadableResult` below), so the message
+    // has somewhere to go.
     void loadSource('python').then((result) => {
-      if (!cancelled && result.ok) setReference(result.value)
+      if (!cancelled) setReference(result)
     })
     return () => {
       cancelled = true
     }
+    // `reference` is a guard, not a dependency: including it would restart the
+    // import that just resolved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -80,6 +93,10 @@ export function RunPlayground() {
     setRun(failRunState(message, recoverable))
   }, [])
 
+  // The editor and the worker both want the loaded text; while the chunk is in
+  // flight (or after it failed) that is the empty string, exactly as before.
+  const referenceText = loadableText(reference)
+
   const start = useCallback(() => {
     if (typeof Worker === 'undefined') {
       failRun(
@@ -105,7 +122,7 @@ export function RunPlayground() {
         type: 'run',
         steps: 200,
         temperature: 0.5,
-        source: edited ?? reference ?? '',
+        source: edited ?? referenceText,
         dataset: DATASET_PLACEHOLDER,
       })
     } catch (error) {
@@ -117,7 +134,7 @@ export function RunPlayground() {
         false,
       )
     }
-  }, [edited, failRun, onMessage, reference])
+  }, [edited, failRun, onMessage, referenceText])
 
   const cancel = useCallback(() => {
     workerRef.current?.postMessage({ type: 'cancel' })
@@ -247,15 +264,29 @@ export function RunPlayground() {
           <label className="visually-hidden" htmlFor="source-editor">
             The reference source, editable
           </label>
-          <textarea
-            id="source-editor"
-            ref={textRef}
-            className="editor"
-            spellCheck={false}
-            value={edited ?? reference ?? ''}
-            onChange={(e) => setEdited(e.target.value)}
-            rows={24}
-          />
+          {/*
+            The editor is a loadable resource too: until the chunk lands there
+            is no text to edit, and if it fails there never will be. The same
+            `LoadableResult` the code panel uses draws all three states, so the
+            failure is a sentence rather than an empty textarea.
+          */}
+          <LoadableResult
+            result={reference}
+            loading="loading the reference source…"
+            error={(message) => <>the reference source could not be loaded ({message}).</>}
+          >
+            {(source) => (
+              <textarea
+                id="source-editor"
+                ref={textRef}
+                className="editor"
+                spellCheck={false}
+                value={edited ?? source}
+                onChange={(e) => setEdited(e.target.value)}
+                rows={24}
+              />
+            )}
+          </LoadableResult>
           <button
             type="button"
             className="button"

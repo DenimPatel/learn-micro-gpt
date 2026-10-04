@@ -81,6 +81,17 @@ describe('the Result helpers', () => {
     if (isErr(result)) expect(result.error).toBe('chunk vanished')
   })
 
+  it('narrows to the failure variant in the else branch of an isOk guard', () => {
+    // The consumers (and `LoadableResult`) branch on `isOk` and read `.error`
+    // in the `else`, so the narrowing has to hold there too, not just via
+    // `isErr`. If `isOk` did not carry a type predicate this would not compile:
+    // `result.value` is what an un-guarded `Result` offers, and the `else` arm
+    // would have no `.error` to read.
+    const result: Result<number> = err('chunk vanished')
+    const rendered = isOk(result) ? `ok: ${result.value}` : `error: ${result.error}`
+    expect(rendered).toBe('error: chunk vanished')
+  })
+
   it('keeps the error type defaulting to a plain string message', () => {
     const result: Result<number> = err('boom')
     expect(result.ok).toBe(false)

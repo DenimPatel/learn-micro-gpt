@@ -26,8 +26,9 @@
 import { useEffect, useId, useMemo, useState } from 'react'
 import { useHighlight } from '../content/highlight'
 import { HIGHLIGHT_LANG, LANGUAGES, anchorFor, loadSource, loadedSource } from '../data/sources'
-import type { Language } from '../data/types'
+import { ok, type Language } from '../data/types'
 import { Icon } from './Icon'
+import { LoadableResult, type Loadable } from './LoadableResult'
 
 const CONTEXT_LINES = 3
 
@@ -63,9 +64,6 @@ export function CodePanel({
   focus?: { start: number; end: number }
   defaultOpen?: boolean
 }) {
-  const [expanded, setExpanded] = useState(defaultOpen)
-  const panelId = useId()
-
   /*
    * The source arrives asynchronously, because each language is a dynamic
    * `?raw` import in its own chunk (see `data/sources.ts` for why). Until it
@@ -77,16 +75,22 @@ export function CodePanel({
    * loads the rest would each setState on mount -- a synchronous state update
    * inside an effect, which is a cascading render, and eslint's
    * `set-state-in-effect` rule is right about that.
+   *
+   * The state is `Loadable<string>` -- the loader's own `Result` while it is in
+   * flight, `undefined` before. A failed chunk is therefore a *rendered* error
+   * state (`LoadableResult` below) rather than the empty box this used to fall
+   * back to: it is now a value the promise resolves, so there is somewhere for
+   * it to go.
    */
-  const [source, setSource] = useState<string | null>(() => loadedSource(language) ?? null)
+  const [source, setSource] = useState<Loadable<string>>(() => {
+    const cached = loadedSource(language)
+    return cached === undefined ? undefined : ok(cached)
+  })
   useEffect(() => {
-    if (source !== null) return
+    if (source !== undefined) return
     let cancelled = false
-    // `loadSource` resolves a `Result` rather than rejecting, so a failed chunk
-    // would leave the panel empty here -- which is what it renders today -- but
-    // it is now a value this `.then` sees instead of an unhandled rejection.
     void loadSource(language).then((result) => {
-      if (!cancelled && result.ok) setSource(result.value)
+      if (!cancelled) setSource(result)
     })
     return () => {
       cancelled = true
@@ -102,26 +106,61 @@ export function CodePanel({
     return anchorFor(conceptId, language) ?? null
   }, [focus, conceptId, language])
 
-  const text = source ?? ''
-  const lines = useMemo(() => text.split('\n'), [text])
-  const from = range ? Math.max(0, range.start - 1 - CONTEXT_LINES) : 0
-  const to = range ? Math.min(lines.length, range.end + CONTEXT_LINES) : lines.length
-  const slice = lines.slice(from, to).join('\n')
-  const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
-  const { html: darkHtml, ready: darkReady } = useHighlight(slice, HIGHLIGHT_LANG[language], 'dark')
-  const [copied, setCopied] = useState(false)
-
-  if (source === null) {
+  if (source === undefined || !source.ok) {
     const name = LANGUAGES[language].label
     return (
       <div className="code-panel" role="group" aria-label={`loading the ${language} source`}>
         <div className="code-panel__bar">
           <span className="code-panel__name">{name}</span>
         </div>
-        <p className="code-panel__missing">loading the {name} source&hellip;</p>
+        <LoadableResult
+          result={source}
+          loading={`loading the ${name} source\u2026`}
+          error={(message) => (
+            <>
+              the {name} source could not be loaded ({message}).
+            </>
+          )}
+        >
+          {() => null}
+        </LoadableResult>
       </div>
     )
   }
+
+  return (
+    <CodeBody language={language} source={source.value} range={range} defaultOpen={defaultOpen} />
+  )
+}
+
+/**
+ * The loaded panel: a `Result` narrowed to its success variant.
+ *
+ * Split out so the hooks below it (`useHighlight` twice over the slice) run
+ * unconditionally, and so the body deals in a plain `string` rather than
+ * unwrapping a `Result` at every read. The `Result` is the prop, not the text,
+ * because that is what "this panel has a source" is *typed* as.
+ */
+function CodeBody({
+  language,
+  source,
+  range,
+  defaultOpen,
+}: {
+  language: Language
+  source: string
+  range: { start: number; end: number } | null
+  defaultOpen: boolean
+}) {
+  const [expanded, setExpanded] = useState(defaultOpen)
+  const panelId = useId()
+  const lines = useMemo(() => source.split('\n'), [source])
+  const from = range ? Math.max(0, range.start - 1 - CONTEXT_LINES) : 0
+  const to = range ? Math.min(lines.length, range.end + CONTEXT_LINES) : lines.length
+  const slice = lines.slice(from, to).join('\n')
+  const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
+  const { html: darkHtml, ready: darkReady } = useHighlight(slice, HIGHLIGHT_LANG[language], 'dark')
+  const [copied, setCopied] = useState(false)
 
   const label = range
     ? `${language} source, lines ${range.start} to ${range.end} of ${lines.length}`
