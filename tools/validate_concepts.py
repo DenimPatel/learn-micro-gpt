@@ -285,6 +285,40 @@ def check_graph(
             f"lookup here assumes a mapping."
         )
 
+    # `glossary` is checked here, next to `chapters`, because the two have the
+    # same failure mode and the same fix: every consumer reaches into the
+    # mapping with `.get` and no shape check, so a wrong shape is not rejected,
+    # it is *dereferenced*. `check_bodies` builds its term set with
+    # `set(index.get("glossary", {}).get("terms", {}))` and `build_index_payload`
+    # emits `index.get("glossary", {}).get("terms", {})` verbatim into the
+    # visualizer's payload.
+    #
+    # The inner `terms` shape is the one that actually bites. A list there is
+    # silently *wrong* rather than fatal on both sides: `set(["a","b"])` is a
+    # perfectly good set that happens to contain the wrong members, so `:::term`
+    # validation compares against nonsense and passes, and the payload ships a
+    # list where the visualizer expects a mapping. A bare string is worse still --
+    # `set("abc")` is `{"a","b","c"}`, so the check starts validating terms
+    # against individual characters. Both are the silent-wrong-answer class this
+    # file exists to catch, which is why they are errors and not warnings.
+    glossary = index.get("glossary", {})
+    if glossary is None:
+        glossary = {}
+    if not isinstance(glossary, dict):
+        raise ContentError(
+            f"content/index.json: 'glossary' must be an object, got "
+            f"{type(glossary).__name__}"
+        )
+    terms = glossary.get("terms", {})
+    if terms is None:
+        terms = {}
+    if not isinstance(terms, dict):
+        raise ContentError(
+            f"content/index.json: 'glossary.terms' must be an object mapping each "
+            f"term to its definition, got {type(terms).__name__}. Every `:::term` "
+            f"check and the visualizer's glossary payload read it as a mapping."
+        )
+
     chapters = index.get("chapters", [])
     if not chapters:
         report.error("index.json declares no chapters")

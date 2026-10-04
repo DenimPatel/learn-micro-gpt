@@ -18,7 +18,7 @@ from pathlib import Path
 from unittest import mock
 
 from tools import concepts as content
-from tools import gen_anchors, selectors, tag_fences, trace, validate_concepts
+from tools import gen_anchors, render_content, selectors, tag_fences, trace, validate_concepts
 from tools.validate_concepts import Report, validate_against_schema
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -1494,6 +1494,135 @@ class TestMalformedIndexJson(unittest.TestCase):
         finally:
             validate_concepts.REPO_ROOT = original
         self.assertEqual(code, 1)
+
+
+class TestMalformedGlossary(unittest.TestCase):
+    """A `glossary` of the wrong shape is a ContentError naming the key.
+
+    The outer shape (`glossary` is not an object) is the easy half: it used to
+    reach `.get` and raise a bare `AttributeError`. The inner shape is the one
+    that actually bit, because it fails *silently and plausibly* instead of
+    loudly: `check_bodies` builds its term set with
+    `set(index.get("glossary", {}).get("terms", {}))`, so `terms: ["a", "b"]` is
+    a perfectly valid set containing the wrong members -- `:::term` validation
+    then compares against nonsense and passes -- and `terms: "abc"` becomes
+    `{"a", "b", "c"}`, validating terms against individual characters.
+    `build_index_payload` shipped both straight into the visualizer's glossary.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="glossary-test-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        (self.tmp / "content").mkdir()
+        self.path = self.tmp / "content" / "index.json"
+
+    def write_index(self, document: object) -> None:
+        self.path.write_text(json.dumps(document), encoding="utf-8")
+
+    def test_a_non_mapping_glossary_names_the_key(self) -> None:
+        for bad in (["attention", "logits"], "attention", 42):
+            with self.subTest(glossary=bad):
+                self.write_index({"glossary": bad})
+                index = content.load_index(self.tmp)
+                with self.assertRaises(content.ContentError) as caught:
+                    validate_concepts.check_graph([], index, Report())
+                message = str(caught.exception)
+                self.assertIn("glossary", message)
+                self.assertIn(type(bad).__name__, message)
+
+    def test_a_list_of_terms_names_the_inner_key(self) -> None:
+        """The silent-wrong-answer case: this used to validate clean."""
+        self.write_index({"glossary": {"terms": ["attention", "logits"]}})
+        index = content.load_index(self.tmp)
+        with self.assertRaises(content.ContentError) as caught:
+            validate_concepts.check_graph([], index, Report())
+        message = str(caught.exception)
+        self.assertIn("glossary.terms", message)
+        self.assertIn("list", message)
+
+    def test_a_string_of_terms_names_the_inner_key(self) -> None:
+        """`set("abc")` is `{"a","b","c"}` -- terms checked against characters."""
+        self.write_index({"glossary": {"terms": "attention"}})
+        index = content.load_index(self.tmp)
+        with self.assertRaises(content.ContentError) as caught:
+            validate_concepts.check_graph([], index, Report())
+        self.assertIn("glossary.terms", str(caught.exception))
+
+    def test_an_absent_or_null_glossary_is_still_allowed(self) -> None:
+        """The guard must not be strict about absence. `None` is how JSON spells
+        "not set" and a document without the key is legal -- rejecting either
+        would break content that is fine."""
+        for document in (
+            {},
+            {"glossary": None},
+            {"glossary": {}},
+            {"glossary": {"terms": None}},
+        ):
+            with self.subTest(document=document):
+                self.write_index(document)
+                index = content.load_index(self.tmp)
+                validate_concepts.check_graph([], index, Report())  # must not raise
+
+    def test_the_render_payload_refuses_the_same_shapes(self) -> None:
+        """`render_content` is reachable without the validator, so it repeats the
+        check rather than trusting it. Both must reject the same input, or a
+        second entry point reintroduces exactly the silent payload this class of
+        bug is about."""
+        for bad in (["attention"], "attention", 42, {"terms": ["attention"]},
+                    {"terms": "attention"}):
+            with self.subTest(glossary=bad):
+                with self.assertRaises(content.ContentError):
+                    render_content.build_index_payload(
+                        [],
+                        {"chapters": [], "reference": {}, "hyperparameters": {},
+                         "glossary": bad},
+                    )
+
+    def test_the_two_guards_agree_on_every_shape(self) -> None:
+        """The validator and the renderer must make the same call, shape for shape.
+
+        They are separate code paths and were written separately, so the failure
+        mode is a divergence: one rejects what the other tolerates. That is how a
+        second entry point reintroduces a bad shape the first one catches -- the
+        renderer's original `or {}` silently accepted `[]`, `''`, `0` and `False`
+        while `check_graph` rejected all four. Asserting agreement rather than
+        listing the rejected shapes means a future edit to either guard is caught
+        here instead of in a payload nobody validates.
+        """
+        shapes = [
+            [], "", 0, False, None, {},
+            ["attention"], "attention", 42,
+            {"terms": []}, {"terms": ""}, {"terms": 0}, {"terms": None},
+            {"terms": {}}, {"terms": {"logit": "a score"}}, {"terms": ["a"]},
+        ]
+        for glossary in shapes:
+            with self.subTest(glossary=glossary):
+                index = {"chapters": [], "reference": {}, "hyperparameters": {},
+                         "glossary": glossary}
+                try:
+                    validate_concepts.check_graph([], dict(index), Report())
+                    validator_ok = True
+                except content.ContentError:
+                    validator_ok = False
+                try:
+                    render_content.build_index_payload([], dict(index))
+                    renderer_ok = True
+                except content.ContentError:
+                    renderer_ok = False
+                self.assertEqual(
+                    validator_ok,
+                    renderer_ok,
+                    f"guards disagree on glossary={glossary!r}: "
+                    f"validator accepts={validator_ok}, renderer accepts={renderer_ok}",
+                )
+
+    def test_the_render_payload_accepts_the_real_index(self) -> None:
+        """Guarding must not change valid output. The real 12-term glossary has
+        to come through unchanged, or this fix is a regression the tests miss."""
+        index = content.load_index(REPO_ROOT)
+        payload = render_content.build_index_payload([], index)
+        self.assertEqual(len(payload["glossary"]), 12)
+        self.assertIn("logit", payload["glossary"])
 
 
 class TestDanglingSchemaRef(unittest.TestCase):

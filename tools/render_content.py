@@ -38,7 +38,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from tools.concepts import Concept, load_all, load_index  # noqa: E402
+from tools.concepts import Concept, ContentError, load_all, load_index  # noqa: E402
 
 OUT_DIR = REPO_ROOT / "visualizer" / "src" / "data" / "generated"
 CONTENT_OUT = OUT_DIR / "content.json"
@@ -94,6 +94,38 @@ def render_concept(concept: Concept) -> dict[str, Any]:
     }
 
 
+def _glossary_terms(index: dict[str, Any]) -> dict[str, Any]:
+    """`index["glossary"]["terms"]`, or a `ContentError` naming the bad shape.
+
+    Deliberately strict about the *inner* shape for the same reason the validator
+    is: a list of terms is not merely a type error here, it is a plausible-looking
+    payload that the visualizer will render as an empty glossary. Failing with the
+    key name beats shipping that.
+
+    `is None` rather than falsy/`or`: the two sides must agree on what is legal,
+    and `or {}` would silently tolerate `[]`, `""`, `0` and `False`, which
+    `check_graph` rejects. A guard that disagrees with the guard next to it is
+    how a second entry point reintroduces the shape the first one catches.
+    """
+    glossary = index.get("glossary")
+    if glossary is None:
+        glossary = {}
+    if not isinstance(glossary, dict):
+        raise ContentError(
+            f"content/index.json: 'glossary' must be an object, got "
+            f"{type(glossary).__name__}"
+        )
+    terms = glossary.get("terms")
+    if terms is None:
+        terms = {}
+    if not isinstance(terms, dict):
+        raise ContentError(
+            f"content/index.json: 'glossary.terms' must be an object mapping each "
+            f"term to its definition, got {type(terms).__name__}"
+        )
+    return terms
+
+
 def build_index_payload(concepts: list[Concept], index: dict[str, Any]) -> dict[str, Any]:
     by_id = {c.id: c for c in concepts}
     chapters = []
@@ -134,7 +166,13 @@ def build_index_payload(concepts: list[Concept], index: dict[str, Any]) -> dict[
         "hyperparameters": index["hyperparameters"],
         "chapters": chapters,
         "edges": edges,
-        "glossary": index.get("glossary", {}).get("terms", {}),
+        # Shape-checked rather than `.get`-ed into the payload: `validate_concepts`
+        # rejects a non-mapping glossary, but this module is also reachable
+        # without it, and emitting a list or a bare string here would put a
+        # shape the visualizer cannot read into generated output -- a failure
+        # that surfaces as an empty glossary in the browser, not as an error.
+        # Same rule the validator applies, so the two agree on what is legal.
+        "glossary": _glossary_terms(index),
     }
 
 
