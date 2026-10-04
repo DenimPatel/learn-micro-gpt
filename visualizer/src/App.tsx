@@ -32,6 +32,7 @@ import { chapters, conceptCount, firstConcept, firstUnread } from './data/sequen
 import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
+import { ConceptSearch } from './components/ConceptSearch'
 import { PageErrorBoundary } from './components/ErrorBoundary'
 import { Icon } from './components/Icon'
 import { RunPlayground } from './components/RunPlayground'
@@ -257,27 +258,13 @@ export function App() {
             {seen.size > 0 ? <ResetProgress count={seen.size} onReset={resetSeen} /> : null}
           </div>
 
-          {chapters.map((chapter) => (
-            <section key={chapter.id} className="app__sidebar-group">
-              <h2>{chapter.title}</h2>
-              <ol>
-                {chapter.concepts.map((entry) => {
-                  const current = route.name === 'concept' && route.conceptId === entry.id
-                  return (
-                    <li key={entry.id}>
-                      <a
-                        href={hrefFor({ name: 'concept', conceptId: entry.id })}
-                        className={seen.has(entry.id) ? 'is-opened' : undefined}
-                        aria-current={current ? 'page' : undefined}
-                      >
-                        {entry.title}
-                      </a>
-                    </li>
-                  )
-                })}
-              </ol>
-            </section>
-          ))}
+          {/* The rail's filter. It owns its own query, so a keystroke re-renders
+              this component and not the reading column beside it. */}
+          <ConceptSearch
+            seen={seen}
+            currentId={route.name === 'concept' ? route.conceptId : undefined}
+            onNavigate={() => setRailRoute(null)}
+          />
         </aside>
 
         <main id="main" ref={mainRef} tabIndex={-1} className="app__main">

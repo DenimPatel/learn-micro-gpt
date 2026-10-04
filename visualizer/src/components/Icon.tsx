@@ -31,6 +31,7 @@ export type IconName =
   | 'check'
   | 'file'
   | 'reset'
+  | 'search'
 
 const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
   sun: [
@@ -60,6 +61,10 @@ const PATHS: Record<IconName, { d: string; fill?: boolean }[]> = {
   check: [{ d: 'M5 12.5 10 17.5 19 7' }],
   file: [{ d: 'M6 3.5h7.5L18 8v12.5H6Z' }, { d: 'M13.5 3.5V8H18' }, { d: 'M9 12.5h6M9 16h4' }],
   reset: [{ d: 'M20 12a8 8 0 1 1-2.6-5.9' }, { d: 'M20 3.6V8h-4.4' }],
+  search: [
+    { d: 'M10.8 4.5a6.3 6.3 0 1 0 0 12.6 6.3 6.3 0 0 0 0-12.6Z' },
+    { d: 'M15.4 15.4 20 20' },
+  ],
 }
 
 export function Icon({ name, size = 16 }: { name: IconName; size?: number }) {
