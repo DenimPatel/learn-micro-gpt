@@ -92,7 +92,20 @@ class SelectorError(Exception):
 
 
 class SelectorSyntaxError(SelectorError):
-    """The selector does not match the grammar."""
+    """The request is malformed: no source text could make it valid.
+
+    Two shapes. The one the name was coined for is a selector string that does
+    not match the grammar -- an unknown prefix, an unparseable `offset:`. The
+    second is a `Span` built from something that is not a pair of line numbers,
+    which is why `Span.__post_init__` raises this rather than the unresolved
+    error below: a `Span("1", 5)` never got as far as *matching* anything.
+
+    The distinction matters to a caller that reports the two differently. This
+    one means "fix the request" -- the selector text, or the code constructing
+    the span. `SelectorUnresolvedError` means "fix the source, or the anchor":
+    the selector was well-formed and simply did not find the region it names.
+    Getting them backwards sends the reader to the wrong file.
+    """
 
 
 class SelectorUnresolvedError(SelectorError):
@@ -137,11 +150,14 @@ class Span:
             # int-shaped thing".
             #
             # Checked before the comparison below, because that comparison is what
-            # leaked: `self.start < 1` against a `str` or `None` raises
-            # `TypeError: '<' not supported between instances of ...`, which escapes
-            # the module's catch contract exactly the way the bare `ValueError` did
-            # before IMP-DNEW-1. Callers catch `SelectorError` to name the concept
-            # and selector; anything else reaches the reader as a traceback.
+            # leaked for a bad *start*: `self.start < 1` against a `str` or `None`
+            # raises `TypeError: '<' not supported between instances of ...`, which
+            # escapes the module's catch contract exactly the way the bare
+            # `ValueError` did before IMP-DNEW-1. Callers catch `SelectorError` to
+            # name the concept and selector; anything else reaches the reader as a
+            # traceback. A bad *end* did not leak here -- it constructed, and failed
+            # later inside `len()`, which is why the check covers both fields
+            # instead of only the one with a comparison below it.
             #
             # `SelectorSyntaxError` rather than `SelectorUnresolvedError`, and the
             # distinction is the point. Unresolved means "the selector matched, but

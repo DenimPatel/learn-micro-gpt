@@ -413,12 +413,15 @@ class TestSpan(unittest.TestCase):
 
     def test_a_non_integer_line_number_is_a_selector_error(self) -> None:
         # The annotation says `int` and nothing enforced it. Two distinct failures
-        # hid behind that: a `str`/`None` leaked a bare `TypeError` out of the
-        # `self.start < 1` comparison below -- the same escape the bare
-        # `ValueError` was before IMP-DNEW-1 -- and a `float` leaked a `TypeError`
-        # from `len()`. Neither is a `SelectorError`, so a caller doing the
-        # documented `except SelectorError` got a traceback instead of a
-        # diagnostic naming the concept and selector.
+        # hid behind that, split by position. A bad *start* leaked a bare
+        # `TypeError` from the `self.start < 1` comparison at construction -- the
+        # same escape the bare `ValueError` was before IMP-DNEW-1. A bad *end*
+        # constructed fine and only leaked later, out of `len()`'s arithmetic or
+        # `clamp()`'s comparison, which is arguably worse: the span exists, is
+        # passed around, and fails somewhere that no longer knows which anchor
+        # caused it. Neither is a `SelectorError`, so a caller doing the documented
+        # `except SelectorError` got a traceback instead of a diagnostic naming
+        # the concept and selector.
         for value in ("1", None, "abc", [], {}, b"1"):
             for start, end in ((value, 5), (1, value)):
                 with self.subTest(start=start, end=end):
