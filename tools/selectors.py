@@ -128,6 +128,34 @@ class Span:
     end: int  # 1-based, inclusive
 
     def __post_init__(self) -> None:
+        for name, value in (("start", self.start), ("end", self.end)):
+            # `bool` is a subclass of `int`, so `isinstance(True, int)` is true and
+            # a plain int check would accept `Span(True, 5)`. That is not pedantry:
+            # `True == 1`, so the span would be a *silently wrong* one-line span at
+            # line 1 -- accepted, rendered, and never questioned. Excluding `bool`
+            # explicitly is the only way to say "a line number" rather than "an
+            # int-shaped thing".
+            #
+            # Checked before the comparison below, because that comparison is what
+            # leaked: `self.start < 1` against a `str` or `None` raises
+            # `TypeError: '<' not supported between instances of ...`, which escapes
+            # the module's catch contract exactly the way the bare `ValueError` did
+            # before IMP-DNEW-1. Callers catch `SelectorError` to name the concept
+            # and selector; anything else reaches the reader as a traceback.
+            #
+            # `SelectorSyntaxError` rather than `SelectorUnresolvedError`, and the
+            # distinction is the point. Unresolved means "the selector matched, but
+            # not a region that exists" -- a missing line, a stale anchor. A
+            # `Span("1", 5)` never got as far as matching: no source text could make
+            # it correct, so it is a malformed *request*, which is what SyntaxError
+            # already means in this module. Both are `SelectorError`, so every
+            # existing caller still catches it.
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise SelectorSyntaxError(
+                    f"line numbers must be integers, got {name}={value!r} "
+                    f"({type(value).__name__}); a span is a pair of 1-based line "
+                    f"numbers"
+                )
         if self.start < 1:
             # Same catch contract as clamp() below: callers catch SelectorError
             # and turn it into a diagnostic naming the concept and selector. A

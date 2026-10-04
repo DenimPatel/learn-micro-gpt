@@ -411,6 +411,67 @@ class TestSpan(unittest.TestCase):
         self.assertIn("start=-3", message)
         self.assertIn("1-based", message)
 
+    def test_a_non_integer_line_number_is_a_selector_error(self) -> None:
+        # The annotation says `int` and nothing enforced it. Two distinct failures
+        # hid behind that: a `str`/`None` leaked a bare `TypeError` out of the
+        # `self.start < 1` comparison below -- the same escape the bare
+        # `ValueError` was before IMP-DNEW-1 -- and a `float` leaked a `TypeError`
+        # from `len()`. Neither is a `SelectorError`, so a caller doing the
+        # documented `except SelectorError` got a traceback instead of a
+        # diagnostic naming the concept and selector.
+        for value in ("1", None, "abc", [], {}, b"1"):
+            for start, end in ((value, 5), (1, value)):
+                with self.subTest(start=start, end=end):
+                    with self.assertRaises(selectors.SelectorError) as ctx:
+                        selectors.Span(start, end)
+                    message = str(ctx.exception)
+                    self.assertIn("integer", message)
+                    self.assertIn(type(value).__name__, message)
+
+    def test_a_float_line_number_is_not_silently_accepted(self) -> None:
+        # `Span(1.5, 5)` is not a line number, and it is not a TypeError either --
+        # it *constructs*, and only falls over later inside `len()` or arithmetic,
+        # far from the anchor that caused it. This is the item's real finding.
+        for start, end in ((1.5, 5), (1, 1.5), (2.0, 3.0)):
+            with self.subTest(start=start, end=end):
+                with self.assertRaises(selectors.SelectorSyntaxError):
+                    selectors.Span(start, end)
+
+    def test_a_boolean_line_number_is_not_silently_accepted(self) -> None:
+        # The trap the item called out: `bool` is a subclass of `int`, so
+        # `isinstance(True, int)` is true and a naive check accepts it. It is worse
+        # than a type error because `True == 1`, so `Span(True, 5)` was a
+        # *silently wrong* span at line 1 -- a plausible span, rendered and never
+        # questioned. A false `end` is the same shape: `Span(1, False)` used to
+        # construct, and its `len()` then depended on `max(0, ...)`.
+        for start, end in ((True, 5), (1, True), (False, 5), (1, False)):
+            with self.subTest(start=start, end=end):
+                with self.assertRaises(selectors.SelectorSyntaxError):
+                    selectors.Span(start, end)
+
+    def test_type_errors_say_which_end_is_wrong(self) -> None:
+        # `start` and `end` fail for different reasons and a caller fixing an anchor
+        # needs to know which one to edit. The loop over both fields could easily
+        # report the wrong name, so pin it.
+        with self.assertRaises(selectors.SelectorSyntaxError) as ctx:
+            selectors.Span(1, None)
+        self.assertIn("end=None", str(ctx.exception))
+        with self.assertRaises(selectors.SelectorSyntaxError) as ctx:
+            selectors.Span(None, 5)
+        self.assertIn("start=None", str(ctx.exception))
+
+    def test_a_non_integer_span_is_a_syntax_error_not_an_unresolved_one(self) -> None:
+        # The distinction is load-bearing and easy to get backwards. Unresolved
+        # means "matched, but not a region that exists" -- a stale anchor, which is
+        # a content problem. A `Span("1", 5)` never matched anything and no source
+        # text could make it valid, so it is a malformed *request*. Both are
+        # `SelectorError`, so callers are unaffected, but a caller that reports the
+        # two differently must not be told to go look at the source.
+        with self.assertRaises(selectors.SelectorSyntaxError):
+            selectors.Span("1", 5)
+        with self.assertRaises(selectors.SelectorUnresolvedError):
+            selectors.Span(0, 5)
+
     def test_an_offset_that_goes_off_the_top_is_still_a_selector_error(self) -> None:
         # The route that does reach it today raises earlier, in `apply_offset`.
         # Pinned so the two stay consistent: whichever guard fires, the caller
