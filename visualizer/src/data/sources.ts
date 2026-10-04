@@ -26,7 +26,37 @@
  * 213 kB to roughly 160 kB gzipped.
  */
 
-import type { Language } from './types'
+import { err, ok, type Language, type Result } from './types'
+
+/**
+ * Turn a thrown value into the message a `Result` carries.
+ *
+ * A rejected dynamic import arrives as whatever was thrown, which is nearly
+ * always an `Error` but is not guaranteed to be one, so this is the one place
+ * that has to cope with both. It must never itself throw.
+ */
+export function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * The boundary where a rejected import becomes a value.
+ *
+ * All three loaders below route their dynamic import through this, and nothing
+ * else in the file catches. That is deliberate: it makes the one function a
+ * failed chunk runs through small enough to test on its own -- and it needs to
+ * be tested on its own, because Vite resolves a `?raw` import before Vitest's
+ * mock registry sees it, so the import itself cannot be made to fail from a
+ * test. Injecting the loader here is the closest a test can get, and it is the
+ * same code path.
+ */
+export async function intoResult<T>(load: () => Promise<T>): Promise<Result<T>> {
+  try {
+    return ok(await load())
+  } catch (error) {
+    return err(messageOf(error))
+  }
+}
 
 /**
  * The five tracks, lazily.
@@ -45,13 +75,19 @@ const LOADERS: Record<Language, () => Promise<string>> = {
 
 const cache = new Map<Language, string>()
 
-/** Load one source, once. The `python` case is awaited eagerly; see `useSource`. */
-export async function loadSource(language: Language): Promise<string> {
+/** Load one source, once. The `python` case is awaited eagerly; see `useSource`.
+ *
+ * Resolves rather than rejects. The dynamic `?raw` imports below are the only
+ * place a chunk can fail to arrive, and a rejection there would be an unhandled
+ * promise rejection at every call site -- so the boundary where it can happen is
+ * the boundary that turns it into a value every caller has to look at.
+ */
+export async function loadSource(language: Language): Promise<Result<string>> {
   const cached = cache.get(language)
-  if (cached !== undefined) return cached
-  const text = await LOADERS[language]()
-  cache.set(language, text)
-  return text
+  if (cached !== undefined) return ok(cached)
+  const result = await intoResult(LOADERS[language])
+  if (result.ok) cache.set(language, result.value)
+  return result
 }
 
 export function loadedSource(language: Language): string | undefined {
@@ -93,13 +129,16 @@ const CANDIDATE_LOADERS: Record<string, () => Promise<string>> = {
 
 const candidateCaches: Record<string, string> = {}
 
-export async function loadCandidate(track = 'rust'): Promise<string> {
-  if (candidateCaches[track] !== undefined) return candidateCaches[track]
+export async function loadCandidate(track = 'rust'): Promise<Result<string>> {
+  if (candidateCaches[track] !== undefined) return ok(candidateCaches[track])
   const loader = CANDIDATE_LOADERS[track]
-  if (!loader) return ''
-  const text = await loader()
-  candidateCaches[track] = text
-  return text
+  // An unknown track is not a failure: there is simply no candidate for it, and
+  // the page renders an empty box. Keeping that a success with an empty value
+  // keeps "this track has no candidate" distinguishable from "the chunk failed".
+  if (!loader) return ok('')
+  const result = await intoResult(loader)
+  if (result.ok) candidateCaches[track] = result.value
+  return result
 }
 
 export function loadedCandidate(track = 'rust'): string | undefined {
@@ -155,12 +194,14 @@ function trackPatchSuffix(track: string): string {
   return track === 'rust' ? 'best-vs-baseline.patch' : `best-vs-baseline-${track}.patch`
 }
 
-/** The patch for one experiment, by run id. Rejected if that run never happened. */
-export async function loadPatch(runId: string): Promise<string | null> {
+/** The patch for one experiment, by run id. `null` if that run never happened. */
+export async function loadPatch(runId: string): Promise<Result<string | null>> {
   const key = `../../../autoresearch/diffs/${runId}.patch`
   const loader = PATCH_LOADERS[key]
-  if (!loader) return null
-  return (await loader()) as string
+  // `null` is "no patch was recorded", which is an honest answer the page shows;
+  // a failed import is a different state and must stay distinguishable from it.
+  if (!loader) return ok(null)
+  return intoResult(async () => (await loader()) as string)
 }
 
 export const LANGUAGES: Record<Language, { label: string; id: string; note: string }> = {

@@ -78,8 +78,8 @@ vi.mock('../src/data/sources', () => ({
   // another, and neither effect runs. They have to exist because the module is
   // imported by name.
   loadedCandidate: () => undefined,
-  loadCandidate: () => Promise.resolve(''),
-  loadPatch: () => Promise.resolve(null),
+  loadCandidate: () => Promise.resolve({ ok: true as const, value: '' }),
+  loadPatch: () => Promise.resolve({ ok: true as const, value: null }),
   bestVsBaselinePatch: () => '',
 }))
 

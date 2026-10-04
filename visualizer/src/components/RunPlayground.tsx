@@ -44,8 +44,10 @@ export function RunPlayground() {
 
   useEffect(() => {
     let cancelled = false
-    void loadSource('python').then((text) => {
-      if (!cancelled) setReference(text)
+    // `loadSource` resolves a `Result`, so a failed chunk is a value here rather
+    // than an unhandled rejection; the editor simply stays empty, as before.
+    void loadSource('python').then((result) => {
+      if (!cancelled && result.ok) setReference(result.value)
     })
     return () => {
       cancelled = true

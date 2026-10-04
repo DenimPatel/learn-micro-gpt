@@ -1460,8 +1460,10 @@ function Divergence({ patch, track }: { patch: string; track: ResearchTrack }) {
   useEffect(() => {
     if (candidate !== null) return
     let cancelled = false
-    void loadCandidate(track).then((text) => {
-      if (!cancelled) setCandidate(text)
+    // `loadCandidate` resolves a `Result`, so a failed chunk leaves the count
+    // showing "loading…" rather than becoming an unhandled rejection.
+    void loadCandidate(track).then((result) => {
+      if (!cancelled && result.ok) setCandidate(result.value)
     })
     return () => {
       cancelled = true
@@ -1535,9 +1537,12 @@ function RunPatches({ track }: { track: ResearchTrack }) {
               setPatch(null)
               setMissing(false)
               if (!next) return
-              void loadPatch(next).then((text) => {
-                if (text === null) setMissing(true)
-                else setPatch(text)
+              void loadPatch(next).then((result) => {
+                // `null` still means "no patch recorded"; `{ok:false}` -- a failed
+                // chunk -- gets the same notice rather than an unhandled
+                // rejection, since the reader can do nothing different about it.
+                if (!result.ok || result.value === null) setMissing(true)
+                else setPatch(result.value)
               })
             }}
           >

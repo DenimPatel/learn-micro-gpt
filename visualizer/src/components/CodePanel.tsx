@@ -82,8 +82,11 @@ export function CodePanel({
   useEffect(() => {
     if (source !== null) return
     let cancelled = false
-    void loadSource(language).then((text) => {
-      if (!cancelled) setSource(text)
+    // `loadSource` resolves a `Result` rather than rejecting, so a failed chunk
+    // would leave the panel empty here -- which is what it renders today -- but
+    // it is now a value this `.then` sees instead of an unhandled rejection.
+    void loadSource(language).then((result) => {
+      if (!cancelled && result.ok) setSource(result.value)
     })
     return () => {
       cancelled = true

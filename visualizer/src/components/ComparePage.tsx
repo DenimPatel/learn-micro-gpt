@@ -33,7 +33,13 @@ export function ComparePage() {
     let cancelled = false
     void Promise.all(
       ORDER.map(async (language) => {
-        const text = loadedSource(language) ?? (await loadSource(language))
+        // `loadSource` resolves a `Result`, so a failed chunk is a value rather
+        // than a rejection that would take the whole `Promise.all` -- and with it
+        // the table -- down. On failure the row falls back to `''` (0 chars, 1
+        // line), the table still renders, and the success path is unchanged.
+        const cached = loadedSource(language)
+        const result = cached !== undefined ? null : await loadSource(language)
+        const text = cached ?? (result && result.ok ? result.value : '')
         return [language, { chars: text.length, lines: text.split('\n').length }] as const
       }),
     ).then((entries) => {

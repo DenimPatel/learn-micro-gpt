@@ -7,6 +7,28 @@
  * typechecker should complain. That is the whole value of having them separate.
  */
 
+/**
+ * A load either succeeded with a value or failed with an error.
+ *
+ * Loaders are the boundary where a rejected dynamic import becomes a value, so
+ * no caller has to remember a `.catch` that nothing makes it write.
+ */
+export type Result<T, E = string> = { ok: true; value: T } | { ok: false; error: E }
+
+/** Constructors and narrowing helpers, so call sites read as English. */
+export function ok<T>(value: T): Result<T, never> {
+  return { ok: true, value }
+}
+export function err<E>(error: E): Result<never, E> {
+  return { ok: false, error }
+}
+export function isOk<T, E>(r: Result<T, E>): r is { ok: true; value: T } {
+  return r.ok
+}
+export function isErr<T, E>(r: Result<T, E>): r is { ok: false; error: E } {
+  return !r.ok
+}
+
 export type Language = 'python' | 'c' | 'go' | 'rust' | 'typescript'
 
 export type ChapterId = 'data' | 'machinery' | 'architecture' | 'training' | 'inference'
