@@ -27,8 +27,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRoute, hrefFor, type Route, type RouteName } from './app/router'
 import { useProgress, useTheme } from './app/state'
+import { startPrompt } from './app/firstRun'
 import { TRACK_ORDER, conceptsById, index } from './data/sources'
-import { chapters, conceptCount, firstConcept, firstUnread } from './data/sequence'
+import { chapters, conceptCount, chapterOf } from './data/sequence'
 import { AtlasGraph } from './components/AtlasGraph'
 import { ComparePage } from './components/ComparePage'
 import { ConceptNotFound, ConceptPage } from './components/ConceptPage'
@@ -440,14 +441,18 @@ function ConceptRoute({
 /**
  * The home page.
  *
- * A hero, the two ways in, the three reasons to believe it, and the recorded run.
- * The four numbers under the title are the ones a reader can check against
+ * A hero, the way in, the three reasons to believe it, and the recorded run. The
+ * four numbers under the title are the ones a reader can check against
  * `content/index.json` and `traces/`; they are not decoration and they are not
  * rounded.
+ *
+ * "The way in" is the guided "start here" surface: a first-time reader is
+ * invited to begin at the first concept of the curriculum, and a reader who has
+ * opened anything at all gets a quieter "continue" link instead -- see `StartHere`
+ * and `app/firstRun.ts`. The decision is a pure function of the seen-set, so it
+ * is unit-tested rather than implied by the markup.
  */
 function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number }) {
-  const first = firstConcept
-  const next = firstUnread(seen)
   const parameters = Number(index.hyperparameters.num_params ?? 0)
 
   return (
@@ -465,28 +470,7 @@ function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number })
           program in four other languages.
         </p>
 
-        <div className="home__cta">
-          {next ? (
-            <a
-              className="button button--primary"
-              href={hrefFor({ name: 'concept', conceptId: next.id })}
-            >
-              {seen.size === 0 ? 'start reading' : `continue: ${next.title}`}
-              <Icon name="arrow" size={14} />
-            </a>
-          ) : (
-            <a
-              className="button button--primary"
-              href={hrefFor({ name: 'concept', conceptId: first?.id ?? '' })}
-            >
-              start again from the beginning
-              <Icon name="arrow" size={14} />
-            </a>
-          )}
-          <a className="button" href={hrefFor({ name: 'run' })}>
-            run it in your browser
-          </a>
-        </div>
+        <StartHere seen={seen} />
 
         <dl className="home__stats">
           <div>
@@ -539,6 +523,99 @@ function HomePage({ seen, total }: { seen: ReadonlySet<string>; total: number })
       <LossChart />
       <SamplesList />
     </article>
+  )
+}
+
+/**
+ * The home page's invitation to begin.
+ *
+ * ## What it is for
+ *
+ * A reader arriving for the first time sees a graph and a rail of eighteen
+ * concepts and no ordered invitation: nothing says "read this one first". The
+ * curriculum's order already exists in `index.json`, so this surface just has to
+ * point at it.
+ *
+ * ## Why it de-emphasises rather than disappears
+ *
+ * The acceptance criterion is "de-emphasises once at least one concept is seen",
+ * and de-emphasising is the honest reading: a returning reader still needs a way
+ * back into the curriculum from the home page, and hiding the link would take
+ * that away for the sake of not shouting. So the *prominence*, not the link,
+ * changes with progress (see `.home__start.is-started` in the stylesheet):
+ *
+ *  - a first-timer gets a primary button reading "start here" -- with the chapter
+ *    it starts, so the invitation is concrete -- beside the playground link, and
+ *    a line saying where in the eighteen it begins;
+ *  - a reader who has started gets the same destination as a quieter bordered
+ *    "continue: <title>" link, the playground button taking over the primary
+ *    slot, and a line reporting how far through the curriculum they are. The
+ *    progress is still legible at a glance; it is simply no longer the loudest
+ *    thing on the page.
+ *
+ * Not rendering the link at all would also satisfy the wording, and would be
+ * worse for the reader: the home page is where someone who has been away comes
+ * back to. The e2e test pins the guarantee that matters either way -- it is no
+ * longer a primary call to action, and it no longer says "start".
+ */
+function StartHere({ seen }: { seen: ReadonlySet<string> }) {
+  const { state, target } = startPrompt(seen)
+  const chapter = target ? chapterOf(target.id) : undefined
+  const started = state !== 'begin'
+
+  // One branch owns the whole surface, because every line below talks about the
+  // target concept and none of it makes sense without one. Written as an early
+  // return rather than a `target &&` inside the JSX so the typechecker, not a
+  // reviewer, is what proves the link never renders with an empty id.
+  if (!target) {
+    return (
+      <div className="home__start is-started">
+        <div className="home__cta">
+          <a className="button" href={hrefFor({ name: 'learn' })}>
+            all {conceptCount} concepts read
+            <Icon name="arrow" size={14} />
+          </a>
+        </div>
+        <p className="home__start-note">every concept is marked read in this browser</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className={started ? 'home__start is-started' : 'home__start'}>
+      <div className="home__cta">
+        <a
+          className={started ? 'home__continue' : 'button button--primary'}
+          href={hrefFor({ name: 'concept', conceptId: target.id })}
+        >
+          {started ? `continue: ${target.title}` : 'start here'}
+          <Icon name="arrow" size={14} />
+        </a>
+        <a
+          className={started ? 'button button--primary' : 'button'}
+          href={hrefFor({ name: 'run' })}
+        >
+          run it in your browser
+        </a>
+      </div>
+      <p className="home__start-note">
+        {started ? (
+          <>
+            {seen.size} of {conceptCount} read &mdash; next up, <strong>{target.title}</strong>
+          </>
+        ) : (
+          <>
+            begins with <strong>{target.title}</strong>
+            {chapter ? (
+              <>
+                {' '}
+                &mdash; chapter {chapter.order}, {chapter.title}
+              </>
+            ) : null}
+          </>
+        )}
+      </p>
+    </div>
   )
 }
 

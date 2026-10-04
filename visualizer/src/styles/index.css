@@ -1475,6 +1475,74 @@ td {
   margin-top: 2em;
 }
 
+/*
+ * The guided "start here" surface.
+ *
+ * Two states, same slot in the hero, and the *only* difference between them is
+ * emphasis -- which is what "de-emphasise" means here. A first-time reader gets
+ * the primary button, so the loudest thing on the page is the invitation to
+ * begin. A reader who has already opened something keeps the same destination,
+ * demoted to `.home__continue` (a quiet bordered link, not a filled button) and
+ * with the playground taking over the primary slot.
+ *
+ * That choice is deliberate: the progress note under the buttons -- "3 of 18
+ * read -- next up, ..." -- is fine print, but the *link back into the
+ * curriculum* is not optional. A reader returning after a week has no other
+ * route from this page into the ordered course, so the link de-emphasises
+ * rather than vanishing.
+ */
+.home__start {
+  margin-top: 2em;
+}
+
+.home__start .home__cta {
+  margin-top: 0;
+}
+
+.home__continue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 2px 5px 0;
+  border-bottom: 1px solid color-mix(in oklab, var(--edge) 90%, transparent);
+  color: var(--ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  text-decoration: none;
+  transition:
+    color 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+.home__continue:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  text-decoration: none;
+}
+
+.home__continue svg {
+  flex: none;
+  transition: transform 0.15s var(--ease);
+}
+
+.home__continue:hover svg {
+  transform: translateX(2px);
+}
+
+.home__start-note {
+  margin: 0.9em 0 0;
+  color: var(--faint);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.home__start-note strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
 .home__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

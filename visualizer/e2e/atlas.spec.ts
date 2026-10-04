@@ -799,7 +799,7 @@ test.describe('reading progress: the empty, full and reset states', () => {
 
   test('the header CTA invites a first read, then offers to continue', async ({ page }) => {
     await page.goto('./')
-    await expect(page.getByRole('link', { name: /start reading/i })).toBeVisible()
+    await expect(page.getByRole('link', { name: /start here/i })).toBeVisible()
     // Seed a single read, rather than visiting a page and racing the write the
     // concept page makes on mount: this test is about the copy the CTA chooses,
     // not about when the mark lands.
