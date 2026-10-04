@@ -19,6 +19,32 @@
  * proves the claim rather than assuming it. The 404-outside-the-prefix behaviour
  * is unchanged: it is correct, and the parameterisation is not a licence to
  * weaken it.
+ *
+ * ## The under-prefix miss serves `404.html` (GitHub Pages' model)
+ *
+ * GitHub Pages serves the built `dist/404.html` with an HTTP 404 status for any
+ * path it cannot resolve. Before this, the miss branch wrote plain text
+ * (`not found: <path>`) and never read `404.html` -- the file the build emits was
+ * emitted, compared in CI, and never served by anything. The two behaviours now
+ * agree with production: the miss returns 404.html's bytes, status 404, HTML.
+ *
+ * Serving the document is all this can do, and all Pages does. It does **not**
+ * guarantee the app boots: `base: './'` makes the shell's `./assets/...` resolve
+ * against the *directory* of the served URL, so a one-segment miss
+ * (`/repo/nope` -> `/repo/`) boots, while the multi-segment shape a history
+ * router would produce (`/repo/nope/softmax` -> `/repo/nope/assets/...`) serves
+ * the shell and then mounts nothing. That is a property of relative asset URLs,
+ * not of this branch, and it is pinned in `e2e/not-found.spec.ts` so nobody
+ * reads "the fallback is served" as "the fallback works".
+ *
+ * The *outside*-the-prefix* branch stays plain text on purpose (above): a request
+ * that is not under the mount point is a different condition from a path that is
+ * under it but missing -- it does not reach this project site at all -- so the
+ * plain-text refusal is kept. Only the under-prefix miss changed.
+ *
+ * If `dist/404.html` is absent -- a dist built before the fallback existed -- the
+ * miss falls back to the old plain-text 404 rather than crashing, so the server
+ * remains usable against any dist.
  */
 import { createReadStream, existsSync, statSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -75,6 +101,19 @@ const server = createServer((request, response) => {
   // bypasses historically.
   const target = join(ROOT, normalize(pathname).replace(/^(\.\.[/\\])+/, ''))
   if (!target.startsWith(ROOT) || !existsSync(target) || !statSync(target).isFile()) {
+    // Under the prefix but missing: GitHub Pages serves `404.html` here, with a
+    // 404 status, so a deep link into a history-routed build still boots the app
+    // shell. `404.html` is emitted by `vite.config.ts` as a copy of `index.html`.
+    const fallback = join(ROOT, '404.html')
+    if (existsSync(fallback) && statSync(fallback).isFile()) {
+      response.writeHead(404, {
+        'content-type': 'text/html; charset=utf-8',
+        'cache-control': 'no-store',
+      })
+      createReadStream(fallback).pipe(response)
+      return
+    }
+    // No fallback in this build: keep the plain-text 404 rather than crash.
     response.writeHead(404, { 'content-type': 'text/plain' })
     response.end(`not found: ${pathname}`)
     return
