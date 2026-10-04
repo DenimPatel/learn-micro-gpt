@@ -58,7 +58,17 @@ def _strip_comment(line: str) -> str:
         quote = match.group(0)
         end = line.find(quote, match.end())
         if end < 0:
-            break  # unterminated literal: never reached in real source
+            # No closing quote on this line: a lone `"""` (a docstring
+            # delimiter, opening or closing its run on another line), a string
+            # built across lines, or an apostrophe in prose. Routinely reached,
+            # not just on malformed input -- the anchored reference source alone
+            # has two `"""` lines, one opening a docstring and one closing it.
+            # Stopping here leaves `index` at the end of the last *balanced*
+            # literal, so the comment search below resumes from there rather
+            # than from inside the unclosed run. A leading `#` still strips
+            # normally; the point is only that the unclosed quote is not treated
+            # as a delimiter the scanner has passed.
+            break
         index = end + len(quote)
     tail = line[index:]
     hash_at = tail.find("#")

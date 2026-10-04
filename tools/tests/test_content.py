@@ -1365,6 +1365,19 @@ class TestTagFencesNormalise(unittest.TestCase):
     def test_a_comment_only_line_normalises_to_empty(self) -> None:
         self.assertEqual(tag_fences.normalise("# only a comment"), "")
 
+    def test_a_lone_triple_quote_delimiter_is_not_treated_as_a_comment(self) -> None:
+        # A `"""` line opens a docstring whose run closes on a later line. The
+        # scanner matches the three quotes as one token, finds no second `"""` on
+        # the same line, and stops instead of treating the unclosed run as text
+        # it has passed. This is the *routine* path for docstring delimiters, not
+        # a malformed-input edge case: two such lines sit in the anchored
+        # reference source `tag` normalises. The line comes back unchanged.
+        self.assertEqual(tag_fences.normalise('"""'), '"""')
+        # Anything after a complete literal, then an unclosed quote, is still
+        # scanned for a comment from the safe position -- so a real trailing
+        # comment is stripped even when an apostrophe follows it.
+        self.assertEqual(tag_fences.normalise("x = 'a'  # don't"), "x = 'a'")
+
     def test_comment_inside_a_call_still_truncates(self) -> None:
         # The `#` here is genuinely a comment, not inside a literal.
         self.assertEqual(tag_fences.normalise("foo(  # inline"), "foo(")
