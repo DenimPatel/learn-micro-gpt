@@ -96,7 +96,9 @@ Six lines that call microgpt::run(). Frozen with its crate; see the note on lib.
 - **License:** Same as upstream: Karpathy's code, our commentary
 - **Upstream:** <https://gist.github.com/karpathy/8627fe009c40f57531cb18360106ce95>
 
-A FORK, not the reference. It is a reading aid and is deliberately excluded from the parity gate. The line numbers differ completely from microgpt.py, so never anchor a concept to it.
+A FORK, not the reference: its digest is recorded above, but it is not byte-compared against upstream. It is a reading aid, and its commentary is the point. The line numbers differ completely from microgpt.py, so never anchor a concept to it.
+
+`make verify-provenance` still holds it to the reference where it matters: `tools/check_annotated_sync.py` parses both files and compares the code with comments and whitespace stripped, so the fork cannot silently drift from the algorithm it explains. The one deliberate difference it tolerates is the reference's single grouped `learning_rate, beta1, beta2, eps_adam = ...` assignment, which the annotated file splits into four assignments for line-by-line commentary; the check unwraps that pair structurally and verifies the four values the grouped form carried, so a changed constant is still caught.
 
 ### `implementations/c/microgpt.c`
 
