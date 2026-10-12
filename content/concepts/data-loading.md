@@ -32,11 +32,12 @@ That is a name dataset: 32,033 of them, one per line. The comprehension strips
 whitespace, splits on newlines, and drops empties — so a trailing newline in the
 file does not produce a phantom empty document.
 
-Then `random.shuffle(docs)`. The seed on line 11 makes this reproducible, which
-matters more than it looks: `docs[step % len(docs)]` walks the list in order, so
-*the shuffle is the only thing deciding which name step 0 sees*. Without it, the
-model trains on the first 1000 names in the file and only ever sees names
-starting with 'a'. That is a real bug, and it is silent — the loss still falls.
+Then [`random.shuffle(docs)`](cite:19). The seed on line 11 makes this
+reproducible, which matters more than it looks: `docs[step % len(docs)]` walks the
+list in order, so *the shuffle is the only thing deciding which name step 0
+sees*. Without it, the model trains on the first 1000 names in the file and only
+ever sees names starting with 'a'. That is a real bug, and it is silent — the
+loss still falls.
 
 :::callout "The shuffle is not optional"
 Without it you are training on an alphabet, not on a language. The loss curve

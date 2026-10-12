@@ -917,6 +917,43 @@ a:hover {
   text-decoration-color: var(--accent);
 }
 
+/*
+ * A citation -- a phrase that scrolls the code panel to a line range.
+ *
+ * It is rendered as a `<button>` (it acts on the page, it does not navigate), so
+ * every one of the browser's button defaults has to be turned off or it will
+ * arrive as a grey rounded box in the middle of a paragraph. `font: inherit` and
+ * `display: inline` bring it back to running text; the underline and the accent
+ * colour are lifted from `.prose a` above so a citation and a real link are
+ * indistinguishable until one is clicked -- which is the point. To the reader
+ * this is a link; the difference is a detail of the DOM, not of the page.
+ */
+.prose .cite {
+  display: inline;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--accent) 40%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.prose .cite:hover {
+  text-decoration-color: var(--accent);
+}
+
+.prose .cite:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .prose ul,
 .prose ol {
   padding-left: 1.15em;

@@ -1772,5 +1772,129 @@ class TestNonFiniteNumbers(unittest.TestCase):
         self.assertEqual(report.errors, [])
 
 
+class TestCitationGate(unittest.TestCase):
+    """A prose citation that points outside its own anchor fails the build.
+
+    This is the machine half of "citations resolve from the anchors, not from a
+    line number in the markup". The number in the sentence and the window the
+    panel crops to have to agree, and nothing at render time can check that: by
+    then the prose is text and the anchor is a different file's line range. So
+    the check lives here, against the same committed `anchors.json` the browser
+    reads.
+
+    The grammar is mirrored in `visualizer/src/content/cite.ts`, and the examples
+    below are the same ones its vitest suite uses -- a form one side accepts and
+    the other rejects is a citation that either fails the build for no reason or
+    renders as a dead control.
+    """
+
+    def setUp(self) -> None:
+        self.tmp = Path(tempfile.mkdtemp(prefix="citation-test-"))
+        for name in ("content", "reference", "data", "implementations", "visualizer", "tools"):
+            source = REPO_ROOT / name
+            if source.is_dir():
+                shutil.copytree(source, self.tmp / name)
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        # `check_citations` reads the committed file, so the tmp copy has to be
+        # regenerated once the tree exists -- the copy carried the *real*
+        # repository's resolved ranges, which no longer line up with the tmp
+        # reference file's line numbers if any test patched a concept above.
+        self._regen()
+
+    def _regen(self) -> None:
+        result = gen_anchors.build(self.tmp)
+        self.assertFalse(result["failures"], result["failures"])
+        path = self.tmp / "visualizer" / "src" / "data" / "generated" / "anchors.json"
+        path.write_text(json.dumps(result["document"], indent=2) + "\n", encoding="utf-8")
+
+    def patch(self, name: str, old: str, new: str) -> None:
+        path = self.tmp / "content" / "concepts" / f"{name}.md"
+        text = path.read_text(encoding="utf-8")
+        self.assertIn(old, text, f"{name}: {old!r} not found")
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
+        self._regen()
+
+    def citations(self) -> list[str]:
+        report = Report()
+        loaded = content.load_all(self.tmp)
+        validate_concepts.check_citations(loaded, report, self.tmp)
+        return report.errors
+
+    def test_the_real_corpus_has_a_resolving_citation(self) -> None:
+        # The feature is only "done" if it is used; an empty check would pass on
+        # any corpus, including one where nobody wrote a citation at all.
+        self.assertEqual(self.citations(), [])
+        text = (self.tmp / "content" / "concepts" / "data-loading.md").read_text(encoding="utf-8")
+        self.assertIn("](cite:19)", text)
+
+    def test_a_range_inside_the_anchor_passes(self) -> None:
+        # data-loading's Python anchor is the section at lines 13-20.
+        self.patch("data-loading", "](cite:19)", "](cite:14-16)")
+        self.assertEqual(self.citations(), [])
+
+    def test_a_range_outside_the_anchor_is_caught(self) -> None:
+        # The failure the gate exists for: the prose cites a line the panel crops
+        # away, so the reader clicks and nothing visibly happens.
+        self.patch("data-loading", "](cite:19)", "](cite:200)")
+        errors = self.citations()
+        self.assertTrue(any("outside this concept's" in e and "anchored range" in e for e in errors), errors)
+
+    def test_a_range_straddling_the_anchor_edge_is_caught(self) -> None:
+        # Only the end overhangs. A check that compared only the start, or only
+        # the end, would let this through.
+        self.patch("data-loading", "](cite:19)", "](cite:20-21)")
+        errors = self.citations()
+        self.assertTrue(any("outside this concept's" in e and "anchored range" in e for e in errors), errors)
+
+    def test_a_range_inside_a_non_primary_window_is_still_caught(self) -> None:
+        # The disagreement this gate had to be *taught* not to have. data-loading
+        # also anchors C at 397-484, and the two windows do not overlap. A
+        # citation valid in the C window is a dead control on the page, whose
+        # visible panel is Python -- so checking "any declared language" would
+        # pass it and check the wrong thing. The gate has to name the primary
+        # language, the same one `canCite` in `ConceptPage.tsx` checks.
+        self.patch("data-loading", "](cite:19)", "](cite:400)")
+        errors = self.citations()
+        self.assertTrue(
+            any("outside this concept's python anchored range" in e for e in errors), errors
+        )
+
+    def test_an_inverted_range_is_caught(self) -> None:
+        self.patch("data-loading", "](cite:19)", "](cite:20-14)")
+        errors = self.citations()
+        self.assertTrue(any("is not a line range" in e for e in errors), errors)
+
+    def test_a_non_numeric_range_is_caught(self) -> None:
+        self.patch("data-loading", "](cite:19)", "](cite:the-shuffle)")
+        errors = self.citations()
+        self.assertTrue(any("is not a line range" in e for e in errors), errors)
+
+    def test_a_typoed_scheme_is_not_a_citation(self) -> None:
+        # `Cite:19` is a different href. It renders as an ordinary link (or a
+        # broken one), and the gate correctly has nothing to say about it --
+        # which is the boundary between "citation" and "link" holding.
+        self.patch("data-loading", "](cite:19)", "](Cite:19)")
+        self.assertEqual(self.citations(), [])
+
+    def test_the_grammar_agrees_with_the_typescript_copy(self) -> None:
+        # The examples `visualizer/tests/cite.test.ts` asserts on, run through
+        # the Python parser. Inverting or loosening either side has to fail here.
+        for raw, expected in (
+            ("11", (11, 11)),
+            ("11-12", (11, 12)),
+            ("1", (1, 1)),
+            ("7-7", (7, 7)),
+            ("20-11", None),
+            ("0", None),
+            ("0-3", None),
+            ("eleven", None),
+            ("11-", None),
+            ("-11", None),
+            ("1.5", None),
+            ("1-2-3", None),
+        ):
+            self.assertEqual(validate_concepts._parse_cite(raw), expected, raw)
+
+
 if __name__ == "__main__":
     unittest.main()

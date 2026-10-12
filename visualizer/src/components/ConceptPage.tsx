@@ -23,7 +23,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Math, Markdown, headings } from '../content/markdown'
-import { anchors, conceptsById, languagesFor } from '../data/sources'
+import { withinAnchor } from '../content/cite'
+import { anchorFor, anchors, conceptsById, languagesFor } from '../data/sources'
 import { chapterOf, neighbours } from '../data/sequence'
 import type { Block, Concept, Language } from '../data/types'
 import { CodePanel } from './CodePanel'
@@ -48,6 +49,42 @@ export function ConceptPage({
   const [primary, ...rest] = languages
   const chapter = chapterOf(concept.id)
   const difficulty = concept.difficulty ?? 1
+
+  /*
+   * Which line range the primary panel is focused on, when a citation has moved
+   * it. `null` means "the concept's own anchor", which is what the panel shows by
+   * default -- so the state is an *override*, not the value, which is why it can
+   * start empty and why a citation that resolves to the concept's own range is
+   * still a meaningful click rather than a no-op.
+   */
+  const [cited, setCited] = useState<{ start: number; end: number } | null>(null)
+
+  /*
+   * A citation resolves against the concept's *declared anchors*, never against a
+   * line number baked into the markup (acceptance criterion 2). The prose sits
+   * beside one panel -- the primary language -- so a range has to fall inside
+   * *that* language's resolved window to be clickable: `data-loading` anchors
+   * Python 13-20 and C 397-484, and a citation drawn from the C window would
+   * highlight nothing in the Python panel the reader is actually looking at.
+   * `withinAnchor` is the same containment check, against the same primary
+   * language, that `tools/validate_concepts.py` runs at build time; the two agree
+   * because they ask the identical question, not because they happened to.
+   *
+   * The resolution is split in two on purpose. `canCite` is a pure predicate the
+   * renderer asks "would this be clickable?" while building elements -- it must
+   * not touch state, or the first citation would focus the panel during render,
+   * before the reader clicked anything. `followCite` is the click, and it is the
+   * only place `setCited` is called.
+   */
+  const canCite = (range: { start: number; end: number }): boolean => {
+    if (!primary) return false
+    return withinAnchor(range, anchorFor(concept.id, primary))
+  }
+
+  const followCite = (range: { start: number; end: number }): void => {
+    if (!canCite(range)) return
+    setCited(range)
+  }
 
   return (
     <div className="concept-page">
@@ -97,7 +134,13 @@ export function ConceptPage({
           to this one rather than a peer of it, so it gets the open panel and the
           others get closed ones.
         */}
-        {primary ? <CodePanel language={primary as Language} conceptId={concept.id} /> : null}
+        {primary ? (
+          <CodePanel
+            language={primary as Language}
+            conceptId={concept.id}
+            focus={cited ?? undefined}
+          />
+        ) : null}
 
         {rest.length > 0 ? (
           <section className="concept__ports" aria-label="The same code in other languages">
@@ -122,7 +165,12 @@ export function ConceptPage({
 
         <div className="prose">
           {concept.blocks.map((block, blockIndex) => (
-            <BlockView key={blockIndex} block={block} />
+            <BlockView
+              key={blockIndex}
+              block={block}
+              onCite={primary ? canCite : undefined}
+              onActivate={primary ? followCite : undefined}
+            />
           ))}
         </div>
 
@@ -136,10 +184,24 @@ export function ConceptPage({
   )
 }
 
-function BlockView({ block }: { block: Block }) {
+function BlockView({
+  block,
+  onCite,
+  onActivate,
+}: {
+  block: Block
+  /** Whether a prose citation resolves against the panel's visible range. */
+  onCite?: ((range: { start: number; end: number }) => boolean) | undefined
+  /** Follows a prose citation the reader clicked. */
+  onActivate?: ((range: { start: number; end: number }) => void) | undefined
+}) {
   switch (block.kind) {
     case 'prose':
-      return <Markdown>{block.markdown}</Markdown>
+      return (
+        <Markdown onCite={onCite} onActivate={onActivate}>
+          {block.markdown}
+        </Markdown>
+      )
 
     case 'callout':
     case 'note':
@@ -151,7 +213,9 @@ function BlockView({ block }: { block: Block }) {
               {block.title}
             </p>
           ) : null}
-          <Markdown>{block.markdown ?? ''}</Markdown>
+          <Markdown onCite={onCite} onActivate={onActivate}>
+            {block.markdown ?? ''}
+          </Markdown>
         </aside>
       )
 

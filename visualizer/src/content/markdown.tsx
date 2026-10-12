@@ -21,6 +21,7 @@ import { marked } from 'marked'
 import katex from 'katex'
 import type { ReactNode } from 'react'
 import { createElement, Fragment } from 'react'
+import { parseCite, type CiteRange } from './cite'
 
 // `mangle` was removed in marked v13: email obfuscation is off, and the
 // `headerIds` option it sat next to is gone too. Both defaults are what we want.
@@ -192,14 +193,58 @@ function headingIds(tokens: unknown[]): Map<number, string> {
  * it is what lets math be rendered as React elements and links be given real
  * `href`s -- no `dangerouslySetInnerHTML` on the markdown path, and every element
  * is inspectable.
+ *
+ * ## Citations
+ *
+ * A link whose href is a `cite:` range is a *citation*: instead of an `<a>` that
+ * navigates, it becomes a button that scrolls the code panel to the line range.
+ * Whether it should be one is decided here, from the href alone, and the decision
+ * is handed to `onCite`. That predicate returns whether the range can resolve; a
+ * `false` -- no panel, no such line, a concept that declares no anchor in any
+ * language -- falls back to rendering the citation as plain text, because a
+ * button that does nothing when clicked is worse than a number that was never
+ * made clickable. It runs during render and must be pure; the click itself goes
+ * through `onActivate`, so the state change happens on the event, not on the
+ * pass that builds the elements.
+ *
+ * The distinction matters because the *same* markdown is rendered in places that
+ * have no code panel at all (the glossary, the home page cards). There is no
+ * "current concept" there, so there is nothing to cite against, and the plain
+ * text is the honest rendering rather than a broken control.
  */
-export function Markdown({ children }: { children: string }) {
+export function Markdown({
+  children,
+  onCite,
+  onActivate,
+}: {
+  children: string
+  /**
+   * Whether a citation's range can be resolved right now; `true` if it can. A
+   * *pure* predicate: the renderer calls it while building elements to decide
+   * button-versus-text, so it must not mutate state (a `setState` here is a
+   * state update during render, which React will apply on the same pass and
+   * which would leave the panel focused on the first citation before any click).
+   */
+  onCite?: ((range: CiteRange) => boolean) | undefined
+  /** Called when the reader actually clicks a citation. */
+  onActivate?: ((range: CiteRange) => void) | undefined
+}) {
   const tokens = marked.lexer(children)
   const ids = headingIds(tokens)
-  return <>{tokens.map((token, index) => renderToken(token, index, ids.get(index)))}</>
+  return (
+    <>
+      {tokens.map((token, index) => renderToken(token, index, ids.get(index), onCite, onActivate))}
+    </>
+  )
 }
 
-function renderToken(token: unknown, key: number, id?: string): ReactNode {
+function renderToken(
+  token: unknown,
+  key: number,
+  id?: string,
+  onCite?: (range: CiteRange) => boolean,
+  onActivate?: (range: CiteRange) => void,
+): ReactNode {
   const node = token as {
     type?: string
     text?: string
@@ -216,7 +261,7 @@ function renderToken(token: unknown, key: number, id?: string): ReactNode {
 
   switch (node.type) {
     case 'paragraph':
-      return <p key={key}>{renderInlineChildren(node.tokens ?? [])}</p>
+      return <p key={key}>{renderInlineChildren(node.tokens ?? [], onCite, onActivate)}</p>
 
     case 'heading': {
       const depth = node.depth ?? 2
@@ -224,7 +269,7 @@ function renderToken(token: unknown, key: number, id?: string): ReactNode {
       const Tag = `h${clamp(depth, 2, 6)}` as 'h2'
       return (
         <Tag key={key} id={id}>
-          {renderInlineChildren(node.tokens ?? [])}
+          {renderInlineChildren(node.tokens ?? [], onCite, onActivate)}
         </Tag>
       )
     }
@@ -237,7 +282,11 @@ function renderToken(token: unknown, key: number, id?: string): ReactNode {
       )
 
     case 'blockquote':
-      return <blockquote key={key}>{renderInlineChildren(node.tokens ?? [])}</blockquote>
+      return (
+        <blockquote key={key}>
+          {renderInlineChildren(node.tokens ?? [], onCite, onActivate)}
+        </blockquote>
+      )
 
     case 'list': {
       const Tag = node.ordered ? 'ol' : 'ul'
@@ -245,7 +294,11 @@ function renderToken(token: unknown, key: number, id?: string): ReactNode {
         <Tag key={key}>
           {(node.items ?? []).map((item, index) => (
             <li key={index}>
-              {renderInlineChildren((item as { tokens?: unknown[] }).tokens ?? [])}
+              {renderInlineChildren(
+                (item as { tokens?: unknown[] }).tokens ?? [],
+                onCite,
+                onActivate,
+              )}
             </li>
           ))}
         </Tag>
@@ -291,7 +344,29 @@ function renderToken(token: unknown, key: number, id?: string): ReactNode {
   }
 }
 
-function renderInlineChildren(tokens: unknown[]): ReactNode {
+/**
+ * The plain text of an inline token list, for use in an accessible name.
+ *
+ * `aria-label` takes a string, not elements, so the citation's rendered children
+ * cannot be reused there. Nesting is walked (`**bold**` is `strong` wrapping
+ * `text`) because a truncated label is worse than no label on the one control
+ * whose whole purpose is to name a location precisely.
+ */
+function labelText(tokens: unknown[]): string {
+  return tokens
+    .map((token) => {
+      const node = token as { text?: string; tokens?: unknown[] }
+      if (node.tokens?.length) return labelText(node.tokens)
+      return node.text ?? ''
+    })
+    .join('')
+}
+
+function renderInlineChildren(
+  tokens: unknown[],
+  onCite?: (range: CiteRange) => boolean,
+  onActivate?: (range: CiteRange) => void,
+): ReactNode {
   return tokens.map((token, index) => {
     const node = token as {
       type?: string
@@ -310,19 +385,51 @@ function renderInlineChildren(tokens: unknown[]): ReactNode {
          * instead of the emphasis and the code span.
          */
         if (node.tokens?.length)
-          return <Fragment key={index}>{renderInlineChildren(node.tokens)}</Fragment>
+          return (
+            <Fragment key={index}>{renderInlineChildren(node.tokens, onCite, onActivate)}</Fragment>
+          )
         return <Fragment key={index}>{renderInlineMath(node.text ?? '')}</Fragment>
       case 'strong':
-        return <strong key={index}>{renderInlineChildren(node.tokens ?? [])}</strong>
+        return (
+          <strong key={index}>{renderInlineChildren(node.tokens ?? [], onCite, onActivate)}</strong>
+        )
       case 'em':
-        return <em key={index}>{renderInlineChildren(node.tokens ?? [])}</em>
+        return <em key={index}>{renderInlineChildren(node.tokens ?? [], onCite, onActivate)}</em>
       case 'codespan':
         return <code key={index}>{node.text}</code>
       case 'br':
         return <br key={index} />
       case 'paragraph':
-        return <Fragment key={index}>{renderInlineChildren(node.tokens ?? [])}</Fragment>
-      case 'link':
+        return (
+          <Fragment key={index}>
+            {renderInlineChildren(node.tokens ?? [], onCite, onActivate)}
+          </Fragment>
+        )
+      case 'link': {
+        const label = renderInlineChildren(node.tokens ?? [], onCite, onActivate)
+        const cite = parseCite(node.href)
+        if (cite) {
+          const landed = onCite?.(cite) ?? false
+          // No handler, or a range that resolved to nothing: keep the author's
+          // words as text. See the `Markdown` doc comment.
+          if (!landed) return <Fragment key={index}>{label}</Fragment>
+          return (
+            <button
+              key={index}
+              type="button"
+              className="cite"
+              // The visible label is the author's own phrase, which is right for
+              // reading; the label names the target so the same phrase in two
+              // places is still distinguishable to a screen reader, and so the
+              // e2e suite can assert the citation points where it claims.
+              aria-label={`show ${labelText(node.tokens ?? [])} in the source`}
+              data-cite={`${cite.start}-${cite.end}`}
+              onClick={() => onActivate?.(cite)}
+            >
+              {label}
+            </button>
+          )
+        }
         return (
           <a
             key={index}
@@ -331,11 +438,12 @@ function renderInlineChildren(tokens: unknown[]): ReactNode {
               ? { target: '_blank', rel: 'noreferrer noopener' }
               : {})}
           >
-            {renderInlineChildren(node.tokens ?? [])}
+            {label}
           </a>
         )
+      }
       case 'del':
-        return <del key={index}>{renderInlineChildren(node.tokens ?? [])}</del>
+        return <del key={index}>{renderInlineChildren(node.tokens ?? [], onCite, onActivate)}</del>
       default:
         return node.text ? <Fragment key={index}>{renderInlineMath(node.text)}</Fragment> : null
     }

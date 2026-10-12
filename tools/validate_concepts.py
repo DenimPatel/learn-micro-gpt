@@ -42,6 +42,7 @@ _guard.require_module_invocation("validate_concepts", __package__)
 import hashlib
 import json
 import math
+import re
 import sys
 from typing import Any, Iterable
 
@@ -207,8 +208,6 @@ def validate_against_schema(
         if "maxLength" in schema and len(value) > schema["maxLength"]:
             report.error(f"{path}: longer than maxLength {schema['maxLength']}")
         if "pattern" in schema:
-            import re
-
             if not re.search(schema["pattern"], value):
                 report.error(f"{path}: {value!r} does not match /{schema['pattern']}/")
 
@@ -728,6 +727,121 @@ def check_anchors_current(concepts: list[Concept], report: Report, root: Path = 
         )
 
 
+#: A markdown link whose href is `cite:<start>` or `cite:<start>-<end>`.
+#:
+#: This grammar is deliberately tiny and is mirrored, character for character, in
+#: `visualizer/src/content/cite.ts`. The two runtimes cannot share code -- one is
+#: Python at build time, one is TypeScript in the browser -- so the grammar has to
+#: be small enough to keep in step by eye. The test suites on both sides use the
+#: same examples for the same reason: a form one accepts and the other rejects is
+#: a citation that either fails the build for no reason or renders as a dead
+#: control, and both are worse than not having the feature.
+CITE_RE = re.compile(r"\[[^\]]*\]\(cite:([^)\s]+)\)")
+
+
+def _parse_cite(raw: str) -> tuple[int, int] | None:
+    """`11` or `11-12` -> `(start, end)`; anything else -> `None`.
+
+    Mirrors `parseCite` in `visualizer/src/content/cite.ts`, including the
+    rejections: 1-based, inclusive, `start <= end`. An inverted range is refused
+    rather than swapped, because the author's number and the highlighted number
+    have to be the same number -- that is the whole point of the feature.
+    """
+    single = re.fullmatch(r"(\d+)", raw)
+    if single:
+        line = int(single.group(1))
+        return (line, line) if line >= 1 else None
+    span = re.fullmatch(r"(\d+)-(\d+)", raw)
+    if span:
+        start, end = int(span.group(1)), int(span.group(2))
+        if start < 1 or end < start:
+            return None
+        return (start, end)
+    return None
+
+
+def check_citations(concepts: list[Concept], report: Report, root: Path = REPO_ROOT) -> None:
+    """Every prose citation must resolve against the concept's primary anchor.
+
+    A citation is a line range written into a sentence: "the seed on line 11".
+    The reader clicks it and the code panel scrolls there. That only means
+    anything if the number is *right*, and "right" here has a precise meaning --
+    inside the window the panel crops to, in the language whose panel the prose
+    is attached to.
+
+    A concept can anchor several languages, but the prose sits beside one panel:
+    the primary language (`selectors.primary_language`, mirroring `TRACK_ORDER`
+    in the visualiser). A citation resolves against *that* window and no other.
+    Checking every declared language instead would be the seductive mistake -- it
+    passes a C-window citation on a page whose visible panel is Python, and the
+    reader gets a click that goes nowhere and a sentence citing a line they
+    cannot see. That is exactly the dead control this gate exists to prevent, so
+    the gate and the browser have to ask the same question, of the same language.
+
+    This is the one failure the browser cannot catch on its own, which is why it
+    is a build gate: by the time the page renders, the prose and the anchor have
+    parted ways, and the reader has no way to tell that the number is stale.
+
+    Read from the committed `anchors.json` rather than re-resolving the selectors,
+    because that file is what the browser will actually use -- `check_anchors_current`
+    has already failed the run if the two disagree, so this check and the rendered
+    page are looking at the same numbers by the time it runs.
+    """
+    path = root / "visualizer" / "src" / "data" / "generated" / "anchors.json"
+    if not path.is_file():
+        # `check_anchors_current` reports this; do not report it twice.
+        return
+    resolved = json.loads(path.read_text(encoding="utf-8")).get("concepts", {})
+
+    for concept in concepts:
+        declared = (concept.frontmatter.get("anchors") or {}).keys()
+        resolved_spans = resolved.get(concept.id) or {}
+        # The panel the prose sits next to: the first declared language in track
+        # order. A citation is only clickable in *this* panel, so this is the one
+        # window a range has to fall inside.
+        primary = selectors.primary_language(declared)
+        window = None
+        if primary is not None and primary in resolved_spans:
+            span = resolved_spans[primary]
+            window = (span["start"], span["end"])
+
+        for block in concept.blocks:
+            if not block.text:
+                continue
+            for match in CITE_RE.finditer(block.text):
+                parsed = _parse_cite(match.group(1))
+                if parsed is None:
+                    report.error(
+                        f"{concept.id} line {block.line_no}: `cite:{match.group(1)}` "
+                        f"is not a line range. Write `cite:11` or `cite:11-12` "
+                        f"(1-based, inclusive). See `visualizer/src/content/cite.ts`."
+                    )
+                    continue
+                start, end = parsed
+                if window is None:
+                    report.error(
+                        f"{concept.id} line {block.line_no}: `cite:{match.group(1)}` "
+                        f"has no anchor to resolve against -- this concept declares "
+                        f"no primary-language anchor that resolved. A citation needs "
+                        f"a code panel to point at."
+                    )
+                    continue
+                low, high = window
+                if start < low or end > high:
+                    report.error(
+                        f"{concept.id} line {block.line_no}: `cite:{match.group(1)}` "
+                        f"(lines {start}\u2013{end}) is outside this concept's "
+                        f"{primary} anchored range ({low}\u2013{high}). The code panel "
+                        f"crops to the primary language's anchor, so this citation "
+                        f"would scroll to a line the reader cannot see. Either point "
+                        f"it at a line inside the range, or widen the anchor."
+                    )
+                else:
+                    report.note(
+                        f"{concept.id}: citation cite:{match.group(1)} resolves"
+                    )
+
+
 def check_traces(report: Report, repo_root: Path = REPO_ROOT) -> None:
     root = repo_root / "traces"
     if not root.is_dir():
@@ -769,6 +883,7 @@ def main() -> int:
         check_bodies(concepts, index, report)
         check_reference_pin(index, report, REPO_ROOT)
         check_anchors_current(concepts, report, REPO_ROOT)
+        check_citations(concepts, report, REPO_ROOT)
         check_traces(report, REPO_ROOT)
     except ContentError as exc:
         print(f"content error: {exc}", file=sys.stderr)

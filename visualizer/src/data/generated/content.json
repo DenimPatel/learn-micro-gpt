@@ -388,11 +388,11 @@
       "blocks": [
         {
           "kind": "prose",
-          "markdown": "Everything downstream is a list of strings. Getting there is four lines, and one\nof them is a trap.\n\n## The four lines\n\n```python\ndocs = [l.strip() for l in open('input.txt').read().strip().split('\\n') if l.strip()]\nrandom.shuffle(docs)\nprint(f\"num docs: {len(docs)}\")\n```\n\nThat is a name dataset: 32,033 of them, one per line. The comprehension strips\nwhitespace, splits on newlines, and drops empties — so a trailing newline in the\nfile does not produce a phantom empty document.\n\nThen `random.shuffle(docs)`. The seed on line 11 makes this reproducible, which\nmatters more than it looks: `docs[step % len(docs)]` walks the list in order, so\n*the shuffle is the only thing deciding which name step 0 sees*. Without it, the\nmodel trains on the first 1000 names in the file and only ever sees names\nstarting with 'a'. That is a real bug, and it is silent — the loss still falls."
+          "markdown": "Everything downstream is a list of strings. Getting there is four lines, and one\nof them is a trap.\n\n## The four lines\n\n```python\ndocs = [l.strip() for l in open('input.txt').read().strip().split('\\n') if l.strip()]\nrandom.shuffle(docs)\nprint(f\"num docs: {len(docs)}\")\n```\n\nThat is a name dataset: 32,033 of them, one per line. The comprehension strips\nwhitespace, splits on newlines, and drops empties — so a trailing newline in the\nfile does not produce a phantom empty document.\n\nThen [`random.shuffle(docs)`](cite:19). The seed on line 11 makes this\nreproducible, which matters more than it looks: `docs[step % len(docs)]` walks the\nlist in order, so *the shuffle is the only thing deciding which name step 0\nsees*. Without it, the model trains on the first 1000 names in the file and only\never sees names starting with 'a'. That is a real bug, and it is silent — the\nloss still falls."
         },
         {
           "kind": "callout",
-          "line": 41,
+          "line": 42,
           "title": "The shuffle is not optional",
           "markdown": "Without it you are training on an alphabet, not on a language. The loss curve\nlooks fine. The samples look terrible. This is the first place in 199 lines where\nsomething can be quietly, invisibly wrong."
         },

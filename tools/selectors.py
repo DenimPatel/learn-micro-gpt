@@ -72,6 +72,7 @@ from __future__ import annotations
 
 import ast
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -720,6 +721,27 @@ SOURCES: dict[str, str] = {
 #: Languages a concept is allowed to anchor to. `c-scaled` and `python-annotated`
 #: are forks: readable, never used for parity, so no concept anchors to them.
 TRACK_LANGUAGES: tuple[str, ...] = ("python", "c", "go", "rust", "typescript")
+
+
+def primary_language(languages: Iterable[str]) -> str | None:
+    """The language whose panel a concept's prose sits next to.
+
+    This is the first declared language in `TRACK_LANGUAGES` order, which is the
+    same rule the visualiser applies (`TRACK_ORDER` in `visualizer/src/content/
+    sources.ts`): the reader sees one code panel by default, its lines are the
+    ones a prose citation can scroll to, and this is which panel that is.
+
+    Shared deliberately. A citation is clickable only if it lands inside *this*
+    language's anchored window, so the build gate and the browser have to name
+    the same language; if they compute "primary" independently they can disagree,
+    and a citation that passes the build can render as a control that scrolls
+    nowhere. Returns `None` when the concept declares no tracked language.
+    """
+    declared = set(languages)
+    for language in TRACK_LANGUAGES:
+        if language in declared:
+            return language
+    return None
 
 
 def source_for_language(language: str, root: Path) -> Path:

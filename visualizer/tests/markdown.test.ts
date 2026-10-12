@@ -332,3 +332,71 @@ describe('Markdown maths delimiters', () => {
     expect(html).toContain('here')
   })
 })
+
+/**
+ * Citations in prose.
+ *
+ * A markdown link whose href is `cite:<range>` should become a button that
+ * scrolls the code panel, and *only* that: every other link on the site has to
+ * keep being an `<a>`. The renderer decides from the href alone, so these tests
+ * are mostly about the boundary between the two.
+ *
+ * The `renderToStaticMarkup` path is the same one the existing maths tests use,
+ * so a regression here surfaces in the same place the rest of the markdown
+ * rendering does.
+ */
+describe('citations', () => {
+  const render = (
+    markdown: string,
+    onCite?: (range: { start: number; end: number }) => boolean,
+    onActivate?: (range: { start: number; end: number }) => void,
+  ) => renderToStaticMarkup(createElement(Markdown, { onCite, onActivate, children: markdown }))
+
+  it('renders a citation as a button, not a link', () => {
+    const html = render('the seed on line 11 is fixed', () => true)
+    // No href: a citation acts on the page, it does not navigate.
+    expect(html).not.toContain('href="cite:11"')
+  })
+
+  it('hands the predicate the parsed range, not the raw href', () => {
+    // The predicate runs during render: that is how the renderer decides whether
+    // the citation resolved and should become a button at all. So the range it
+    // receives is a live assertion, not a placeholder -- `11-12` has to arrive
+    // as two numbers, because the caller compares them against anchor offsets.
+    // It must be pure: a `setState` here would focus the panel during render,
+    // which is why the click goes through a separate `onActivate`.
+    const seen: { start: number; end: number }[] = []
+    render('see [the shuffle](cite:11-12)', (range) => {
+      seen.push(range)
+      return true
+    })
+    expect(seen).toEqual([{ start: 11, end: 12 }])
+    expect(render('see [it](cite:11-12)', () => true)).toContain('data-cite="11-12"')
+  })
+
+  it('falls back to plain text when nothing can resolve the citation', () => {
+    // No handler at all -- the glossary and the home page render concept prose
+    // with no panel behind it. A button there would do nothing when clicked.
+    const html = render('the seed on line 11')
+    expect(html).not.toContain('<button')
+  })
+
+  it('falls back to plain text when the handler declines the range', () => {
+    // A Python range that cannot highlight anything in the C panel.
+    const html = render('see [the shuffle](cite:11-12)', () => false)
+    expect(html).not.toContain('<button')
+    expect(html).toContain('the shuffle')
+  })
+
+  it('leaves ordinary links as links', () => {
+    const html = render('[softmax](../concepts/softmax.md)')
+    expect(html).toContain('href="../concepts/softmax.md"')
+    expect(html).not.toContain('<button')
+  })
+
+  it('leaves external links as links, with the rel that keeps them safe', () => {
+    const html = render('[papers](https://example.com/)')
+    expect(html).toContain('href="https://example.com/"')
+    expect(html).toContain('noreferrer')
+  })
+})

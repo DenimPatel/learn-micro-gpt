@@ -524,5 +524,35 @@ class TestSpan(unittest.TestCase):
         self.assertEqual((selectors.Span(28, 29).apply_offset((0, -1))).end, 28)
 
 
+class TestPrimaryLanguage(unittest.TestCase):
+    """`primary_language` picks the panel a concept's prose sits beside.
+
+    It exists so the citation gate and the browser name the same language. The
+    visualiser takes `languagesFor(id)[0]`, i.e. the first entry of `TRACK_ORDER`
+    the concept declares; this function has to return the same answer for every
+    concept, or a citation can pass the build gate and render as a dead control.
+    """
+
+    def test_prefers_python(self) -> None:
+        # Every shipped concept declares python first, so this is the live case.
+        self.assertEqual(selectors.primary_language(["c", "python"]), "python")
+        self.assertEqual(selectors.primary_language(["python", "c"]), "python")
+
+    def test_follows_track_order_not_declaration_order(self) -> None:
+        # The frontmatter order is arbitrary; the track order is the rule.
+        self.assertEqual(selectors.primary_language(["typescript", "c"]), "c")
+        self.assertEqual(selectors.primary_language(["go", "rust"]), "go")
+
+    def test_ignores_untracked_languages(self) -> None:
+        # `python-annotated` is a fork, never a panel the prose sits beside.
+        self.assertEqual(selectors.primary_language(["python-annotated", "c"]), "c")
+
+    def test_none_when_no_tracked_language(self) -> None:
+        # A concept that declares nothing tracked has no primary panel, so a
+        # citation in it has nothing to resolve against.
+        self.assertIsNone(selectors.primary_language([]))
+        self.assertIsNone(selectors.primary_language(["python-annotated"]))
+
+
 if __name__ == "__main__":
     unittest.main()

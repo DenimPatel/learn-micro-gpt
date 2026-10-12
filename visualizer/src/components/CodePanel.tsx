@@ -23,7 +23,8 @@
  * code panel has before Shiki loads.
  */
 
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { useHighlight } from '../content/highlight'
 import { HIGHLIGHT_LANG, LANGUAGES, anchorFor, loadSource, loadedSource } from '../data/sources'
 import { ok, type Language } from '../data/types'
@@ -61,7 +62,7 @@ export function CodePanel({
   /** When set, the panel opens focused on this concept's resolved range. */
   conceptId?: string
   /** An explicit 1-based inclusive line range, which wins over `conceptId`. */
-  focus?: { start: number; end: number }
+  focus?: { start: number; end: number } | undefined
   defaultOpen?: boolean
 }) {
   /*
@@ -161,6 +162,9 @@ function CodeBody({
   const { html, ready } = useHighlight(slice, HIGHLIGHT_LANG[language], 'light')
   const { html: darkHtml, ready: darkReady } = useHighlight(slice, HIGHLIGHT_LANG[language], 'dark')
   const [copied, setCopied] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
+
+  useScrollToRange(bodyRef, range)
 
   const label = range
     ? `${language} source, lines ${range.start} to ${range.end} of ${lines.length}`
@@ -170,7 +174,14 @@ function CodeBody({
     const number = from + index + 1
     const focused = range ? number >= range.start && number <= range.end : false
     return (
-      <span key={number} className={focused ? 'code-gutter__line is-focused' : 'code-gutter__line'}>
+      <span
+        key={number}
+        className={focused ? 'code-gutter__line is-focused' : 'code-gutter__line'}
+        // The e2e suite asserts on this attribute rather than on the class: the
+        // class is a *style* decision the stylesheet may rename, while the
+        // attribute is the contract that "this visible line is line N".
+        data-line={number}
+      >
         {number}
       </span>
     )
@@ -205,7 +216,7 @@ function CodeBody({
         </button>
       </div>
 
-      <div id={panelId} hidden={!expanded} className="code-panel__body">
+      <div id={panelId} ref={bodyRef} hidden={!expanded} className="code-panel__body">
         <div className="code-gutter" aria-hidden="true">
           {gutter}
         </div>
@@ -249,4 +260,42 @@ function CodeBody({
       </div>
     </div>
   )
+}
+
+/**
+ * Scroll the focused line into view when the range changes.
+ *
+ * A citation's whole job is to bring the reader's eye to a line, and on a long
+ * panel the target is usually below the fold -- so "highlight it" without
+ * "scroll to it" is half the feature. The effect is keyed on the range's *ends*
+ * rather than on the range object, because a re-render hands over a fresh object
+ * with the same numbers, and scrolling again would yank the reader back to the
+ * citation every time anything else on the page updated. Clicking the same
+ * citation twice is deliberately a no-op, for the same reason.
+ *
+ * `scrollIntoView` is deliberately *not* used. It looks like the obvious call,
+ * but in Chromium it also moves the sequential-focus-navigation starting point
+ * to the scrolled element -- so the very next Tab press resumes from the code
+ * gutter instead of from the top of the document, which silently broke the skip
+ * link (the first tabbable element) whenever a panel auto-scrolled on load.
+ * Setting `scrollTop` scrolls the same distance without touching focus at all.
+ * `block: 'center'`'s intent -- put the line mid-container rather than at the
+ * top edge, so it reads as "here" instead of "hereabouts" -- is kept by centring
+ * the offset explicitly.
+ */
+function useScrollToRange(
+  ref: RefObject<HTMLDivElement | null>,
+  range: { start: number; end: number } | null,
+): void {
+  const start = range?.start
+  const end = range?.end
+  useEffect(() => {
+    if (start === undefined || end === undefined) return
+    const scroller = ref.current
+    if (!scroller) return
+    const node = scroller.querySelector<HTMLElement>('.code-gutter__line.is-focused')
+    if (!node) return
+    const top = node.offsetTop - (scroller.clientHeight - node.offsetHeight) / 2
+    scroller.scrollTop = Math.max(0, top)
+  }, [ref, start, end])
 }
